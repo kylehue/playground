@@ -1,0 +1,28 @@
+{
+   "compilerOptions": {
+      "target": "ES6",
+      "module": "ES6",
+      "lib": ["ES6", "DOM"],
+      "moduleResolution": "Node",
+      "useDefineForClassFields": true,
+      "strict": true,
+      "isolatedModules": false,
+      "esModuleInterop": true,
+      "noEmit": false,
+      "noUnusedLocals": false,
+      "noUnusedParameters": false,
+      "noImplicitReturns": false,
+      "skipLibCheck": true,
+      "baseUrl": ".",
+      "rootDir": "./src",
+      "paths": {
+         "@app/*": ["./src/*"]
+      },
+      "sourceMap": true,
+      "outDir": "dist",
+      "declaration": false,
+      "noImplicitAny": false,
+      "allowSyntheticDefaultImports": false
+   },
+   "include": ["./src/**/*.ts", "./src/**/*.vue"]
+}
