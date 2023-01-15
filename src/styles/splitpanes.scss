@@ -1,0 +1,47 @@
+@import "splitpanes/dist/splitpanes.css";
+$gutter-size: 15px;
+$gutter-color: /* $slate-600 */ rgba(250, 250, 250, 0.025);
+
+.splitpanes {
+   background-color: transparent;
+}
+
+.splitpanes__splitter {
+   background-color: $gutter-color;
+   position: relative;
+}
+
+.splitpanes__splitter:before {
+   content: "";
+   position: absolute;
+   left: 0;
+   top: 0;
+   transition: opacity 50ms;
+   background-color: $gutter-color;
+   opacity: 0;
+   z-index: 1;
+}
+
+.splitpanes__splitter:hover:before {
+   opacity: 1;
+}
+
+.splitpanes--vertical > .splitpanes__splitter {
+   cursor: e-resize;
+}
+
+.splitpanes--horizontal > .splitpanes__splitter {
+   cursor: n-resize;
+}
+
+.splitpanes--vertical > .splitpanes__splitter:before {
+   left: calc(-#{$gutter-size} / 2);
+   right: calc(-#{$gutter-size} / 2);
+   height: 100%;
+}
+
+.splitpanes--horizontal > .splitpanes__splitter:before {
+   top: calc(-#{$gutter-size} / 2);
+   bottom: calc(-#{$gutter-size} / 2);
+   width: 100%;
+}

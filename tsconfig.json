@@ -16,13 +16,14 @@
       "baseUrl": ".",
       "rootDir": "./src",
       "paths": {
-         "@app/*": ["./src/*"]
+         //"@app/*": ["./src/*"],
+         "toypack": ["./node_modules/toypack/"]
       },
       "sourceMap": true,
       "outDir": "dist",
       "declaration": false,
       "noImplicitAny": false,
-      "allowSyntheticDefaultImports": false
+      "allowSyntheticDefaultImports": true
    },
-   "include": ["./src/**/*.ts", "./src/**/*.vue"]
+   "include": ["./src/**/*.ts", "./src/**/*.vue", "./src/**/*.scss", "./src/global.d.ts"]
 }

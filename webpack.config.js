@@ -3,6 +3,7 @@ const path = require("path");
 const env = yargs.argv.env;
 const webpack = require("webpack");
 const vueLoader = require("vue-loader");
+const MonacoEditorPlugin = require("monaco-editor-webpack-plugin");
 
 function resolve(source) {
    return path.resolve(__dirname, source);
@@ -37,7 +38,6 @@ const config = {
          {
             test: /\.(s(a|c)ss|css)$/,
             use: ["style-loader", "css-loader", "sass-loader"],
-            exclude: /node_modules/,
          },
       ],
    },
@@ -52,6 +52,9 @@ const config = {
          __VUE_PROD_DEVTOOLS__: false,
       }),
       new vueLoader.VueLoaderPlugin(),
+      new MonacoEditorPlugin({
+         languages: ["javascript", "css", "html", "typescript", "scss", "json"],
+      }),
    ],
 };
 
