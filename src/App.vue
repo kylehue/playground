@@ -10,7 +10,7 @@
             class="header d-flex flex-row align-items-center justify-content-between mb-1"
          >
             <label class="user-select-none"
-               >Enter the path of the new file</label
+               >Enter the path of the new file or directory</label
             >
             <IconButton
                icon="close"
@@ -20,6 +20,7 @@
          <SimpleInput
             @update="(event) => (state.fileDialogPath = event.target.value)"
             @keypress.enter="createFile(state.fileDialogPath)"
+            :value="state.fileDialogPath"
             v-focus
             class="w-100"
             type="text"
@@ -37,8 +38,12 @@
             <Pane size="70" min-size="10">
                <Drawer
                   ref="drawer"
-                  @openCreateFileDialog="state.showCreateFileDialog = true"
                   title="Files"
+                  @openCreateFileDialog="state.showCreateFileDialog = true"
+                  @addDirectoryButtonClick="openCreateFileDialog"
+                  @addFileButtonClick="openCreateFileDialog"
+                  @removeButtonClick="removeFile"
+                  @changeEditorModel="setModel"
                ></Drawer>
             </Pane>
             <Pane size="30" min-size="10">
@@ -62,7 +67,10 @@ import SimpleInput from "@app/components/basic/SimpleInput.vue";
 import IconButton from "@app/components/basic/IconButton.vue";
 import { onMounted, ref, reactive, nextTick } from "vue";
 import { editor as monacoEditor, KeyMod, KeyCode } from "monaco-editor";
-import Toypack from "toypack";
+import getLang from "./utils/getLang";
+import { extractIdentifiers } from "@vue/compiler-core";
+
+const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
 
 const editorHTMLElement = ref();
 const drawer = ref();
@@ -71,16 +79,93 @@ const state = reactive({
    fileDialogPath: "",
 });
 
-const bundler = new Toypack({
-   bundleOptions: {
+let editor: null | monacoEditor.IStandaloneCodeEditor = null;
+const modelMap: Map<string, any> = new Map();
 
+function getModelMap(id: string) {
+   for (let model of Object.values(Object.fromEntries(modelMap.entries()))) {
+      if (id == editor?.getModel()?.id) {
+         let modelMapModel = modelMap.get(model.path);
+         return modelMapModel;
+      }
    }
-});
+
+   return null;
+}
 
 function createFile(path: string) {
-   drawer.value.createFile(path);
    state.showCreateFileDialog = false;
+
+   // Create file in explorer
+   let newFile = drawer.value.createFile(path);
+
+   // Create file in bundler IF we successfully created a file in the explorer
+   let hasCreatedFile = !!newFile;
+   if (hasCreatedFile) {
+      newFile.element.getMain().click();
+      bundler.postMessage({
+         cmd: "addAsset",
+         args: [path],
+      });
+   }
 }
+
+function removeFile(path: string) {
+   // Remove from explorer
+   drawer.value.removeFile(path);
+
+   // Remove from bundler
+   bundler.postMessage({
+      customCmd: "removeAsset",
+      path,
+   });
+}
+
+function openCreateFileDialog(path = "") {
+   state.showCreateFileDialog = true;
+   state.fileDialogPath = path + "/";
+}
+
+function getModelById(modelId: string) {
+   if (typeof modelId != "string") return null;
+
+   let models = monacoEditor.getModels();
+
+   for (let model of models) {
+      if (model.id === modelId) {
+         return model;
+      }
+   }
+
+   return null;
+}
+
+function setModel(path: string) {
+   if (!editor) {
+      throw new Error("Set Model Error: Editor is not yet created.");
+   }
+
+   // Check if model already exists
+   let modelId = modelMap.get(path)?.id;
+   let model = getModelById(modelId);
+
+   // Create model if it doesn't exist
+   if (!model) {
+      model = monacoEditor.createModel("", getLang(path));
+      modelMap.set(path, {
+         id: model.id,
+         path,
+      });
+   }
+
+   // Set
+   editor.setModel(model);
+   editor.focus();
+}
+
+bundler.onmessage = (event) => {
+   // console.log(event);
+};
 
 monacoEditor.defineTheme("theme-dark", {
    base: "vs-dark",
@@ -102,7 +187,7 @@ addEventListener("keydown", (event) => {
 
 onMounted(() => {
    // Initialize monaco editor
-   const editor = monacoEditor.create(editorHTMLElement.value, {
+   editor = monacoEditor.create(editorHTMLElement.value, {
       value: "",
       language: "text/html",
       lineNumbers: "on",
@@ -113,7 +198,7 @@ onMounted(() => {
       wordWrap: "on",
       wrappingIndent: "indent",
       insertSpaces: true,
-      tabSize: 2,
+      tabSize: 3,
       useShadowDOM: true,
       automaticLayout: true,
       contextmenu: true,
@@ -132,15 +217,48 @@ onMounted(() => {
          modelId: currentModel.id,
          value: currentModelValue,
       }); */
+
+      let currentModel = editor?.getModel();
+      let currentModelPosition = editor?.getPosition();
+
+      for (let model of Object.values(Object.fromEntries(modelMap.entries()))) {
+         if (model.id == currentModel?.id) {
+            break;
+         }
+      }
+      //let modelMapModel = modelMap.get(currentModel);
    });
 
-   // Add shortcut for block comment
+   // Save cursor position
+   editor.onDidChangeCursorPosition(() => {
+      let currentModel = editor?.getModel();
+      let modelMapModel = getModelMap(currentModel?.id || "");
+      if (modelMapModel) {
+         modelMapModel.position = editor?.getPosition();
+      }
+   });
+
+   
+
+   editor.onDidChangeModel(function () {
+      let currentModel = editor?.getModel();
+      let modelMapModel = getModelMap(currentModel?.id || "");
+      // Restore cursor position
+      if (modelMapModel?.position) {
+         editor?.setPosition(modelMapModel.position);
+         editor?.revealPositionInCenter(modelMapModel.position, monacoEditor.ScrollType.Immediate);
+      }
+   });
+
+   // Add shortcut for block commentada
    editor.addAction({
       id: "blockComment",
       label: "Block Comment",
       keybindings: [KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Slash],
       run() {
-         editor.trigger(null, "editor.action.blockComment", null);
+         if (editor) {
+            editor.trigger(null, "editor.action.blockComment", null);
+         }
       },
    });
 

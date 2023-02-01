@@ -45,6 +45,7 @@ const config = {
       alias: {
          "@app": resolve("src"),
       },
+      extensions: [".ts", ".js", ".json"]
    },
    plugins: [
       new webpack.DefinePlugin({

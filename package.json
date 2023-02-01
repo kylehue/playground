@@ -4,6 +4,7 @@
     "build": "webpack --env=prod"
   },
   "devDependencies": {
+    "@types/path-browserify": "^1.0.0",
     "css-loader": "^6.7.3",
     "monaco-editor-webpack-plugin": "^7.0.1",
     "sass": "^1.57.1",
@@ -17,9 +18,10 @@
     "yargs": "^17.6.2"
   },
   "dependencies": {
-    "@kylehue/drawer": "^1.0.7",
+    "@kylehue/drawer": "^1.0.8",
     "bootstrap": "^5.2.3",
     "monaco-editor": "^0.34.1",
+    "path-browserify": "^1.0.1",
     "splitpanes": "^3.1.5",
     "vue": "^3.2.45"
   }

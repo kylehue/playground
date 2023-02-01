@@ -6,8 +6,9 @@
 
 <script setup lang="ts">
 import Drawer from "@kylehue/drawer";
-import { onMounted, defineExpose } from "vue";
+import { onMounted, defineExpose, defineEmits } from "vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
+import { resolve } from "path-browserify";
 const props = defineProps({
    title: String
 });
@@ -28,15 +29,39 @@ function createFile(path: string) {
    let isFile = path.indexOf(".") != -1;
 
    if (isFile) {
-      drawer.addFileFromPath(path);
+      if (drawer.getFileFromPath(path)) return null;
+
+      return drawer.addFileFromPath(path);
    } else {
-      drawer.addDirectoryFromPath(path);
+      if (drawer.getDirectoryFromPath(path)) return null;
+
+      return drawer.addDirectoryFromPath(path);
+   }
+}
+
+function removeFile(path: string) {
+   let isFile = path.indexOf(".") != -1;
+
+   if (isFile) {
+      drawer.removeFileFromPath(path);
+   } else {
+      drawer.removeDirectoryFromPath(path);
    }
 }
 
 defineExpose({
-   createFile
+   createFile,
+   removeFile
 });
+
+const emit = defineEmits([
+   "removeButtonClick",
+   "copyButtonClick",
+   "pasteButtonClick",
+   "addFileButtonClick",
+   "addDirectoryButtonClick",
+   "changeEditorModel"
+]);
 
 onMounted(() => {
    drawer.appendTo("#drawer");
@@ -56,6 +81,57 @@ onMounted(() => {
    drawer.addFileFromPath("l.html");
    drawer.addFileFromPath("m.html");
    drawer.addFileFromPath("src/App.vue");
+
+   drawer.on("click", (item) => {
+      if (item.type == "file") {
+         const path = resolve(item.parent.path, item.title);
+         emit("changeEditorModel", path);
+      }
+   });
+
+   drawer.on("change", (type, item) => {
+      console.log(type, item);
+
+      if (type == "move") {
+
+      } else if (type == "add") {
+         
+      } else if (type == "remove") {
+         
+      } else if (type == "rename") {
+         
+      }
+   });
+
+   console.log(drawer);
+
+   drawer.on("addDirectoryClick", (item) => {
+      const path = resolve(item.parent.path, item.title);
+      emit("addDirectoryButtonClick", path);
+   });
+
+   drawer.on("addFileClick", (item) => {
+      const path = resolve(item.parent.path, item.title);
+      emit("addFileButtonClick", path);
+   });
+
+   drawer.on("removeClick", (item) => {
+      const path = resolve(item.parent.path, item.title);
+      const doRemove = confirm("Are you sure you want to delete " + path);
+      if (doRemove) {
+         emit("removeButtonClick", path);
+      }
+   });
+
+   drawer.on("copyClick", (item) => {
+      const path = resolve(item.parent.path, item.title);
+      emit("copyButtonClick", path);
+   });
+
+   drawer.on("pasteClick", (item) => {
+      const path = resolve(item.parent.path, item.title);
+      emit("pasteButtonClick", path);
+   });
 });
 </script>
 

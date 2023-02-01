@@ -1,7 +1,7 @@
 {
    "compilerOptions": {
       "target": "ES6",
-      "module": "ES6",
+      "module": "ESNext",
       "lib": ["ES6", "DOM"],
       "moduleResolution": "Node",
       "useDefineForClassFields": true,
@@ -25,5 +25,5 @@
       "noImplicitAny": false,
       "allowSyntheticDefaultImports": true
    },
-   "include": ["./src/**/*.ts", "./src/**/*.vue", "./src/**/*.scss", "./src/global.d.ts"]
+   "include": ["./src/**/*.*"]
 }
