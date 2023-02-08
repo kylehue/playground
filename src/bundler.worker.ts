@@ -12,7 +12,7 @@ onmessage = async event => {
 
       postMessage({
          ...data,
-         result,
+         result: data.cmd == "bundle" ? result : {}
       });
    }
    
@@ -26,4 +26,26 @@ onmessage = async event => {
          });
       }
    }
+
+   console.log(bundler);
 };
+
+bundler.hooks.failedLoader(async (descriptor) => {
+   let BabelPattern = /\.(t|j)sx?$/; // .js, .ts, .jsx, .tsx
+   if (BabelPattern.test(descriptor.asset.source)) {
+      let BabelLoader = await import("toypack/lib/BabelLoader.js");
+      bundler.loaders.push(new BabelLoader.default());
+   }
+   
+   let VuePattern = /\.vue$/; // .vue
+   if (VuePattern.test(descriptor.asset.source)) {
+      let VueLoader = await import("toypack/lib/VueLoader.js");
+      bundler.loaders.push(new VueLoader.default());
+   }
+   
+   let SassPattern = /\.s(a|c)ss$/; // .sass, .scss
+   if (SassPattern.test(descriptor.asset.source)) {
+      let SassLoader = await import("toypack/lib/SassLoader.js");
+      bundler.loaders.push(new SassLoader.default());
+   }
+});

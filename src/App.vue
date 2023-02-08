@@ -54,7 +54,13 @@
       <Pane size="40" min-size="5">
          <div ref="editorHTMLElement" class="editor d-flex w-100 h-100"></div>
       </Pane>
-      <Pane size="40" min-size="5">output</Pane>
+      <Pane size="40" min-size="5">
+         <iframe
+            ref="iframe"
+            class="w-100 h-100"
+            sandbox="allow-modals allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation-by-user-activation"
+         ></iframe>
+      </Pane>
    </Splitpanes>
 </template>
 
@@ -68,12 +74,12 @@ import IconButton from "@app/components/basic/IconButton.vue";
 import { onMounted, ref, reactive, nextTick } from "vue";
 import { editor as monacoEditor, KeyMod, KeyCode } from "monaco-editor";
 import getLang from "./utils/getLang";
-import { extractIdentifiers } from "@vue/compiler-core";
 
 const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
 
 const editorHTMLElement = ref();
 const drawer = ref();
+const iframe = ref();
 const state = reactive({
    showCreateFileDialog: false,
    fileDialogPath: "",
@@ -84,7 +90,7 @@ const modelMap: Map<string, any> = new Map();
 
 function getModelMap(id: string) {
    for (let model of Object.values(Object.fromEntries(modelMap.entries()))) {
-      if (id == editor?.getModel()?.id) {
+      if (id === model.id) {
          let modelMapModel = modelMap.get(model.path);
          return modelMapModel;
       }
@@ -93,8 +99,9 @@ function getModelMap(id: string) {
    return null;
 }
 
-function createFile(path: string) {
+function createFile(path: string, content = "") {
    state.showCreateFileDialog = false;
+   state.fileDialogPath = "";
 
    // Create file in explorer
    let newFile = drawer.value.createFile(path);
@@ -105,7 +112,7 @@ function createFile(path: string) {
       newFile.element.getMain().click();
       bundler.postMessage({
          cmd: "addAsset",
-         args: [path],
+         args: [path, content],
       });
    }
 }
@@ -164,7 +171,20 @@ function setModel(path: string) {
 }
 
 bundler.onmessage = (event) => {
-   // console.log(event);
+   const data = event.data;
+
+   if (data.cmd == "bundle") {
+      iframe.value.src = data.result.contentDocURL;
+   }
+
+   console.log(data);
+};
+
+(window as any).bundle = function () {
+   let result = bundler.postMessage({
+      cmd: "bundle",
+      args: [],
+   });
 };
 
 monacoEditor.defineTheme("theme-dark", {
@@ -211,22 +231,24 @@ onMounted(() => {
 
    // Content change
    editor.onDidChangeModelContent((e) => {
-      /* let currentModel = editor.getModel();
-      let currentModelValue = currentModel.getValue();
-      emit("fileUpdated", {
-         modelId: currentModel.id,
-         value: currentModelValue,
-      }); */
-
+      // Update bundler asset content
       let currentModel = editor?.getModel();
-      let currentModelPosition = editor?.getPosition();
-
-      for (let model of Object.values(Object.fromEntries(modelMap.entries()))) {
-         if (model.id == currentModel?.id) {
-            break;
-         }
+      let modelMapModel = getModelMap(currentModel?.id || "");
+      if (modelMapModel) {
+         console.log(modelMapModel.path);
+         console.log(currentModel?.getValue());
+         
+         bundler.postMessage({
+            cmd: "addAsset",
+            args: [modelMapModel.path, currentModel?.getValue()],
+         });
       }
-      //let modelMapModel = modelMap.get(currentModel);
+
+      // Bundle
+      bundler.postMessage({
+         cmd: "bundle",
+         args: [],
+      });
    });
 
    // Save cursor position
@@ -238,15 +260,16 @@ onMounted(() => {
       }
    });
 
-   
-
    editor.onDidChangeModel(function () {
       let currentModel = editor?.getModel();
       let modelMapModel = getModelMap(currentModel?.id || "");
       // Restore cursor position
       if (modelMapModel?.position) {
          editor?.setPosition(modelMapModel.position);
-         editor?.revealPositionInCenter(modelMapModel.position, monacoEditor.ScrollType.Immediate);
+         editor?.revealPositionInCenter(
+            modelMapModel.position,
+            monacoEditor.ScrollType.Immediate
+         );
       }
    });
 
@@ -262,131 +285,54 @@ onMounted(() => {
       },
    });
 
+   createFile("index.html", "<html>\
+\
+<head>\
+   <script src=\"src/main\"><\/script>\
+</head>\
+\
+<body>\
+   <canvas id=\"game\"></canvas>\
+</body>\
+\
+</html>");
+
+   createFile("src/main.ts", `let canvas = document.getElementById("game") as HTMLCanvasElement;
+let ctx = canvas.getContext("2d");
+console.log(canvas, 123);
+
+let r = 20;
+let x = r;
+let y = r;
+let vx = 1;
+let vy = 1;
+function animate() {
+   ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+   ctx.fillRect(0, 0, canvas.width, canvas.height);
+   ctx.fillStyle = "yellow";
+   ctx.beginPath();
+   ctx.arc(x, y, r, 0, Math.PI * 2);
+   ctx.closePath();
+   ctx.fill();
+   x += vx;
+   y += vy;
+
+   vx += 0.1;
+   vy += 0.1;
+
+   if (x <= r - vx || x + vx >= canvas.width - r) {
+      vx = -vx;
+   }
+   if (y <= r - vy || y + vy >= canvas.height - r) {
+      vy = -vy;
+   }
+   requestAnimationFrame(animate);
+}
+
+animate();`);
+
    (window as any).editor = editor;
 });
-
-/* import * as monaco from "monaco-editor";
-const emit = defineEmits(["fileUpdated"]);
-
-const editorElement = ref();
-let editor;
-
-// Setup dark theme for monaco editor
-let themeDarkBackground = "#151618";
-let themeDarkWidgetBackground = "#202225";
-monaco.editor.defineTheme("theme-dark", {
-  base: "vs-dark",
-  inherit: true,
-  rules: [],
-  colors: {
-    "editor.background": themeDarkBackground,
-    "editorWidget.background": themeDarkWidgetBackground
-  }
-});
-
-// Setup light theme for monaco editor
-let themeLightBackground = "#fcfdfe";
-let themeLightWidgetBackground = "#e9edf1";
-monaco.editor.defineTheme("theme-light", {
-  base: "vs",
-  inherit: true,
-  rules: [],
-  colors: {
-    "editor.background": themeLightBackground,
-    "editorWidget.background": themeLightWidgetBackground
-  }
-});
-
-function setTheme(theme) {
-  monaco.editor.setTheme(theme);
-}
-
-function getModelById(modelId) {
-  let result;
-  monaco.editor.getModels().forEach(model => {
-    if (model.id === modelId) {
-      result = model;
-      return;
-    }
-  });
-
-  return result;
-}
-
-function setModel(model) {
-  if (typeof model == "string") {
-    model = getModelById(model);
-  }
-
-  editor.setModel(model);
-  editor.focus();
-}
-
-function createModel(value, language) {
-  let model = monaco.editor.createModel(value, language);
-  return model;
-}
-
-defineExpose({
-  setTheme,
-  setModel,
-  createModel,
-	getModelById
-});
-
-onMounted(() => {
-  let currentTheme = "theme-dark";
-  let bodyIsDark = document.body.classList.contains("theme-dark");
-  if (!bodyIsDark) {
-    currentTheme = "theme-light";
-  }
-
-  // Initialize monaco editor
-  editor = monaco.editor.create(editorElement.value, {
-    value: "",
-    language: "text/html",
-    lineNumbers: "on",
-    roundedSelection: true,
-    scrollBeyondLastLine: true,
-    readOnly: false,
-    theme: currentTheme,
-    wordWrap: "on",
-    wordWrapMinified: true,
-    wrappingIndent: "indent",
-    insertSpaces: false,
-    tabSize: 4,
-    automaticLayout: true,
-    contextmenu: true,
-    scrollbar: {
-      vertical: "auto",
-      horizontal: "auto",
-      verticalScrollbarSize: 8,
-      horizontalScrollbarSize: 8
-    }
-  });
-
-  editor.onDidChangeModelContent(e => {
-    let currentModel = editor.getModel();
-    let currentModelValue = currentModel.getValue();
-    emit("fileUpdated", {
-      modelId: currentModel.id,
-      value: currentModelValue
-    });
-  });
-
-  editor.addAction({
-		id: "blockComment",
-    label: "Block Comment",
-    keybindings: [
-      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Slash
-    ],
-    run: function() {
-			editor.trigger("", "editor.action.blockComment");
-    }
-  });
-
-	window.editor = editor;
-}); */
 </script>
 
 <style lang="scss" scoped>
@@ -405,5 +351,9 @@ onMounted(() => {
       width: 400px;
       height: fit-content;
    }
+}
+
+iframe {
+   background: white;
 }
 </style>

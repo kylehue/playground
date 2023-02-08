@@ -21,6 +21,8 @@
     "@kylehue/drawer": "^1.0.8",
     "bootstrap": "^5.2.3",
     "monaco-editor": "^0.34.1",
+    "monaco-volar": "^0.0.6",
+    "monaco-vue": "^0.2.3",
     "path-browserify": "^1.0.1",
     "splitpanes": "^3.1.5",
     "vue": "^3.2.45"

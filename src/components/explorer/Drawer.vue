@@ -66,22 +66,6 @@ const emit = defineEmits([
 onMounted(() => {
    drawer.appendTo("#drawer");
 
-   drawer.addFileFromPath("index.html");
-   drawer.addFileFromPath("a.html");
-   drawer.addFileFromPath("b.html");
-   drawer.addFileFromPath("c.html");
-   drawer.addFileFromPath("d.html");
-   drawer.addFileFromPath("e.html");
-   drawer.addFileFromPath("f.html");
-   drawer.addFileFromPath("g.html");
-   drawer.addFileFromPath("h.html");
-   drawer.addFileFromPath("i.html");
-   drawer.addFileFromPath("j.html");
-   drawer.addFileFromPath("k.html");
-   drawer.addFileFromPath("l.html");
-   drawer.addFileFromPath("m.html");
-   drawer.addFileFromPath("src/App.vue");
-
    drawer.on("click", (item) => {
       if (item.type == "file") {
          const path = resolve(item.parent.path, item.title);
