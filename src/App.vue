@@ -3,7 +3,7 @@
       v-if="state.showCreateFileDialog"
       id="createFileDialog"
       class="d-flex align-items-center justify-content-center w-100 h-100 position-absolute zindex-modal-backdrop"
-      @click.self="state.showCreateFileDialog = false"
+      @click.self="closeNewFileDialog"
    >
       <div class="d-flex flex-column p-2 rounded">
          <div
@@ -12,10 +12,7 @@
             <label class="user-select-none"
                >Enter the path of the new file or directory</label
             >
-            <IconButton
-               icon="close"
-               @click="state.showCreateFileDialog = false"
-            ></IconButton>
+            <IconButton icon="close" @click="closeNewFileDialog"></IconButton>
          </div>
          <SimpleInput
             @update="(event) => (state.fileDialogPath = event.target.value)"
@@ -32,7 +29,8 @@
          >
       </div>
    </div>
-   <Splitpanes>
+   <Navbar class="flex-shrink-0"></Navbar>
+   <Splitpanes class="flex-grow-1 overflow-hidden">
       <Pane size="20" min-size="5" class="explorer-pane">
          <Splitpanes horizontal>
             <Pane size="70" min-size="10">
@@ -44,6 +42,8 @@
                   @addFileButtonClick="openCreateFileDialog"
                   @removeButtonClick="removeFile"
                   @changeEditorModel="setModel"
+                  @copyButtonClick="setCopiedFilePath"
+                  @pasteButtonClick="pasteCopiedFilePath"
                ></Drawer>
             </Pane>
             <Pane size="30" min-size="10">
@@ -71,9 +71,11 @@ import Packages from "@app/components/explorer/Packages.vue";
 import SimpleButton from "@app/components/basic/SimpleButton.vue";
 import SimpleInput from "@app/components/basic/SimpleInput.vue";
 import IconButton from "@app/components/basic/IconButton.vue";
+import Navbar from "@app/components/navbar/Navbar.vue";
 import { onMounted, ref, reactive, nextTick } from "vue";
-import { editor as monacoEditor, KeyMod, KeyCode } from "monaco-editor";
+import { editor as monacoEditor, KeyMod, KeyCode, Uri } from "monaco-editor";
 import getLang from "./utils/getLang";
+import { resolve, basename, join } from "path-browserify";
 
 const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
 
@@ -83,25 +85,35 @@ const iframe = ref();
 const state = reactive({
    showCreateFileDialog: false,
    fileDialogPath: "",
+   copiedFilePath: "",
 });
 
 let editor: null | monacoEditor.IStandaloneCodeEditor = null;
 const modelMap: Map<string, any> = new Map();
 
-function getModelMap(id: string) {
-   for (let model of Object.values(Object.fromEntries(modelMap.entries()))) {
-      if (id === model.id) {
-         let modelMapModel = modelMap.get(model.path);
-         return modelMapModel;
-      }
-   }
+function setCopiedFilePath(path: string) {
+   path = join("/", path);
+   state.copiedFilePath = path;
+}
 
-   return null;
+function pasteCopiedFilePath(targetDirectory: string) {
+   targetDirectory = join("/", targetDirectory);
+   let model = monacoEditor.getModel(getPathURI(state.copiedFilePath));
+
+   if (model) {
+      let dest = resolve(targetDirectory, basename(state.copiedFilePath));
+      createFile(dest, model.getValue());
+   }
+}
+
+function closeNewFileDialog() {
+   state.showCreateFileDialog = false;
+   state.fileDialogPath = "";
 }
 
 function createFile(path: string, content = "") {
-   state.showCreateFileDialog = false;
-   state.fileDialogPath = "";
+   path = join("/", path);
+   closeNewFileDialog();
 
    // Create file in explorer
    let newFile = drawer.value.createFile(path);
@@ -109,7 +121,7 @@ function createFile(path: string, content = "") {
    // Create file in bundler IF we successfully created a file in the explorer
    let hasCreatedFile = !!newFile;
    if (hasCreatedFile) {
-      newFile.element.getMain().click();
+      setModel(path, content);
       bundler.postMessage({
          cmd: "addAsset",
          args: [path, content],
@@ -118,6 +130,7 @@ function createFile(path: string, content = "") {
 }
 
 function removeFile(path: string) {
+   path = join("/", path);
    // Remove from explorer
    drawer.value.removeFile(path);
 
@@ -129,45 +142,37 @@ function removeFile(path: string) {
 }
 
 function openCreateFileDialog(path = "") {
+   path = join("/", path);
    state.showCreateFileDialog = true;
    state.fileDialogPath = path + "/";
 }
 
-function getModelById(modelId: string) {
-   if (typeof modelId != "string") return null;
-
-   let models = monacoEditor.getModels();
-
-   for (let model of models) {
-      if (model.id === modelId) {
-         return model;
-      }
-   }
-
-   return null;
+function getPathURI(path: string) {
+   return Uri.parse("file://" + join("/", path));
 }
 
-function setModel(path: string) {
+function setModel(path: string, content = "") {
    if (!editor) {
       throw new Error("Set Model Error: Editor is not yet created.");
    }
 
+   path = join("/", path);
+
    // Check if model already exists
-   let modelId = modelMap.get(path)?.id;
-   let model = getModelById(modelId);
+   let uri = getPathURI(path);
+   let model = monacoEditor.getModel(uri);
 
    // Create model if it doesn't exist
    if (!model) {
-      model = monacoEditor.createModel("", getLang(path));
-      modelMap.set(path, {
-         id: model.id,
-         path,
-      });
+      model = monacoEditor.createModel(content, getLang(path), uri);
+      modelMap.set(path, {});
    }
 
    // Set
    editor.setModel(model);
    editor.focus();
+
+   return model;
 }
 
 bundler.onmessage = (event) => {
@@ -201,7 +206,7 @@ monacoEditor.setTheme("theme-dark");
 
 addEventListener("keydown", (event) => {
    if (event.code == "Escape") {
-      state.showCreateFileDialog = false;
+      closeNewFileDialog();
    }
 });
 
@@ -233,16 +238,10 @@ onMounted(() => {
    editor.onDidChangeModelContent((e) => {
       // Update bundler asset content
       let currentModel = editor?.getModel();
-      let modelMapModel = getModelMap(currentModel?.id || "");
-      if (modelMapModel) {
-         console.log(modelMapModel.path);
-         console.log(currentModel?.getValue());
-         
-         bundler.postMessage({
-            cmd: "addAsset",
-            args: [modelMapModel.path, currentModel?.getValue()],
-         });
-      }
+      bundler.postMessage({
+         cmd: "addAsset",
+         args: [currentModel?.uri.path, currentModel?.getValue()],
+      });
 
       // Bundle
       bundler.postMessage({
@@ -254,7 +253,7 @@ onMounted(() => {
    // Save cursor position
    editor.onDidChangeCursorPosition(() => {
       let currentModel = editor?.getModel();
-      let modelMapModel = getModelMap(currentModel?.id || "");
+      let modelMapModel = modelMap.get(currentModel?.uri.path || "");
       if (modelMapModel) {
          modelMapModel.position = editor?.getPosition();
       }
@@ -262,7 +261,7 @@ onMounted(() => {
 
    editor.onDidChangeModel(function () {
       let currentModel = editor?.getModel();
-      let modelMapModel = getModelMap(currentModel?.id || "");
+      let modelMapModel = modelMap.get(currentModel?.uri.path || "");
       // Restore cursor position
       if (modelMapModel?.position) {
          editor?.setPosition(modelMapModel.position);
@@ -285,21 +284,30 @@ onMounted(() => {
       },
    });
 
-   createFile("index.html", "<html>\
+   createFile(
+      "index.html",
+      '<html>\
 \
 <head>\
-   <script src=\"src/main\"><\/script>\
+   <script src="src/main"><\/script>\
 </head>\
 \
 <body>\
-   <canvas id=\"game\"></canvas>\
+   <canvas id="game"></canvas>\
 </body>\
 \
-</html>");
+</html>'
+   );
 
-   createFile("src/main.ts", `let canvas = document.getElementById("game") as HTMLCanvasElement;
+   createFile(
+      "src/main.ts",
+      `import Circle from "./Circle";
+      import "../styles/main.css";
+      let canvas = document.getElementById("game") as HTMLCanvasElement;
 let ctx = canvas.getContext("2d");
-console.log(canvas, 123);
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+console.log(canvas, 123, new Circle(1));
 
 let r = 20;
 let x = r;
@@ -329,7 +337,30 @@ function animate() {
    requestAnimationFrame(animate);
 }
 
-animate();`);
+animate();`
+   );
+
+   createFile(
+      "src/Circle.ts",
+      `export default class Circle {
+   constructor(x: number) {
+      
+   }
+}`
+   );
+
+   createFile(
+      "styles/main.css",
+      `body {
+         margin: 0;
+         overflow: hidden;
+      }`
+   );
+
+   bundler.postMessage({
+      cmd: "bundle",
+      args: [],
+   });
 
    (window as any).editor = editor;
 });

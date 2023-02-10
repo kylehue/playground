@@ -18,6 +18,7 @@ const drawer = new Drawer({
    directoryButton: {
       cut: false,
       rename: false,
+      addDirectory: false
    },
    fileButton: {
       cut: false,
@@ -59,12 +60,14 @@ const emit = defineEmits([
    "copyButtonClick",
    "pasteButtonClick",
    "addFileButtonClick",
-   "addDirectoryButtonClick",
    "changeEditorModel"
 ]);
 
 onMounted(() => {
    drawer.appendTo("#drawer");
+   for (let i = 0; i < 30; i++) {
+      drawer.addFileFromPath(`${i}.html`);
+   }
 
    drawer.on("click", (item) => {
       if (item.type == "file") {
@@ -85,13 +88,6 @@ onMounted(() => {
       } else if (type == "rename") {
          
       }
-   });
-
-   console.log(drawer);
-
-   drawer.on("addDirectoryClick", (item) => {
-      const path = resolve(item.parent.path, item.title);
-      emit("addDirectoryButtonClick", path);
    });
 
    drawer.on("addFileClick", (item) => {
