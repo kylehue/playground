@@ -1,5 +1,5 @@
 <template>
-   <ExplorerSpace @addClick="$emit('openCreateFileDialog')" title="Files">
+   <ExplorerSpace @addClick="emit('openNewFileDialog')" title="Files">
       <div id="drawer" class="w-100 h-100 d-flex flex-column"></div>
    </ExplorerSpace>
 </template>
@@ -60,7 +60,8 @@ const emit = defineEmits([
    "copyButtonClick",
    "pasteButtonClick",
    "addFileButtonClick",
-   "changeEditorModel"
+   "changeEditorModel",
+   "openNewFileDialog"
 ]);
 
 onMounted(() => {

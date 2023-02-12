@@ -1,6 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Catamaran:wght@400;500;700&display=swap");
 @import url("https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css");
 @import "bootstrap/dist/css/bootstrap.min.css";
+@import "primevue/resources/themes/bootstrap4-dark-purple/theme.css";
+@import "primevue/resources/primevue.min.css";
+@import "primeicons/primeicons.css";
 @import "./variables.scss";
 @import "./splitpanes.scss";
 html,
@@ -26,18 +29,16 @@ body {
 ::-webkit-scrollbar-track,
 ::-webkit-scrollbar-corner {
    background: $slate-800;
-   border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
    background: $slate-500;
-   border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-   background: lighten($slate-700, 2.5%);
+   background: lighten($slate-500, 5%);
 }
 
 ::-webkit-scrollbar-thumb:active {
-   background: lighten($slate-700, 5%);
+   background: lighten($slate-500, 10%);
 }

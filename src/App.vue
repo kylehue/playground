@@ -1,34 +1,80 @@
 <template>
-   <div
-      v-if="state.showCreateFileDialog"
-      id="createFileDialog"
-      class="d-flex align-items-center justify-content-center w-100 h-100 position-absolute zindex-modal-backdrop"
-      @click.self="closeNewFileDialog"
+   <!-- New file dialog -->
+   <Dialog
+      v-model:visible="state.showNewFileDialog"
+      @hide="closeNewFileDialog"
+      :dismissableMask="true"
+      :modal="true"
+      class="col-10 col-md-5"
    >
-      <div class="d-flex flex-column p-2 rounded">
-         <div
-            class="header d-flex flex-row align-items-center justify-content-between mb-1"
-         >
-            <label class="user-select-none"
-               >Enter the path of the new file or directory</label
-            >
-            <IconButton icon="close" @click="closeNewFileDialog"></IconButton>
-         </div>
-         <SimpleInput
-            @update="(event) => (state.fileDialogPath = event.target.value)"
-            @keypress.enter="createFile(state.fileDialogPath)"
-            :value="state.fileDialogPath"
-            v-focus
+      <template #header>
+         <h6>Enter the path</h6>
+      </template>
+      <InputText
+         type="text"
+         v-model="state.newFileDialogPath"
+         @keypress.enter="createFile(state.newFileDialogPath)"
+         v-focus
+         spellcheck="false"
+         autocomplete="off"
+         autofill="off"
+         class="w-100"
+      />
+      <template #footer>
+         <Button
+            label="Create"
             class="w-100"
-            type="text"
+            @click="createFile(state.newFileDialogPath)"
          />
-         <SimpleButton
-            class="w-100 mt-2"
-            @click="createFile(state.fileDialogPath)"
-            >Create</SimpleButton
+      </template>
+   </Dialog>
+   <!-- New package dialog -->
+   <Dialog
+      v-model:visible="state.showNewPackageDialog"
+      @hide="closeNewPackageDialog"
+      :dismissableMask="true"
+      :modal="true"
+      class="col-10 col-md-5"
+   >
+      <template #header>
+         <h6>Search Packages</h6>
+      </template>
+      <div class="d-flex flex-row">
+         <Dropdown
+            v-model="state.selectedPackage"
+            :options="state.packageResults"
+            :editable="true"
+            @input="(e) => fetchPackage(e.target.value)"
+            @change="(e) => fetchSelectPackageVersions(e.value)"
+            optionLabel="name"
+            optionValue="name"
+            placeholder="Search packages"
+            class="col-7 me-2"
          >
+         </Dropdown>
+         <Dropdown
+            v-model="state.selectedPackageVersion"
+            :options="state.selectedPackageVersionResults"
+            :editable="true"
+            :disabled="!state.selectedPackage"
+            optionLabel="name"
+            optionValue="value"
+            placeholder="Version"
+            class="col-5"
+         >
+         </Dropdown>
       </div>
-   </div>
+      <template #footer>
+         <Button
+            :disabled="!state.selectedPackageVersion"
+            label="Add"
+            class="w-100"
+            @click="
+               addPackage(state.selectedPackage, state.selectedPackageVersion)
+            "
+         />
+      </template>
+   </Dialog>
    <Navbar class="flex-shrink-0"></Navbar>
    <Splitpanes class="flex-grow-1 overflow-hidden">
       <Pane size="20" min-size="5" class="explorer-pane">
@@ -37,8 +83,7 @@
                <Drawer
                   ref="drawer"
                   title="Files"
-                  @openCreateFileDialog="state.showCreateFileDialog = true"
-                  @addDirectoryButtonClick="openCreateFileDialog"
+                  @openNewFileDialog="openCreateFileDialog"
                   @addFileButtonClick="openCreateFileDialog"
                   @removeButtonClick="removeFile"
                   @changeEditorModel="setModel"
@@ -47,7 +92,9 @@
                ></Drawer>
             </Pane>
             <Pane size="30" min-size="10">
-               <Packages></Packages>
+               <Packages
+                  @openNewPackageDialog="state.showNewPackageDialog = true"
+               ></Packages>
             </Pane>
          </Splitpanes>
       </Pane>
@@ -55,11 +102,7 @@
          <div ref="editorHTMLElement" class="editor d-flex w-100 h-100"></div>
       </Pane>
       <Pane size="40" min-size="5">
-         <iframe
-            ref="iframe"
-            class="w-100 h-100"
-            sandbox="allow-modals allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation-by-user-activation"
-         ></iframe>
+         <iframe ref="iframe" class="w-100 h-100"></iframe>
       </Pane>
    </Splitpanes>
 </template>
@@ -73,8 +116,19 @@ import SimpleInput from "@app/components/basic/SimpleInput.vue";
 import IconButton from "@app/components/basic/IconButton.vue";
 import Navbar from "@app/components/navbar/Navbar.vue";
 import { onMounted, ref, reactive, nextTick } from "vue";
-import { editor as monacoEditor, KeyMod, KeyCode, Uri } from "monaco-editor";
+import {
+   editor as monacoEditor,
+   KeyMod,
+   KeyCode,
+   Uri,
+   languages,
+} from "monaco-editor";
 import getLang from "./utils/getLang";
+import { searchPackagesByName, searchPackage } from "./utils/npmSearch";
+import InputText from "primevue/inputtext";
+import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+import Dropdown from "primevue/dropdown";
 import { resolve, basename, join } from "path-browserify";
 
 const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
@@ -83,13 +137,83 @@ const editorHTMLElement = ref();
 const drawer = ref();
 const iframe = ref();
 const state = reactive({
-   showCreateFileDialog: false,
-   fileDialogPath: "",
+   showNewFileDialog: false,
+   newFileDialogPath: "",
    copiedFilePath: "",
+   showNewPackageDialog: false,
+   selectedPackage: "",
+   packageResults: [],
+   selectedPackageVersion: "",
+   selectedPackageVersionResults: [] as object[],
 });
+
+languages.typescript.typescriptDefaults.setCompilerOptions({
+   allowJs: true,
+   moduleResolution: languages.typescript.ModuleResolutionKind.NodeJs,
+   module: languages.typescript.ModuleKind.ESNext,
+   /* types: [
+      "https://esm.sh/v106/vue@3.2.47/dist/vue.d.ts"
+   ],
+   typeRoots: [
+      "https://esm.sh/v106/vue@3.2.47/dist/vue.d.ts"
+   ], */
+});
+
+/* languages.typescript.typescriptDefaults.addExtraLib(
+   `declare module 'vue' { export {default} from "https://esm.sh/v106/vue@3.2.47/dist/vue.d.ts"; export * from "https://esm.sh/v106/vue@3.2.47/dist/vue.d.ts"; }`,
+   "/node_modules/vue/vue.d.ts"
+); */
 
 let editor: null | monacoEditor.IStandaloneCodeEditor = null;
 const modelMap: Map<string, any> = new Map();
+async function fetchPackage(searchText: string) {
+   state.selectedPackageVersion = "";
+   state.selectedPackageVersionResults = [];
+
+   let searchResult = await searchPackagesByName(searchText, {
+      size: 10,
+   });
+
+   state.packageResults = searchResult;
+}
+
+async function fetchSelectPackageVersions(packageName: string) {
+   state.selectedPackageVersion = "";
+   state.selectedPackageVersionResults = [];
+
+   let result = await searchPackage(packageName);
+   let distTags = result["dist-tags"];
+
+   state.selectedPackageVersionResults = Object.values(result.versions)
+      .reverse()
+      .map((el: any) => ({
+         name:
+            distTags.latest == el.version
+               ? el.version + " (latest)"
+               : el.version,
+         value: el.version,
+      }));
+
+   state.selectedPackageVersion = distTags.latest;
+}
+
+function closeNewPackageDialog() {
+   state.showNewPackageDialog = false;
+   state.selectedPackage = "";
+   state.packageResults = [];
+   state.selectedPackageVersion = "";
+   state.selectedPackageVersionResults = [];
+}
+
+function addPackage(name: string, version: string) {
+   console.log(name, version);
+
+   bundler.postMessage({
+      customCmd: "installPackage",
+      name,
+      version,
+   });
+}
 
 function setCopiedFilePath(path: string) {
    path = join("/", path);
@@ -107,8 +231,8 @@ function pasteCopiedFilePath(targetDirectory: string) {
 }
 
 function closeNewFileDialog() {
-   state.showCreateFileDialog = false;
-   state.fileDialogPath = "";
+   state.showNewFileDialog = false;
+   state.newFileDialogPath = "";
 }
 
 function createFile(path: string, content = "") {
@@ -142,13 +266,16 @@ function removeFile(path: string) {
 }
 
 function openCreateFileDialog(path = "") {
-   path = join("/", path);
-   state.showCreateFileDialog = true;
-   state.fileDialogPath = path + "/";
+   if (path) {
+      path = join("/", path);
+      state.newFileDialogPath = path + "/";
+   }
+
+   state.showNewFileDialog = true;
 }
 
 function getPathURI(path: string) {
-   return Uri.parse("file://" + join("/", path));
+   return Uri.parse(join("/", path));
 }
 
 function setModel(path: string, content = "") {
@@ -182,6 +309,19 @@ bundler.onmessage = (event) => {
       iframe.value.src = data.result.contentDocURL;
    }
 
+   if (data.customCmd == "installPackage") {
+      for (let asset of data.assets) {
+         if (asset.source.startsWith(join("/", "node_modules", data.name))) {
+            let uri = getPathURI(asset.source);
+            monacoEditor.createModel(asset.content, getLang(asset.source), uri);
+            /* languages.typescript.typescriptDefaults.addExtraLib(
+               asset.content,
+               asset.source
+            ); */
+         }
+      }
+   }
+
    console.log(data);
 };
 
@@ -197,8 +337,8 @@ monacoEditor.defineTheme("theme-dark", {
    inherit: true,
    rules: [],
    colors: {
-      "editor.background": "#202125",
-      "editorWidget.background": "#202225",
+      "editor.background": "#1c1f25",
+      "editorWidget.background": "#1c1f25",
    },
 });
 
@@ -248,6 +388,8 @@ onMounted(() => {
          cmd: "bundle",
          args: [],
       });
+
+      console.log(monacoEditor.getModels());
    });
 
    // Save cursor position

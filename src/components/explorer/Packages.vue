@@ -1,6 +1,5 @@
 <template>
-   <ExplorerSpace title="Packages">
-
+   <ExplorerSpace @addClick="emit('openNewPackageDialog')" title="Packages">
    </ExplorerSpace>
 </template>
 
@@ -8,11 +7,9 @@
 import { onMounted } from "vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
 
-onMounted(() => {
-   
-});
+const emit = defineEmits(["openNewPackageDialog"]);
+
+onMounted(() => {});
 </script>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
