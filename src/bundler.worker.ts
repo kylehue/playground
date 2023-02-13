@@ -1,8 +1,10 @@
 import Toypack from "toypack";
+import { join } from "path-browserify";
 const bundler = new Toypack({
    bundleOptions: {},
 });
 
+const typesSourceURL = "https://esm.sh/";
 function getSimplifiedAssets() {
    let assets = Object.fromEntries(bundler.assets);
    return Object.values(assets).map((el) => ({
@@ -35,12 +37,43 @@ onmessage = async (event) => {
 
       if (data.customCmd == "installPackage") {
          let version = data.version ? "@" + data.version : "";
+
+         // Install
          await bundler.packageManager.install(data.name + version);
 
          postMessage({
             ...data,
             assets: getSimplifiedAssets(),
          });
+
+         // Get types
+         let response = await fetch(typesSourceURL + data.name + version);
+         let typesURL = response.headers.get("x-typescript-types");
+         if (typesURL) {
+            let graph = await bundler.packageManager._createGraph(
+               data.name,
+               typesURL
+            );
+
+            // TODO: investigate why dts file for react is not working
+            // Make single .d.ts file
+            let dts = "";
+            for (let asset of graph) {
+               let source = join(data.name, asset.source);
+               dts = `declare module "${source}" { ${asset.content} }` + dts;
+            }
+
+            let entrySource = join(data.name, graph[0].source);
+            dts += `declare module "${data.name}" { export * from "${entrySource}"; export { default } from "${entrySource}" }`;
+            
+            postMessage({
+               name: data.name,
+               version: data.version,
+               dts
+            });
+         }
+
+
       }
    }
 
@@ -53,16 +86,17 @@ bundler.hooks.failedLoader(async (descriptor) => {
       let BabelLoader = await import("toypack/lib/BabelLoader.js");
       let loopProtectPlugin = await import("@freecodecamp/loop-protect");
       let slowLoopTimeLimitMS = 100;
-      bundler.loaders.push(
-         new BabelLoader.default({
-            registerPlugins: [
-               ["loopProtect", loopProtectPlugin.default(slowLoopTimeLimitMS)],
-            ],
-            transformOptions: {
-               plugins: ["loopProtect"],
-            },
-         })
-      );
+
+      let loader = new BabelLoader.default({
+         registerPlugins: [
+            ["loopProtect", loopProtectPlugin.default(slowLoopTimeLimitMS)],
+         ],
+         transformOptions: {
+            plugins: ["loopProtect"],
+         },
+      });
+
+      bundler.loaders.push(loader);
    }
 
    let VuePattern = /\.vue$/; // .vue

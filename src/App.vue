@@ -309,17 +309,24 @@ bundler.onmessage = (event) => {
       iframe.value.src = data.result.contentDocURL;
    }
 
-   if (data.customCmd == "installPackage") {
-      for (let asset of data.assets) {
-         if (asset.source.startsWith(join("/", "node_modules", data.name))) {
-            let uri = getPathURI(asset.source);
-            monacoEditor.createModel(asset.content, getLang(asset.source), uri);
-            /* languages.typescript.typescriptDefaults.addExtraLib(
-               asset.content,
-               asset.source
-            ); */
-         }
-      }
+   // if (data.customCmd == "installPackage") {
+   //    for (let asset of data.assets) {
+   //       if (asset.source.startsWith(join("/", "node_modules", data.name))) {
+   //          let uri = getPathURI(asset.source);
+   //          monacoEditor.createModel(asset.content, getLang(asset.source), uri);
+   //          /* languages.typescript.typescriptDefaults.addExtraLib(
+   //             asset.content,
+   //             asset.source
+   //          ); */
+   //       }
+   //    }
+   // }
+
+   if (data.dts) {
+      languages.typescript.typescriptDefaults.addExtraLib(
+         data.dts,
+         data.name + ".d.ts"
+      );
    }
 
    console.log(data);
