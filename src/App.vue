@@ -148,21 +148,17 @@ const state = reactive({
 });
 
 languages.typescript.typescriptDefaults.setCompilerOptions({
-   allowJs: true,
-   moduleResolution: languages.typescript.ModuleResolutionKind.NodeJs,
    module: languages.typescript.ModuleKind.ESNext,
-   /* types: [
-      "https://esm.sh/v106/vue@3.2.47/dist/vue.d.ts"
-   ],
-   typeRoots: [
-      "https://esm.sh/v106/vue@3.2.47/dist/vue.d.ts"
-   ], */
+   target: languages.typescript.ScriptTarget.ES2015,
+   moduleResolution: languages.typescript.ModuleResolutionKind.NodeJs,
+   allowJs: true,
+   allowSyntheticDefaultImports: true,
+   esModuleInterop: true,
+   noEmit: true,
+   noImplicitAny: false,
+   skipLibCheck: true,
+   useDefineForClassFields: true,
 });
-
-/* languages.typescript.typescriptDefaults.addExtraLib(
-   `declare module 'vue' { export {default} from "https://esm.sh/v106/vue@3.2.47/dist/vue.d.ts"; export * from "https://esm.sh/v106/vue@3.2.47/dist/vue.d.ts"; }`,
-   "/node_modules/vue/vue.d.ts"
-); */
 
 let editor: null | monacoEditor.IStandaloneCodeEditor = null;
 const modelMap: Map<string, any> = new Map();
@@ -305,23 +301,12 @@ function setModel(path: string, content = "") {
 bundler.onmessage = (event) => {
    const data = event.data;
 
+   // Update iframe every bundle
    if (data.cmd == "bundle") {
       iframe.value.src = data.result.contentDocURL;
    }
 
-   // if (data.customCmd == "installPackage") {
-   //    for (let asset of data.assets) {
-   //       if (asset.source.startsWith(join("/", "node_modules", data.name))) {
-   //          let uri = getPathURI(asset.source);
-   //          monacoEditor.createModel(asset.content, getLang(asset.source), uri);
-   //          /* languages.typescript.typescriptDefaults.addExtraLib(
-   //             asset.content,
-   //             asset.source
-   //          ); */
-   //       }
-   //    }
-   // }
-
+   // Add dts
    if (data.dts) {
       languages.typescript.typescriptDefaults.addExtraLib(
          data.dts,

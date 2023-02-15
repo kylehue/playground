@@ -13,69 +13,133 @@ function getSimplifiedAssets() {
    }));
 }
 
-onmessage = async (event) => {
-   const data = event.data;
+// Bundling = not priority
+// Installing = priority
+const queue: any[] = [];
 
-   if (data.cmd) {
-      const result = await bundler[data.cmd](...data.args);
+async function process() {
+   /* if (queue.length > 0) {
+      const data = queue[0];
+      if (data.cmd) {
+         let hasOthersWaiting = queue.find((e) => e.cmd == data.cmd && e !== data);
+         if (!hasOthersWaiting) {
+            const result = await bundler[data.cmd](...data.args);
 
-      postMessage({
-         ...data,
-         result: data.cmd == "bundle" ? result : {},
-      });
-   }
-
-   if (data.customCmd) {
-      if (data.customCmd == "removeAsset") {
-         bundler.assets.delete(data.path);
-
-         postMessage({
-            ...data,
-            assets: getSimplifiedAssets(),
-         });
-      }
-
-      if (data.customCmd == "installPackage") {
-         let version = data.version ? "@" + data.version : "";
-
-         // Install
-         await bundler.packageManager.install(data.name + version);
-
-         postMessage({
-            ...data,
-            assets: getSimplifiedAssets(),
-         });
-
-         // Get types
-         let response = await fetch(typesSourceURL + data.name + version);
-         let typesURL = response.headers.get("x-typescript-types");
-         if (typesURL) {
-            let graph = await bundler.packageManager._createGraph(
-               data.name,
-               typesURL
-            );
-
-            // TODO: investigate why dts file for react is not working
-            // Make single .d.ts file
-            let dts = "";
-            for (let asset of graph) {
-               let source = join(data.name, asset.source);
-               dts = `declare module "${source}" { ${asset.content} }` + dts;
-            }
-
-            let entrySource = join(data.name, graph[0].source);
-            dts += `declare module "${data.name}" { export * from "${entrySource}"; export { default } from "${entrySource}" }`;
-            
             postMessage({
-               name: data.name,
-               version: data.version,
-               dts
+               ...data,
+               result: data.cmd == "bundle" ? result : {},
             });
          }
 
+         queue.shift();
+      } else if (data.customCmd) {
+         if (data.customCmd == "removeAsset") {
+            bundler.assets.delete(data.path);
 
+            postMessage({
+               ...data,
+               assets: getSimplifiedAssets(),
+            });
+         }
+
+         if (data.customCmd == "installPackage") {
+            let version = data.version ? "@" + data.version : "";
+
+            // Install
+            await bundler.packageManager.install(data.name + version);
+
+            postMessage({
+               ...data,
+               assets: getSimplifiedAssets(),
+            });
+
+            // Get types
+            let response = await fetch(typesSourceURL + data.name + version);
+            let typesURL = response.headers.get("x-typescript-types");
+            if (typesURL) {
+               let graph = await bundler.packageManager._createGraph(
+                  data.name,
+                  typesURL
+               );
+
+               // Make single .d.ts file
+               let dts = "";
+               for (let asset of graph) {
+                  let source = join(data.name, asset.source);
+                  dts = `declare module "${source}" { ${asset.content} }` + dts;
+               }
+
+               let entrySource = join(data.name, graph[0].source);
+               dts += `declare module "${data.name}" { export * from "${entrySource}"; export { default } from "${entrySource}" }`;
+
+               postMessage({
+                  name: data.name,
+                  version: data.version,
+                  dts,
+               });
+            }
+
+            queue.shift();
+         }
       }
+
+      await process();
+   } */
+
+   
+}
+
+function createMethodFromData(data: any) {
+   if (data.customCmd == "installPackage") {
+      return {
+         priority: true,
+         init: async () => {
+            let version = data.version ? "@" + data.version : "";
+
+            // Install
+            await bundler.packageManager.install(data.name + version);
+
+            postMessage({
+               ...data,
+               assets: getSimplifiedAssets(),
+            });
+
+            // Get types
+            let response = await fetch(typesSourceURL + data.name + version);
+            let typesURL = response.headers.get("x-typescript-types");
+            if (typesURL) {
+               let graph = await bundler.packageManager._createGraph(
+                  data.name,
+                  typesURL
+               );
+
+               // Make single .d.ts file
+               let dts = "";
+               for (let asset of graph) {
+                  let source = join(data.name, asset.source);
+                  dts = `declare module "${source}" { ${asset.content} }` + dts;
+               }
+
+               let entrySource = join(data.name, graph[0].source);
+               dts += `declare module "${data.name}" { export * from "${entrySource}"; export { default } from "${entrySource}" }`;
+
+               postMessage({
+                  name: data.name,
+                  version: data.version,
+                  dts,
+               });
+            }
+         },
+      };
    }
+}
+
+onmessage = async (event) => {
+   const data = event.data;
+
+   queue.push(createMethodFromData(data));
+
+   await process();
 
    console.log(bundler);
 };
