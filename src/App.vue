@@ -51,6 +51,7 @@
             optionValue="name"
             placeholder="Search packages"
             class="col-7 me-2"
+            v-focus
          >
          </Dropdown>
          <Dropdown

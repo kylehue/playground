@@ -5,10 +5,18 @@ import PrimeVue from "primevue/config";
 import Tooltip from "primevue/tooltip";
 const app = createApp(App);
 app.directive("tooltip", Tooltip);
-app.use(PrimeVue);
+app.use(PrimeVue, {
+   
+});
 app.directive("focus", {
    mounted(el) {
-      el.focus();
+      let input = el.querySelector("input");
+
+      if (input) {
+         input.focus();
+      } else {
+         el.focus();
+      }
    }
 });
 
