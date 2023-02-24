@@ -10,6 +10,10 @@ $gutter-color: /* $slate-600 */ rgba(250, 250, 250, 0.025);
    position: relative;
 }
 
+.splitpanes__pane {
+   overflow: visible;
+}
+
 .splitpanes__splitter:before {
    content: "";
    position: absolute;

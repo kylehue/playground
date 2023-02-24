@@ -1,8 +1,20 @@
 import Toypack from "toypack";
+import NodePolyfillPlugin from "toypack/lib/NodePolyfillPlugin";
 import { join } from "path-browserify";
 const bundler = new Toypack({
-   bundleOptions: {},
+   bundleOptions: {
+      mode: "development",
+      entry: "/",
+      output: {
+         path: "lib",
+         resourceType: "external",
+         sourceMap: "inline-cheap-sources",
+      },
+      logs: true,
+   },
 });
+
+bundler.use(new NodePolyfillPlugin());
 
 const typesSourceURL = "https://esm.sh/";
 function getSimplifiedAssets() {
@@ -13,134 +25,140 @@ function getSimplifiedAssets() {
    }));
 }
 
-// Bundling = not priority
-// Installing = priority
 const queue: any[] = [];
-
 async function process() {
-   /* if (queue.length > 0) {
-      const data = queue[0];
-      if (data.cmd) {
-         let hasOthersWaiting = queue.find((e) => e.cmd == data.cmd && e !== data);
-         if (!hasOthersWaiting) {
-            const result = await bundler[data.cmd](...data.args);
+   let data = queue[0];
 
-            postMessage({
-               ...data,
-               result: data.cmd == "bundle" ? result : {},
-            });
-         }
+   if (data.cmd) {
+      queue.shift();
+      let hasOthersWaiting = queue.find((q) => q.cmd == data.cmd && q !== data);
+      if (!hasOthersWaiting) {
+         const result = await bundler[data.cmd](...data.args);
 
+         postMessage({
+            ...data,
+            result: data.cmd == "bundle" ? result : {},
+         });
+      }
+   } else if (data.customCmd) {
+      if (data.customCmd == "removeAsset") {
          queue.shift();
-      } else if (data.customCmd) {
-         if (data.customCmd == "removeAsset") {
-            bundler.assets.delete(data.path);
+         bundler.assets.delete(data.path);
 
-            postMessage({
-               ...data,
-               assets: getSimplifiedAssets(),
-            });
-         }
-
-         if (data.customCmd == "installPackage") {
-            let version = data.version ? "@" + data.version : "";
-
-            // Install
-            await bundler.packageManager.install(data.name + version);
-
-            postMessage({
-               ...data,
-               assets: getSimplifiedAssets(),
-            });
-
-            // Get types
-            let response = await fetch(typesSourceURL + data.name + version);
-            let typesURL = response.headers.get("x-typescript-types");
-            if (typesURL) {
-               let graph = await bundler.packageManager._createGraph(
-                  data.name,
-                  typesURL
-               );
-
-               // Make single .d.ts file
-               let dts = "";
-               for (let asset of graph) {
-                  let source = join(data.name, asset.source);
-                  dts = `declare module "${source}" { ${asset.content} }` + dts;
-               }
-
-               let entrySource = join(data.name, graph[0].source);
-               dts += `declare module "${data.name}" { export * from "${entrySource}"; export { default } from "${entrySource}" }`;
-
-               postMessage({
-                  name: data.name,
-                  version: data.version,
-                  dts,
-               });
-            }
-
-            queue.shift();
-         }
+         postMessage({
+            ...data,
+            assets: getSimplifiedAssets(),
+         });
       }
 
+      if (data.customCmd == "renameAsset") {
+         queue.shift();
+
+         let asset = bundler.assets.get(data.from);
+         if (asset) {
+            await bundler.addAsset(data.to, asset.content);
+            bundler.assets.delete(asset.source);
+         }
+
+         postMessage({
+            ...data,
+            assets: getSimplifiedAssets(),
+         });
+      }
+
+      if (data.customCmd == "installPackage") {
+         let version = data.version ? "@" + data.version : "";
+
+         // Install
+         await bundler.packageManager.install(data.name + version);
+
+         // Send
+         postMessage({
+            ...data,
+            assets: getSimplifiedAssets(),
+         });
+
+         // After installing, it's time we remove it from queue
+         queue.shift();
+      }
+   }
+
+   // If queue isn't empty, keep processing
+   if (queue.length > 0) {
       await process();
-   } */
-
-   
-}
-
-function createMethodFromData(data: any) {
-   if (data.customCmd == "installPackage") {
-      return {
-         priority: true,
-         init: async () => {
-            let version = data.version ? "@" + data.version : "";
-
-            // Install
-            await bundler.packageManager.install(data.name + version);
-
-            postMessage({
-               ...data,
-               assets: getSimplifiedAssets(),
-            });
-
-            // Get types
-            let response = await fetch(typesSourceURL + data.name + version);
-            let typesURL = response.headers.get("x-typescript-types");
-            if (typesURL) {
-               let graph = await bundler.packageManager._createGraph(
-                  data.name,
-                  typesURL
-               );
-
-               // Make single .d.ts file
-               let dts = "";
-               for (let asset of graph) {
-                  let source = join(data.name, asset.source);
-                  dts = `declare module "${source}" { ${asset.content} }` + dts;
-               }
-
-               let entrySource = join(data.name, graph[0].source);
-               dts += `declare module "${data.name}" { export * from "${entrySource}"; export { default } from "${entrySource}" }`;
-
-               postMessage({
-                  name: data.name,
-                  version: data.version,
-                  dts,
-               });
-            }
-         },
-      };
    }
 }
 
+bundler.hooks.installPackage(async (pkg) => {
+   postMessage({
+      loadStart: true,
+   });
+
+   let pkgVersion = pkg.version ? "@" + pkg.version : "";
+   let pkgSource = pkg.name + pkgVersion + pkg.subpath;
+   
+   // Get types/dts
+   let response = await fetch(typesSourceURL + pkgSource);
+   let typesURL = response.headers.get("x-typescript-types");
+   let dts = "";
+
+   // Get name in fallbacks (this is needed when plugin auto-installs happens)
+   let name = pkg.name + pkg.subpath;
+   let fallbacks = bundler.options.bundleOptions?.resolve?.fallback;
+   if (typeof fallbacks == "object") {
+      for (let [key, value] of Object.entries(fallbacks)) {
+         if (value == pkg.name + pkg.subpath) {
+            name = key;
+
+            break;
+         }
+      }
+   }
+
+   if (typesURL) {
+      let graph = await bundler.packageManager._createGraph(
+         pkgSource,
+         typesURL
+      );
+
+      // Produce dts
+      for (let i = 0; i < graph.length; i++) {
+         let asset = graph[i];
+         let source = join(name, asset.source);
+
+         // First asset is the entry, so we're gonna set its module source to installed module name
+         if (i == 0) {
+            source = name;
+         }
+
+         dts += `declare module "${source}" { ${asset.content} }`;
+      }
+   }
+
+   // If dts fetching failed, just create a mock dts to remove errors
+   if (!response.ok || !dts) {
+      dts = `declare module "${name}";`;
+   }
+
+   postMessage({
+      name,
+      dts,
+      loadEnd: true
+   });
+});
+
 onmessage = async (event) => {
    const data = event.data;
-
-   queue.push(createMethodFromData(data));
-
-   await process();
-
+   queue.push(data);
+   if (queue.length == 1) {
+      postMessage({
+         loadStart: true
+      });
+      await process();
+      postMessage({
+         loadEnd: true,
+      });
+   }
    console.log(bundler);
 };
 

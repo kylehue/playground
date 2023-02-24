@@ -4,7 +4,7 @@
          <span class="fw-bold">{{ props.title }}</span>
          <IconButton @click="$emit('addClick')" icon="plus"></IconButton>
       </div>
-      <div class="body d-flex"><slot></slot></div>
+      <div class="body d-flex flex-column"><slot></slot></div>
    </div>
 </template>
 

@@ -61,7 +61,8 @@ const emit = defineEmits([
    "pasteButtonClick",
    "addFileButtonClick",
    "changeEditorModel",
-   "openNewFileDialog"
+   "openNewFileDialog",
+   "renameAsset",
 ]);
 
 onMounted(() => {
@@ -77,7 +78,7 @@ onMounted(() => {
       }
    });
 
-   drawer.on("change", (type, item) => {
+   /* drawer.on("change", (type, item) => {
       console.log(type, item);
 
       if (type == "move") {
@@ -89,6 +90,14 @@ onMounted(() => {
       } else if (type == "rename") {
          
       }
+   }); */
+
+   drawer.on("move", (item, from, to) => {
+      emit("renameAsset", from, to);
+   });
+
+   drawer.on("rename", (item, from, to) => {
+      emit("renameAsset", from, to);
    });
 
    drawer.on("addFileClick", (item) => {

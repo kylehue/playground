@@ -8,13 +8,14 @@
       class="col-10 col-md-5"
    >
       <template #header>
-         <h6>Enter the path</h6>
+         <h6>Create new file</h6>
       </template>
       <InputText
          type="text"
          v-model="state.newFileDialogPath"
          @keypress.enter="createFile(state.newFileDialogPath)"
          v-focus
+         placeholder="Enter the path"
          spellcheck="false"
          autocomplete="off"
          autofill="off"
@@ -37,7 +38,7 @@
       class="col-10 col-md-5"
    >
       <template #header>
-         <h6>Search Packages</h6>
+         <h6>Add Packages</h6>
       </template>
       <div class="d-flex flex-row">
          <Dropdown
@@ -79,7 +80,7 @@
    <Splitpanes class="flex-grow-1 overflow-hidden">
       <Pane size="20" min-size="5" class="explorer-pane">
          <Splitpanes horizontal>
-            <Pane size="70" min-size="10">
+            <Pane size="60" min-size="10">
                <Drawer
                   ref="drawer"
                   title="Files"
@@ -89,11 +90,13 @@
                   @changeEditorModel="setModel"
                   @copyButtonClick="setCopiedFilePath"
                   @pasteButtonClick="pasteCopiedFilePath"
+                  @renameAsset="renameFile"
                ></Drawer>
             </Pane>
-            <Pane size="30" min-size="10">
-               <Packages
+            <Pane size="40" min-size="10">
+               <Packages :content="state.packages"
                   @openNewPackageDialog="state.showNewPackageDialog = true"
+                  @removePackage="removePackage"
                ></Packages>
             </Pane>
          </Splitpanes>
@@ -101,7 +104,15 @@
       <Pane size="40" min-size="5">
          <div ref="editorHTMLElement" class="editor d-flex w-100 h-100"></div>
       </Pane>
-      <Pane size="40" min-size="5">
+      <Pane
+         size="40"
+         min-size="5"
+         class="d-flex align-items-center justify-content-center"
+      >
+         <ProgressSpinner
+            v-if="state.bundlerLoading"
+            class="position-absolute"
+         />
          <iframe ref="iframe" class="w-100 h-100"></iframe>
       </Pane>
    </Splitpanes>
@@ -129,6 +140,7 @@ import InputText from "primevue/inputtext";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
+import ProgressSpinner from "primevue/progressspinner";
 import { resolve, basename, join } from "path-browserify";
 
 const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
@@ -145,6 +157,8 @@ const state = reactive({
    packageResults: [],
    selectedPackageVersion: "",
    selectedPackageVersionResults: [] as object[],
+   bundlerLoading: false,
+   packages: [] as Array<{name: string, version: string}>,
 });
 
 languages.typescript.typescriptDefaults.setCompilerOptions({
@@ -162,6 +176,18 @@ languages.typescript.typescriptDefaults.setCompilerOptions({
 
 let editor: null | monacoEditor.IStandaloneCodeEditor = null;
 const modelMap: Map<string, any> = new Map();
+
+
+function removePackage(packageName: string) {
+   for (let i = 0; i < state.packages.length; i++) {
+      const pkg = state.packages[i];
+      if (pkg.name === packageName) {
+         state.packages.splice(i, 1);
+         break;
+      }
+   }
+}
+
 async function fetchPackage(searchText: string) {
    state.selectedPackageVersion = "";
    state.selectedPackageVersionResults = [];
@@ -202,13 +228,13 @@ function closeNewPackageDialog() {
 }
 
 function addPackage(name: string, version: string) {
-   console.log(name, version);
-
    bundler.postMessage({
       customCmd: "installPackage",
       name,
       version,
    });
+
+   closeNewPackageDialog();
 }
 
 function setCopiedFilePath(path: string) {
@@ -259,6 +285,33 @@ function removeFile(path: string) {
       customCmd: "removeAsset",
       path,
    });
+
+   // Remove from models
+   monacoEditor.getModel(getPathURI(path))?.dispose();
+
+   // Remove from model map
+   modelMap.delete(path);
+}
+
+function renameFile(fromPath: string, toPath: string) {
+   // Rename in bundler
+   bundler.postMessage({
+      customCmd: "renameAsset",
+      from: fromPath,
+      to: toPath
+   });
+
+   // Rename in model maps
+   modelMap.set(toPath, modelMap.get(fromPath));
+   modelMap.delete(fromPath);
+
+   // Rename in models
+   let model = monacoEditor.getModel(getPathURI(fromPath));
+   if (model) {
+      let value = model.getValue();
+      setModel(toPath, value);
+      model.dispose();
+   }
 }
 
 function openCreateFileDialog(path = "") {
@@ -288,7 +341,10 @@ function setModel(path: string, content = "") {
    // Create model if it doesn't exist
    if (!model) {
       model = monacoEditor.createModel(content, getLang(path), uri);
-      modelMap.set(path, {});
+
+      if (!modelMap.get(path)) {
+         modelMap.set(path, {});
+      }
    }
 
    // Set
@@ -312,6 +368,20 @@ bundler.onmessage = (event) => {
          data.dts,
          data.name + ".d.ts"
       );
+   }
+
+   if (data.customCmd == "installPackage") {
+      state.packages.push({
+         name: data.name,
+         version: data.version
+      });
+   }
+
+   // Loading state
+   if (data.loadStart) {
+      state.bundlerLoading = true;
+   } else if (data.loadEnd) {
+      state.bundlerLoading = false;
    }
 
    console.log(data);
@@ -345,8 +415,6 @@ addEventListener("keydown", (event) => {
 onMounted(() => {
    // Initialize monaco editor
    editor = monacoEditor.create(editorHTMLElement.value, {
-      value: "",
-      language: "text/html",
       lineNumbers: "on",
       roundedSelection: true,
       scrollBeyondLastLine: true,
