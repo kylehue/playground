@@ -13,7 +13,6 @@ const props = defineProps({
    title: String
 });
 
-
 const drawer = new Drawer({
    directoryButton: {
       cut: false,
@@ -50,9 +49,18 @@ function removeFile(path: string) {
    }
 }
 
+function highlightFile(path: string) {
+   let file = drawer.getFileFromPath(path);
+
+   if (file) {
+      file.emit("click");
+   }
+}
+
 defineExpose({
    createFile,
-   removeFile
+   removeFile,
+   highlightFile
 });
 
 const emit = defineEmits([
@@ -71,8 +79,8 @@ onMounted(() => {
       drawer.addFileFromPath(`${i}.html`);
    }
 
-   drawer.on("click", (item) => {
-      if (item.type == "file") {
+   drawer.on("click", (item, event) => {
+      if (item.type == "file" && event.target.tagName != "INPUT") {
          const path = resolve(item.parent.path, item.title);
          emit("changeEditorModel", path);
       }

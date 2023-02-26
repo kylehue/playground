@@ -20,12 +20,12 @@
   "dependencies": {
     "@freecodecamp/loop-protect": "^3.0.0",
     "bootstrap": "^5.2.3",
-    "emmet-monaco-es": "^5.2.0",
     "monaco-editor": "^0.34.1",
     "path-browserify": "^1.0.1",
     "primeicons": "^6.0.1",
     "primevue": "^3.23.0",
     "splitpanes": "^3.1.5",
-    "vue": "^3.2.45"
+    "vue": "^3.2.45",
+    "vue-router": "^4.1.6"
   }
 }

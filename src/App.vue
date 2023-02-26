@@ -473,6 +473,9 @@ onMounted(() => {
             monacoEditor.ScrollType.Immediate
          );
       }
+
+      // Highlight item in explorer
+      drawer.value.highlightFile(currentModel?.uri.path);
    });
 
    // Add shortcut for block commentada

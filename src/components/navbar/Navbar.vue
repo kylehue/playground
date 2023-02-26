@@ -70,7 +70,7 @@ function toggle(event) {
 @import "@app/styles/variables.scss";
 
 .navbar-wrapper {
-   height: 50px;
+   height: fit-content;
    background: $slate-700;
 
    * {
