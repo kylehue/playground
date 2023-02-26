@@ -1,2 +1,2 @@
 # JS Playground
-A JavaScript playground using Toypack.
+A JavaScript playground.
