@@ -13,12 +13,13 @@ const router = createRouter({
    routes: [
       {
          path: "/",
-         redirect: "/app"
+         redirect: "/playground",
       },
       {
          name: "App",
-         path: "/app",
+         path: "/",
          component: App,
+         alias: "/playground",
       },
    ],
 });
