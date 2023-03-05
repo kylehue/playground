@@ -1,13 +1,19 @@
 import { createApp } from "vue";
-import App from "./App.vue";
 import "./styles/main.scss";
 import PrimeVue from "primevue/config";
 import Tooltip from "primevue/tooltip";
 import router from "./router";
-const app = createApp(App);
-app.directive("tooltip", Tooltip);
+import Main from "./Main.vue";
+
+// Create app
+const app = createApp(Main);
+
+// Plugins
 app.use(PrimeVue);
 app.use(router);
+
+// Directives
+app.directive("tooltip", Tooltip);
 app.directive("focus", {
    mounted(el) {
       let input = el.querySelector("input");
@@ -20,5 +26,6 @@ app.directive("focus", {
    }
 });
 
+// Mount
 app.mount("#root");
 

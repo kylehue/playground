@@ -77,7 +77,11 @@
          />
       </template>
    </Dialog>
-   <Navbar class="flex-shrink-0"></Navbar>
+   <Navbar
+      class="flex-shrink-0"
+      :runnable="!state.bundlerLoading"
+      @runProject="run"
+   ></Navbar>
    <Splitpanes class="flex-grow-1 overflow-hidden">
       <Pane size="20" min-size="5" class="explorer-pane">
          <Splitpanes horizontal>
@@ -95,7 +99,8 @@
                ></Drawer>
             </Pane>
             <Pane size="40" min-size="10">
-               <Packages :content="state.packages"
+               <Packages
+                  :content="state.packages"
                   @openNewPackageDialog="state.showNewPackageDialog = true"
                   @removePackage="removePackage"
                ></Packages>
@@ -110,10 +115,6 @@
          min-size="5"
          class="d-flex align-items-center justify-content-center"
       >
-         <ProgressSpinner
-            v-if="state.bundlerLoading"
-            class="position-absolute"
-         />
          <iframe ref="iframe" class="w-100 h-100"></iframe>
       </Pane>
    </Splitpanes>
@@ -141,7 +142,6 @@ import InputText from "primevue/inputtext";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
-import ProgressSpinner from "primevue/progressspinner";
 import { resolve, basename, join } from "path-browserify";
 
 const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
@@ -158,8 +158,8 @@ const state = reactive({
    packageResults: [],
    selectedPackageVersion: "",
    selectedPackageVersionResults: [] as object[],
-   bundlerLoading: false,
-   packages: [] as Array<{name: string, version: string}>,
+   bundlerLoading: true,
+   packages: [] as Array<{ name: string; version: string }>,
 });
 
 languages.typescript.typescriptDefaults.setCompilerOptions({
@@ -177,7 +177,6 @@ languages.typescript.typescriptDefaults.setCompilerOptions({
 
 let editor: null | monacoEditor.IStandaloneCodeEditor = null;
 const modelMap: Map<string, any> = new Map();
-
 
 function removePackage(packageName: string) {
    for (let i = 0; i < state.packages.length; i++) {
@@ -299,7 +298,7 @@ function renameFile(fromPath: string, toPath: string) {
    bundler.postMessage({
       customCmd: "renameAsset",
       from: fromPath,
-      to: toPath
+      to: toPath,
    });
 
    // Rename in model maps
@@ -355,6 +354,14 @@ function setModel(path: string, content = "") {
    return model;
 }
 
+function run() {
+   // Bundle
+   bundler.postMessage({
+      cmd: "bundle",
+      args: [],
+   });
+}
+
 bundler.onmessage = (event) => {
    const data = event.data;
 
@@ -374,7 +381,7 @@ bundler.onmessage = (event) => {
    if (data.customCmd == "installPackage") {
       state.packages.push({
          name: data.name,
-         version: data.version
+         version: data.version,
       });
    }
 
@@ -443,14 +450,6 @@ onMounted(() => {
          cmd: "addAsset",
          args: [currentModel?.uri.path, currentModel?.getValue()],
       });
-
-      // Bundle
-      bundler.postMessage({
-         cmd: "bundle",
-         args: [],
-      });
-
-      console.log(monacoEditor.getModels());
    });
 
    // Save cursor position
@@ -563,10 +562,7 @@ animate();`
       }`
    );
 
-   bundler.postMessage({
-      cmd: "bundle",
-      args: [],
-   });
+   run();
 
    (window as any).editor = editor;
 });

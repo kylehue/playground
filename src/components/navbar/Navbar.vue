@@ -1,14 +1,28 @@
 <template>
    <div class="navbar-wrapper w-100 d-flex flex-row align-items-center">
-      <Menubar ref="menu" :model="items" class="w-100 h-100" />
+      <Menubar ref="menu" :model="items" class="w-100 h-100">
+         <template #end>
+            <Button label="Run" icon="pi pi-play" :loading="!props.runnable" @click="emit('runProject')"></Button>
+         </template>
+      </Menubar>
    </div>
 </template>
 
 <script setup lang="ts">
-import Menu from "primevue/menu";
 import Menubar from "primevue/menubar";
 import Button from "primevue/button";
 import { ref } from "vue";
+const props = defineProps({
+   runnable: Boolean
+});
+const emit = defineEmits([
+   "runProject",
+   "newProject",
+   "openProject",
+   "saveProject",
+   "downloadProject",
+   "openOptions"
+]);
 const menu = ref();
 const items = [
    {
@@ -42,23 +56,11 @@ const items = [
       icon: "pi pi-fw pi-pencil",
       items: [
          {
-            label: "Left",
-            icon: "pi pi-fw pi-align-left",
-         },
-         {
-            label: "Right",
-            icon: "pi pi-fw pi-align-right",
-         },
-         {
-            label: "Center",
-            icon: "pi pi-fw pi-align-center",
-         },
-         {
-            label: "Justify",
-            icon: "pi pi-fw pi-align-justify",
-         },
+            label: "Options",
+            icon: "pi pi-cog",
+         }
       ],
-   },
+   }
 ];
 
 function toggle(event) {

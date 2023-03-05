@@ -17,7 +17,8 @@ const drawer = new Drawer({
    directoryButton: {
       cut: false,
       rename: false,
-      addDirectory: false
+      addDirectory: false,
+      copy: false
    },
    fileButton: {
       cut: false,
@@ -75,9 +76,10 @@ const emit = defineEmits([
 
 onMounted(() => {
    drawer.appendTo("#drawer");
-   for (let i = 0; i < 30; i++) {
+   
+   /* for (let i = 0; i < 30; i++) {
       drawer.addFileFromPath(`${i}.html`);
-   }
+   } */
 
    drawer.on("click", (item, event) => {
       if (item.type == "file" && event.target.tagName != "INPUT") {
