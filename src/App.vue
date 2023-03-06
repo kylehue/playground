@@ -306,7 +306,7 @@ function removeFile(path: string) {
    }
 }
 
-function renameFile(fromPath: string, toPath: string, type: string) {
+function renameFile(fromPath: string, toPath: string) {
    // Get an array of paths of itself and its children
    let renamedPaths: string[] = [];
    for (let model of monacoEditor.getModels()) {
@@ -318,7 +318,7 @@ function renameFile(fromPath: string, toPath: string, type: string) {
    }
 
    for (let oldPath of renamedPaths) {
-      let targetPath = type == "directory" ? join("/", toPath, basename(oldPath)) : join("/", toPath);
+      let targetPath = oldPath.replace(fromPath, toPath);
 
       // Rename in bundler
       bundler.postMessage({
@@ -534,7 +534,7 @@ onMounted(() => {
    createFile(
       "src/main.ts",
       `import Circle from "./Circle";
-      import "../styles/main.css";
+      import "../styles/a/main.css";
       let canvas = document.getElementById("game") as HTMLCanvasElement;
 let ctx = canvas.getContext("2d");
 canvas.width = innerWidth;
@@ -582,7 +582,7 @@ animate();`
    );
 
    createFile(
-      "styles/main.css",
+      "styles/a/main.css",
       `body {
          margin: 0;
          overflow: hidden;

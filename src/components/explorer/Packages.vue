@@ -20,9 +20,11 @@
 import { onMounted } from "vue";
 import IconButton from "@app/components/basic/IconButton.vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
+
 const props = defineProps({
    content: Object,
 });
+
 const emit = defineEmits(["openNewPackageDialog", "removePackage"]);
 function removePackage(name: string) {
    const doRemove = confirm(`Are you sure you want to remove the '${name}' package?`);
