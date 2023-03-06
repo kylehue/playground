@@ -3,8 +3,8 @@
    <Dialog
       v-model:visible="state.showNewFileDialog"
       @hide="closeNewFileDialog"
-      :dismissableMask="true"
-      :modal="true"
+      dismissableMask
+      modal
       class="col-10 col-md-5"
    >
       <template #header>
@@ -33,8 +33,8 @@
    <Dialog
       v-model:visible="state.showNewPackageDialog"
       @hide="closeNewPackageDialog"
-      :dismissableMask="true"
-      :modal="true"
+      dismissableMask
+      modal
       class="col-10 col-md-5"
    >
       <template #header>
@@ -78,7 +78,6 @@
       </template>
    </Dialog>
    <Navbar
-      class="flex-shrink-0"
       :runnable="!state.bundlerLoading"
       @runProject="run"
    ></Navbar>

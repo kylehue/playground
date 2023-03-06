@@ -2,18 +2,60 @@
    <div class="navbar-wrapper w-100 d-flex flex-row align-items-center">
       <Menubar ref="menu" :model="items" class="w-100 h-100">
          <template #end>
-            <Button label="Run" icon="pi pi-play" :loading="!props.runnable" @click="emit('runProject')"></Button>
+            <Button
+               label="Run"
+               icon="pi pi-play"
+               :loading="!props.runnable"
+               @click="emit('runProject')"
+            ></Button>
          </template>
       </Menubar>
    </div>
+   <Dialog
+      v-model:visible="state.showProjects"
+      dismissableMask
+      modal
+      class="w-75 h-75"
+      contentClass="h-100"
+   >
+      <template #header>
+         <h6>Open project</h6>
+      </template>
+      <template #default>
+         <Projects v-model="state.projects"></Projects>
+      </template>
+   </Dialog>
 </template>
 
 <script setup lang="ts">
+import Projects from "@app/components/navbar/Projects.vue";
 import Menubar from "primevue/menubar";
 import Button from "primevue/button";
-import { ref } from "vue";
+import Dialog from "primevue/dialog";
+import { ref, reactive } from "vue";
 const props = defineProps({
-   runnable: Boolean
+   runnable: Boolean,
+});
+const state = reactive({
+   showProjects: true,
+   projects: [
+      {
+         name: "default template",
+         lastEdited: Date.now(),
+      },
+      {
+         name: "this is a veryyyy long name hello this is just an example for testing",
+         lastEdited: Date.now(),
+      },
+      {
+         name: "sample 1",
+         lastEdited: Date.now(),
+      },
+      {
+         name: "sample 2",
+         lastEdited: Date.now(),
+      },
+   ],
 });
 const emit = defineEmits([
    "runProject",
@@ -21,7 +63,7 @@ const emit = defineEmits([
    "openProject",
    "saveProject",
    "downloadProject",
-   "openOptions"
+   "openOptions",
 ]);
 const menu = ref();
 const items = [
@@ -37,7 +79,9 @@ const items = [
          {
             label: "Open...",
             icon: "pi pi-folder-open",
-            command: () => {},
+            command: () => {
+               state.showProjects = true;
+            },
          },
          {
             label: "Save As...",
@@ -58,9 +102,9 @@ const items = [
          {
             label: "Options",
             icon: "pi pi-cog",
-         }
+         },
       ],
-   }
+   },
 ];
 
 function toggle(event) {
