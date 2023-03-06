@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHashHistory } from "vue-router";
 import { defineAsyncComponent } from "vue";
 import Splash from "./Splash.vue";
 
@@ -9,17 +9,16 @@ const App = defineAsyncComponent({
 });
 
 const router = createRouter({
-   history: createWebHistory(),
+   history: createWebHashHistory(),
    routes: [
       {
          path: "/",
-         redirect: "/playground",
+         redirect: "/app",
       },
       {
          name: "App",
-         path: "/",
-         component: App,
-         alias: "/playground",
+         path: "/app",
+         component: App
       },
    ],
 });

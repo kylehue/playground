@@ -142,7 +142,7 @@ import InputText from "primevue/inputtext";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
-import { resolve, basename, join } from "path-browserify";
+import { resolve, basename, join, dirname } from "path-browserify";
 
 const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
 
@@ -280,37 +280,64 @@ function removeFile(path: string) {
    // Remove from explorer
    drawer.value.removeFile(path);
 
-   // Remove from bundler
-   bundler.postMessage({
-      customCmd: "removeAsset",
-      path,
-   });
+   // Get an array of paths of itself and its children
+   let disposedPaths: string[] = [];
+   for (let model of monacoEditor.getModels()) {
+      let modelPath = model.uri.path;
 
-   // Remove from models
-   monacoEditor.getModel(getPathURI(path))?.dispose();
+      if (modelPath.startsWith(path)) {
+         disposedPaths.push(modelPath);
+      }
+   }
 
-   // Remove from model map
-   modelMap.delete(path);
+   // Iterate through disposedPaths
+   for (let disposedPath of disposedPaths) {
+      // Remove from bundler
+      bundler.postMessage({
+         customCmd: "removeAsset",
+         path: disposedPath,
+      });
+
+      // Remove from models
+      monacoEditor.getModel(getPathURI(disposedPath))?.dispose();
+   
+      // Remove from model map
+      modelMap.delete(disposedPath);
+   }
 }
 
-function renameFile(fromPath: string, toPath: string) {
-   // Rename in bundler
-   bundler.postMessage({
-      customCmd: "renameAsset",
-      from: fromPath,
-      to: toPath,
-   });
+function renameFile(fromPath: string, toPath: string, type: string) {
+   // Get an array of paths of itself and its children
+   let renamedPaths: string[] = [];
+   for (let model of monacoEditor.getModels()) {
+      let modelPath = model.uri.path;
 
-   // Rename in model maps
-   modelMap.set(toPath, modelMap.get(fromPath));
-   modelMap.delete(fromPath);
+      if (modelPath.startsWith(fromPath)) {
+         renamedPaths.push(modelPath);
+      }
+   }
 
-   // Rename in models
-   let model = monacoEditor.getModel(getPathURI(fromPath));
-   if (model) {
-      let value = model.getValue();
-      setModel(toPath, value);
-      model.dispose();
+   for (let oldPath of renamedPaths) {
+      let targetPath = type == "directory" ? join("/", toPath, basename(oldPath)) : join("/", toPath);
+
+      // Rename in bundler
+      bundler.postMessage({
+         customCmd: "renameAsset",
+         from: oldPath,
+         to: targetPath,
+      });
+   
+      // Rename in model maps
+      modelMap.set(targetPath, modelMap.get(oldPath));
+      modelMap.delete(oldPath);
+   
+      // Rename in models
+      let model = monacoEditor.getModel(getPathURI(oldPath));
+      if (model) {
+         let value = model.getValue();
+         setModel(targetPath, value);
+         model.dispose();
+      }
    }
 }
 

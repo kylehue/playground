@@ -52,7 +52,7 @@ function removeFile(path: string) {
 
 function highlightFile(path: string) {
    let file = drawer.getFileFromPath(path);
-
+   
    if (file) {
       file.emit("click");
    }
@@ -82,6 +82,7 @@ onMounted(() => {
    } */
 
    drawer.on("click", (item, event) => {
+      // Only focus editor when item is not getting renamed
       if (item.type == "file" && event.target.tagName != "INPUT") {
          const path = resolve(item.parent.path, item.title);
          emit("changeEditorModel", path);
@@ -103,11 +104,11 @@ onMounted(() => {
    }); */
 
    drawer.on("move", (item, from, to) => {
-      emit("renameAsset", from, to);
+      emit("renameAsset", from, to, item.type);
    });
 
    drawer.on("rename", (item, from, to) => {
-      emit("renameAsset", from, to);
+      emit("renameAsset", from, to, item.type);
    });
 
    drawer.on("addFileClick", (item) => {
