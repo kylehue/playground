@@ -15205,7 +15205,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 var App = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncComponent)({
-    loader: function () { return Promise.all(/*! import() */[__webpack_require__.e("vendors-node_modules_path-browserify_index_js"), __webpack_require__.e("vendors-node_modules_moment_locale_af_js-node_modules_moment_locale_ar-dz_js-node_modules_mom-8fbb8b"), __webpack_require__.e("node_modules_moment_locale_sync_recursive_-src_App_vue-data_image_png_base64_iVBORw0KGgoAAAAN-0f7364")]).then(__webpack_require__.bind(__webpack_require__, /*! ./App.vue */ "./src/App.vue")); },
+    loader: function () { return Promise.all(/*! import() */[__webpack_require__.e("vendors-node_modules_path-browserify_index_js"), __webpack_require__.e("vendors-node_modules_moment_locale_af_js-node_modules_moment_locale_ar-dz_js-node_modules_mom-bc3008"), __webpack_require__.e("node_modules_moment_locale_sync_recursive_-src_App_vue-data_image_png_base64_iVBORw0KGgoAAAAN-0f7364")]).then(__webpack_require__.bind(__webpack_require__, /*! ./App.vue */ "./src/App.vue")); },
     delay: 0,
     loadingComponent: _Splash_vue__WEBPACK_IMPORTED_MODULE_1__["default"],
 });

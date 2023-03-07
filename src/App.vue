@@ -142,6 +142,7 @@ import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
 import { resolve, basename, join, dirname } from "path-browserify";
+import templates, { Template } from "./templates";
 
 const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
 
@@ -276,8 +277,6 @@ function createFile(path: string, content = "") {
 
 function removeFile(path: string) {
    path = join("/", path);
-   // Remove from explorer
-   drawer.value.removeFile(path);
 
    // Get an array of paths of itself and its children
    let disposedPaths: string[] = [];
@@ -291,6 +290,9 @@ function removeFile(path: string) {
 
    // Iterate through disposedPaths
    for (let disposedPath of disposedPaths) {
+      // Remove from explorer
+      drawer.value.removeFile(disposedPath);
+
       // Remove from bundler
       bundler.postMessage({
          customCmd: "removeAsset",
@@ -339,6 +341,28 @@ function renameFile(fromPath: string, toPath: string) {
       }
    }
 }
+
+function clearProject() {
+   removeFile("/");
+   state.packages = [];
+   drawer.value.self.clear();
+}
+
+function loadTemplate(template: Template) {
+   clearProject();
+   for (let file of template.files) {
+      createFile(file.source, file.content);
+   }
+
+   for (let pkg of template.packages) {
+      addPackage(pkg.name, pkg.version);
+   }
+}
+
+(window as any).clearProject = clearProject;
+(window as any).loadTemplate = loadTemplate;
+(window as any).templates = templates;
+(window as any).monacoEditor = monacoEditor;
 
 function openCreateFileDialog(path = "") {
    if (path) {

@@ -43,6 +43,9 @@ function createFile(path: string) {
 function removeFile(path: string) {
    let isFile = path.indexOf(".") != -1;
 
+   console.log(path, isFile);
+   
+
    if (isFile) {
       drawer.removeFileFromPath(path);
    } else {
@@ -61,7 +64,8 @@ function highlightFile(path: string) {
 defineExpose({
    createFile,
    removeFile,
-   highlightFile
+   highlightFile,
+   self: drawer
 });
 
 const emit = defineEmits([

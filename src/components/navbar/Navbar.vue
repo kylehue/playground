@@ -22,7 +22,7 @@
       contentClass="h-100"
    >
       <template #header>
-         <h6>Open project</h6>
+         <h6>Projects</h6>
       </template>
       <template #default>
          <Projects v-model="state.projects"></Projects>
