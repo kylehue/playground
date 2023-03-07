@@ -1,16 +1,32 @@
 <template>
-   <button class="project position-relative d-flex flex-row flex-shrink-0 justify-content-between p-3 m-3">
-      <div class="d-flex flex-column flex-grow-1">
-         <h6 class="pe-none text-start text-nowrap text-truncate w-100">{{ name }}</h6>
-         <span class="pe-none text-start text-muted text-nowrap text-truncate w-100" style="font-size: 0.8em"
-            >Last edited: {{ moment(lastEdited).calendar() }}
-         </span>
-      </div>
-      <div class="sub-buttons d-flex flex-column">
-         <button class="sub"><i class="pi pi-times"></i></button>
-         <button class="sub"><i class="pi pi-copy"></i></button>
-      </div>
-   </button>
+   <div class="project p-2 d-flex">
+      <button
+         class="main-button d-flex flex-row align-items-center justify-content-between p-3 w-100 h-100" @contextmenu="emit('showMenu', $event)"
+      >
+         <div class="details d-flex flex-column">
+            <h6
+               class="user-select-none text-start text-nowrap text-truncate w-100"
+            >
+               {{ name }}
+            </h6>
+            <span
+               class="d-flex align-items-center user-select-none text-start text-muted text-nowrap text-truncate w-100"
+               style="font-size: 0.8em"
+            >
+               <i class="pi pi-clock me-2"></i>
+               {{ moment(lastEdited).calendar() }}
+            </span>
+         </div>
+         <div class="sub-buttons d-flex flex-column">
+            <button class="sub" v-tooltip="'Delete'">
+               <i class="pi pi-trash"></i>
+            </button>
+            <button class="sub" v-tooltip="'Use as a template'">
+               <i class="pi pi-copy"></i>
+            </button>
+         </div>
+      </button>
+   </div>
 </template>
 
 <script setup lang="ts">
@@ -20,46 +36,56 @@ const props = defineProps<{
    name: string;
    lastEdited: number;
 }>();
+
+const emit = defineEmits([
+   "showMenu"
+]);
 </script>
 
 <style lang="scss" scoped>
 @import "@app/styles/variables.scss";
 .project {
-   background-color: $slate-400;
    width: 33.33%;
-   height: 80px;
-   border-radius: 5px;
-   border: 1px solid $slate-300;
+   height: 100px;
 
-   .sub-buttons {
-      visibility: hidden;
-   }
-
-   &:hover {
-      background-color: $slate-300;
-
-      .sub-buttons {
-         visibility: visible;
-      }
-   }
-
-   &:active {
-      background-color: $slate-200;
-   }
-
-   transition: background-color 150ms;
-
-   .sub {
-      $size: 25px;
-      width: $size;
-      height: $size;
-      border-radius: $size / 2;
-      background: none;
-      border: none;
-      color: $slate-100;
+   .main-button {
+      background-color: $slate-400;
+      border-radius: 5px;
+      border: 1px solid $slate-300;
 
       &:hover {
-         color: $light-900;
+         background-color: $slate-300;
+
+         .sub-buttons {
+            visibility: visible;
+         }
+      }
+
+      &:active {
+         background-color: $slate-200;
+      }
+      .sub-buttons {
+         visibility: hidden;
+      }
+
+      transition: background-color 150ms;
+
+      $sub-button-size: 25px;
+      .details {
+         width: calc(100% - $sub-button-size);
+      }
+
+      .sub {
+         width: $sub-button-size;
+         height: $sub-button-size;
+         border-radius: calc($sub-button-size / 2);
+         background: none;
+         border: none;
+         color: $slate-100;
+
+         &:hover {
+            color: $light-900;
+         }
       }
    }
 }

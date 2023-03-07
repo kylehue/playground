@@ -1,6 +1,6 @@
 <template>
    <button>
-      <i :class="'mdi mdi-' + props.icon"></i>
+      <i :class="'pi pi-' + props.icon"  style="font-size: 0.8rem"></i>
    </button>
 </template>
 

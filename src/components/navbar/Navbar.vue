@@ -1,6 +1,9 @@
 <template>
    <div class="navbar-wrapper w-100 d-flex flex-row align-items-center">
       <Menubar ref="menu" :model="items" class="w-100 h-100">
+         <template #start>
+            <img :src="logo" alt="logo" width="40" height="40" class="me-2">
+         </template>
          <template #end>
             <Button
                label="Run"
@@ -32,6 +35,7 @@ import Projects from "@app/components/navbar/Projects.vue";
 import Menubar from "primevue/menubar";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
+import logo from "@app/assets/logo_240x240.png";
 import { ref, reactive } from "vue";
 const props = defineProps({
    runnable: Boolean,
@@ -57,6 +61,14 @@ const state = reactive({
       },
    ],
 });
+
+for (let i = 3; i < 30; i++) {
+   state.projects.push({
+      name: "sample " + i,
+      lastEdited: Date.now()
+   })
+}
+
 const emit = defineEmits([
    "runProject",
    "newProject",
@@ -118,10 +130,6 @@ function toggle(event) {
 .navbar-wrapper {
    height: fit-content;
    background: $slate-700;
-
-   * {
-      font-size: 0.8rem !important;
-   }
 
    .p-menubar {
       background: $slate-700;

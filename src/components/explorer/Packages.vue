@@ -1,5 +1,5 @@
 <template>
-   <ExplorerSpace @addClick="emit('openNewPackageDialog')" title="Packages">
+   <ExplorerSpace @addClick="emit('openNewPackageDialog')" title="Packages" addTooltip="Add a package">
       <div class="d-flex flex-column align-items-center w-100 h-100">
          <div
             class="package d-flex rounded m-2 mt-1 mb-1 p-2 flex-grow-1"

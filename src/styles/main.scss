@@ -29,22 +29,26 @@ body {
 
 ::-webkit-scrollbar-track,
 ::-webkit-scrollbar-corner {
-   background: $slate-800;
+   background: rgba(0, 0, 0, 0);
 }
 
 ::-webkit-scrollbar-thumb {
-   background: $slate-500;
+   background: rgba(180, 202, 255, 0.15);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-   background: lighten($slate-500, 5%);
+   background: rgba(180, 202, 255, 0.2);
 }
 
 ::-webkit-scrollbar-thumb:active {
-   background: lighten($slate-500, 10%);
+   background: rgba(180, 202, 255, 0.25);
 }
 
 .drawer-file.drawer-highlight {
    background: $slate-500;
    border-radius: 5px;
+}
+
+.p-tooltip-text, .p-menuitem-text, .p-button-label {
+   font-size: 0.8em;
 }

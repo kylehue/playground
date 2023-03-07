@@ -1,5 +1,5 @@
 <template>
-   <ExplorerSpace @addClick="emit('openNewFileDialog')" title="Files">
+   <ExplorerSpace @addClick="emit('openNewFileDialog')" title="Files" addTooltip="New file">
       <div id="drawer" class="w-100 h-100 d-flex flex-column"></div>
    </ExplorerSpace>
 </template>
@@ -77,9 +77,9 @@ const emit = defineEmits([
 onMounted(() => {
    drawer.appendTo("#drawer");
    
-   /* for (let i = 0; i < 30; i++) {
+   for (let i = 0; i < 30; i++) {
       drawer.addFileFromPath(`${i}.html`);
-   } */
+   }
 
    drawer.on("click", (item, event) => {
       // Only focus editor when item is not getting renamed
