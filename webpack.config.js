@@ -4,6 +4,7 @@ const env = yargs.argv.env;
 const webpack = require("webpack");
 const vueLoader = require("vue-loader");
 const MonacoEditorPlugin = require("monaco-editor-webpack-plugin");
+const HTMLWebpackPlugin = require("html-webpack-plugin");
 
 function resolve(source) {
    return path.resolve(__dirname, source);
@@ -15,6 +16,7 @@ const config = {
       path: resolve("dist"),
       filename: "[name].bundle.js",
       clean: true,
+      publicPath: "/",
    },
    module: {
       rules: [
@@ -65,8 +67,26 @@ const config = {
 
 if (env == "dev") {
    config.mode = "development";
-   config.watch = true;
+   config.watch = false;
    config.devtool = "inline-cheap-source-map";
+   config.devServer = {
+      historyApiFallback: true,
+		port: process.env.PORT || 8080,
+		hot: true,
+		liveReload: false,
+   }
+   
+   config.plugins.push(
+      new HTMLWebpackPlugin({
+         title: "JS Playground",
+         favicon: resolve("./src/assets/logo_24x24.png"),
+         templateContent: `<body>
+   <div id="root" class="d-flex flex-column vh-100">
+   </div>
+</body>`,
+         filename: "index.html",
+      })
+   );
 } else {
    config.mode = "production";
 }

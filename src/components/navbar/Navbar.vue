@@ -48,7 +48,7 @@ const state = reactive({
          lastEdited: Date.now(),
       },
       {
-         name: "this is a veryyyy long name hello this is just an example for testing",
+         name: "hey, this is a veryyyy long name hello this is just an example for testing",
          lastEdited: Date.now(),
       },
       {
