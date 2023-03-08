@@ -21,9 +21,12 @@ import { onMounted } from "vue";
 import IconButton from "@app/components/basic/IconButton.vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
 
-const props = defineProps({
-   content: Object,
-});
+const props = <{
+   content: Array<{
+      name: string;
+      version: string;
+   }>,
+}>defineProps();
 
 const emit = defineEmits(["openNewPackageDialog", "removePackage"]);
 function removePackage(name: string) {
