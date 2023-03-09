@@ -79,7 +79,8 @@
    </Dialog>
    <Navbar
       :runnable="!state.bundlerLoading"
-      @runProject="run"
+      @runProject="runProject"
+      @openProject="openProject"
    ></Navbar>
    <Splitpanes class="flex-grow-1 overflow-hidden">
       <Pane size="20" min-size="5" class="explorer-pane">
@@ -293,18 +294,17 @@ function removeFile(path: string) {
       // Remove from explorer
       drawer.value.removeFile(disposedPath);
 
-      // Remove from bundler
-      bundler.postMessage({
-         customCmd: "removeAsset",
-         path: disposedPath,
-      });
-
       // Remove from models
       monacoEditor.getModel(getPathURI(disposedPath))?.dispose();
-   
+
       // Remove from model map
       modelMap.delete(disposedPath);
    }
+
+   // Clear bundler
+   bundler.postMessage({
+      customCmd: "clear",
+   });
 }
 
 function renameFile(fromPath: string, toPath: string) {
@@ -327,11 +327,11 @@ function renameFile(fromPath: string, toPath: string) {
          from: oldPath,
          to: targetPath,
       });
-   
+
       // Rename in model maps
       modelMap.set(targetPath, modelMap.get(oldPath));
       modelMap.delete(oldPath);
-   
+
       // Rename in models
       let model = monacoEditor.getModel(getPathURI(oldPath));
       if (model) {
@@ -346,6 +346,23 @@ function clearProject() {
    removeFile("/");
    state.packages = [];
    drawer.value.self.clear();
+   iframe.value.src = "";
+}
+
+function loadProjects() {
+   const storageKey = "kylehue.github.io/playground";
+   let storage = localStorage.getItem(storageKey);
+
+   let projects: Template[] = [];
+
+   if (storage) {
+      // Load
+      let storageParsed = JSON.parse(storage);
+
+      projects = storageParsed.projects;
+   }
+
+   return projects;
 }
 
 function loadTemplate(template: Template) {
@@ -356,6 +373,28 @@ function loadTemplate(template: Template) {
 
    for (let pkg of template.packages) {
       addPackage(pkg.name, pkg.version);
+   }
+
+   // Focus main file
+   for (let file of template.files) {
+      if (basename(file.source).startsWith("index")) {
+         setModel(file.source);
+         break;
+      }
+   }
+}
+
+function openProject(projectId: string) {
+   // Clear
+   clearProject();
+
+   // Get project
+   let projects = loadProjects();
+   let project = projects.find((p) => p.id == projectId);
+
+   if (project) {
+      // Load
+      loadTemplate(project);
    }
 }
 
@@ -404,7 +443,7 @@ function setModel(path: string, content = "") {
    return model;
 }
 
-function run() {
+function runProject() {
    // Bundle
    bundler.postMessage({
       cmd: "bundle",
@@ -612,7 +651,7 @@ animate();`
       }`
    );
 
-   run();
+   runProject();
 
    (window as any).editor = editor;
 });

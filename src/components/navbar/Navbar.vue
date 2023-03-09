@@ -25,7 +25,7 @@
          <h6>Projects</h6>
       </template>
       <template #default>
-         <Projects v-model="state.projects"></Projects>
+         <Projects v-model="state.projects" @openProject="openProject"></Projects>
       </template>
    </Dialog>
 </template>
@@ -36,46 +36,24 @@ import Menubar from "primevue/menubar";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import logo from "@app/assets/logo_240x240.png";
-import { ref, reactive } from "vue";
+import templates from "../../templates";
+import { ref, reactive, onMounted } from "vue";
 const props = defineProps({
    runnable: Boolean,
 });
 const state = reactive({
    showProjects: true,
-   projects: [
-      {
-         name: "default template",
-         lastEdited: Date.now(),
-      },
-      {
-         name: "hey, this is a veryyyy long name hello this is just an example for testing",
-         lastEdited: Date.now(),
-      },
-      {
-         name: "sample 1",
-         lastEdited: Date.now(),
-      },
-      {
-         name: "sample 2",
-         lastEdited: Date.now(),
-      },
-   ],
+   projects: [],
 });
-
-for (let i = 3; i < 30; i++) {
-   state.projects.push({
-      name: "sample " + i,
-      lastEdited: Date.now()
-   })
-}
 
 const emit = defineEmits([
    "runProject",
-   "newProject",
+   "newProjectDialog",
+   "openProjectDialog",
+   "saveProjectDialog",
+   "downloadProjectDialog",
+   "openOptionsDialog",
    "openProject",
-   "saveProject",
-   "downloadProject",
-   "openOptions",
 ]);
 const menu = ref();
 const items = [
@@ -122,6 +100,35 @@ const items = [
 function toggle(event) {
    menu.value.toggle(event);
 }
+
+function loadProjects() {
+   const storageKey = "kylehue.github.io/playground";
+   let storage = localStorage.getItem(storageKey);
+
+   // If storage is empty, create
+   if (!storage) {
+      let storageData = {
+         projects: templates
+      };
+
+      storage = JSON.stringify(storageData);
+      localStorage.setItem(storageKey, storage);
+   }
+
+   // Load
+   let storageParsed = JSON.parse(storage);
+   
+   state.projects = storageParsed.projects;
+}
+
+function openProject(projectId: string) {
+   emit("openProject", projectId);
+   state.showProjects = false;
+}
+
+onMounted(() => {
+   loadProjects();
+});
 </script>
 
 <style lang="scss" scoped>

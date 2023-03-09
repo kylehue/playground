@@ -16,7 +16,6 @@ const config = {
       path: resolve("dist"),
       filename: "[name].bundle.js",
       clean: true,
-      publicPath: "/",
    },
    module: {
       rules: [
@@ -71,11 +70,11 @@ if (env == "dev") {
    config.devtool = "inline-cheap-source-map";
    config.devServer = {
       historyApiFallback: true,
-		port: process.env.PORT || 8080,
-		hot: true,
-		liveReload: false,
-   }
-   
+      port: process.env.PORT || 8080,
+      hot: true,
+      liveReload: false,
+   };
+
    config.plugins.push(
       new HTMLWebpackPlugin({
          title: "JS Playground",

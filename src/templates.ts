@@ -1,5 +1,8 @@
+import { nanoid } from "nanoid";
+
 export interface Template {
-   name: String;
+   id: string;
+   name: string;
    lastEdited: number;
    files: {
       source: string;
@@ -11,10 +14,9 @@ export interface Template {
    }[];
 }
 
-type Templates = { [key: string]: Template };
-
-const templates: Templates = {
-   default: {
+const templates: Template[] = [
+   {
+      id: nanoid(),
       name: "default template",
       lastEdited: Date.now(),
       files: [
@@ -44,7 +46,8 @@ console.log("Test 1");`,
       ],
       packages: [],
    },
-   typescript: {
+   {
+      id: nanoid(),
       name: "typescript template",
       lastEdited: Date.now(),
       files: [
@@ -63,7 +66,8 @@ console.log("Hello World!");`,
       ],
       packages: [],
    },
-   react: {
+   {
+      id: nanoid(),
       name: "react template",
       lastEdited: Date.now(),
       files: [
@@ -110,7 +114,8 @@ ReactDOM.createRoot(
          },
       ],
    },
-   vue: {
+   {
+      id: nanoid(),
       name: "vue template",
       lastEdited: Date.now(),
       files: [
@@ -160,5 +165,5 @@ button {
          },
       ],
    },
-};
+];
 export default templates;

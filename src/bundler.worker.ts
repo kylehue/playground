@@ -51,6 +51,12 @@ async function process() {
          });
       }
 
+      if (data.customCmd == "clear") {
+         queue.shift();
+         
+         bundler.assets.clear();
+      }
+
       if (data.customCmd == "renameAsset") {
          queue.shift();
 
@@ -89,6 +95,7 @@ async function process() {
    }
 }
 
+const dtsCache = new Map();
 bundler.hooks.installPackage(async (pkg) => {
    postMessage({
       loadStart: true,
@@ -96,14 +103,22 @@ bundler.hooks.installPackage(async (pkg) => {
 
    let pkgVersion = pkg.version ? "@" + pkg.version : "";
    let pkgSource = pkg.name + pkgVersion + pkg.subpath;
-   
+   let name = pkg.name + pkg.subpath;
+
+   // Check cache
+   let cached = dtsCache.get(name);
+   if (cached) {
+      // No need to post since it's already added in monaco editor ts libs
+      // postMessage(cached);
+      return;
+   }
+
    // Get types/dts
    let response = await fetch(typesSourceURL + pkgSource);
    let typesURL = response.headers.get("x-typescript-types");
    let dts = "";
 
    // Get name in fallbacks (this is needed when plugin auto-installs happens)
-   let name = pkg.name + pkg.subpath;
    let fallbacks = bundler.options.bundleOptions?.resolve?.fallback;
    if (typeof fallbacks == "object") {
       for (let [key, value] of Object.entries(fallbacks)) {
@@ -140,11 +155,16 @@ bundler.hooks.installPackage(async (pkg) => {
       dts = `declare module "${name}";`;
    }
 
-   postMessage({
+   let result = {
       name,
       dts,
-      loadEnd: true
-   });
+      loadEnd: true,
+   };
+
+   postMessage(result);
+
+   // Add to cache
+   dtsCache.set(name, result);
 });
 
 onmessage = async (event) => {

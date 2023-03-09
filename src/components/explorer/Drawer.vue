@@ -79,6 +79,8 @@ const emit = defineEmits([
 ]);
 
 onMounted(() => {
+   console.log(drawer);
+   
    drawer.appendTo("#drawer");
    
    for (let i = 0; i < 30; i++) {

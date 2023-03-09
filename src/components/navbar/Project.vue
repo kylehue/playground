@@ -1,7 +1,9 @@
 <template>
    <div class="project p-2 d-flex">
       <button
-         class="main-button d-flex flex-row align-items-center justify-content-between p-3 w-100 h-100" @contextmenu="emit('showMenu', $event)"
+         class="main-button d-flex flex-row align-items-center justify-content-between p-3 w-100 h-100"
+         @contextmenu="contextMenu"
+         @click="emit('click', $event)"
       >
          <div class="details d-flex flex-column">
             <h6
@@ -37,9 +39,11 @@ const props = defineProps<{
    lastEdited: number;
 }>();
 
-const emit = defineEmits([
-   "showMenu"
-]);
+const emit = defineEmits(["showMenu", "click"]);
+
+function contextMenu(event) {
+   emit("showMenu", event);
+}
 </script>
 
 <style lang="scss" scoped>
