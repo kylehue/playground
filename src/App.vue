@@ -144,6 +144,7 @@ import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
 import { resolve, basename, join, dirname } from "path-browserify";
 import templates, { Template } from "./templates";
+import * as storage from "./utils/storage";
 
 const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
 
@@ -161,6 +162,7 @@ const state = reactive({
    selectedPackageVersionResults: [] as object[],
    bundlerLoading: true,
    packages: [] as Array<{ name: string; version: string }>,
+   currentProjectId: "",
 });
 
 languages.typescript.typescriptDefaults.setCompilerOptions({
@@ -349,37 +351,39 @@ function clearProject() {
    iframe.value.src = "";
 }
 
-function loadProjects() {
-   const storageKey = "kylehue.github.io/playground";
+/* function loadStorage() {
    let storage = localStorage.getItem(storageKey);
 
-   let projects: Template[] = [];
+   if (!storage) {
+      storage = JSON.stringify({
+         projects: []
+      });
 
-   if (storage) {
-      // Load
-      let storageParsed = JSON.parse(storage);
-
-      projects = storageParsed.projects;
+      localStorage.setItem(storageKey, storage);
    }
 
-   return projects;
-}
+   return JSON.parse(storage);
+} */
 
 function loadTemplate(template: Template) {
    clearProject();
-   for (let file of template.files) {
-      createFile(file.source, file.content);
+   if (template.files) {
+      for (let file of template.files) {
+         createFile(file.source, file.content);
+      }
+
+      // Focus main file
+      for (let file of template.files) {
+         if (basename(file.source).startsWith("index")) {
+            setModel(file.source);
+            break;
+         }
+      }
    }
 
-   for (let pkg of template.packages) {
-      addPackage(pkg.name, pkg.version);
-   }
-
-   // Focus main file
-   for (let file of template.files) {
-      if (basename(file.source).startsWith("index")) {
-         setModel(file.source);
-         break;
+   if (template.packages) {
+      for (let pkg of template.packages) {
+         addPackage(pkg.name, pkg.version);
       }
    }
 }
@@ -389,13 +393,37 @@ function openProject(projectId: string) {
    clearProject();
 
    // Get project
-   let projects = loadProjects();
+   let projects = storage.getProjects();
    let project = projects.find((p) => p.id == projectId);
 
    if (project) {
       // Load
       loadTemplate(project);
+      state.currentProjectId = projectId;
    }
+}
+
+function autosave() {
+   let files: Array<any> = [];
+   let models = monacoEditor.getModels();
+      for (let model of models) {
+         files.push({
+            source: model.uri.path,
+            content: model.getValue(),
+         });
+   }
+
+   // Save in projects
+   storage.updateProject(state.currentProjectId, {
+      files: files,
+      packages: state.packages
+   });
+
+   // Save in temp
+   localStorage.setItem("temp", JSON.stringify({
+      files: files,
+      packages: state.packages
+   }));
 }
 
 (window as any).clearProject = clearProject;
@@ -481,6 +509,8 @@ bundler.onmessage = (event) => {
       state.bundlerLoading = false;
    }
 
+   // Autosave
+   autosave();
    console.log(data);
 };
 
@@ -539,6 +569,8 @@ onMounted(() => {
          cmd: "addAsset",
          args: [currentModel?.uri.path, currentModel?.getValue()],
       });
+
+      autosave();
    });
 
    // Save cursor position

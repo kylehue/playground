@@ -2,13 +2,13 @@ import { nanoid } from "nanoid";
 
 export interface Template {
    id: string;
-   name: string;
-   lastEdited: number;
-   files: {
+   name?: string;
+   lastEdited?: number;
+   files?: {
       source: string;
       content: string;
    }[];
-   packages: {
+   packages?: {
       name: string;
       version: string;
    }[];

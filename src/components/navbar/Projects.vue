@@ -59,7 +59,12 @@ const menuModel = [
    },
 ];
 
-const sortedModel = computed(() => props.modelValue.sort((a, b) => b.lastEdited - a.lastEdited));
+const sortedModel = computed(() => props.modelValue.sort((a, b) => {
+   let current = a.lastEdited || Date.now();
+   let next = b.lastEdited || Date.now();
+
+   return next - current;
+}));
 
 function openProject(projectId: string) {
    emit("openProject", projectId);

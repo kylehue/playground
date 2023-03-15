@@ -71,18 +71,17 @@ import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import logo from "@app/assets/logo_240x240.png";
-import templates, { Template } from "../../templates";
-import { nanoid } from "nanoid";
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive } from "vue";
+import * as storage from "../../utils/storage";
 const props = defineProps({
    runnable: Boolean,
 });
-const storageKey = "kylehue.github.io/playground";
+
 const state = reactive({
    showProjectsDialog: false,
    showNewProjectDialog: false,
    newProjectName: "",
-   projects: [],
+   projects: storage.getProjects(),
 });
 
 const emit = defineEmits([
@@ -143,52 +142,20 @@ function toggle(event) {
 }
 
 function createProject(projectName: string) {
-   let storage = loadProjects();
-
-   let newProject: Template = {
-      id: nanoid(),
+   storage.addProject({
       name: projectName,
-      lastEdited: Date.now(),
-      files: [],
-      packages: [],
-   };
+   });
 
-   storage.projects.push(newProject);
-   localStorage.setItem(storageKey, JSON.stringify(storage));
-
+   // Update state
+   state.projects = storage.getProjects();
    state.showNewProjectDialog = false;
    state.newProjectName = "";
-}
-
-function loadProjects() {
-   let storage = localStorage.getItem(storageKey);
-
-   // If storage is empty, create
-   if (!storage) {
-      let storageData = {
-         projects: templates,
-      };
-
-      storage = JSON.stringify(storageData);
-      localStorage.setItem(storageKey, storage);
-   }
-
-   // Load
-   let storageParsed = JSON.parse(storage);
-
-   state.projects = storageParsed.projects;
-
-   return storageParsed;
 }
 
 function openProject(projectId: string) {
    emit("openProject", projectId);
    state.showProjectsDialog = false;
 }
-
-onMounted(() => {
-   loadProjects();
-});
 </script>
 
 <style lang="scss" scoped>
