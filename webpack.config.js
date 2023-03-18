@@ -5,6 +5,7 @@ const webpack = require("webpack");
 const vueLoader = require("vue-loader");
 const MonacoEditorPlugin = require("monaco-editor-webpack-plugin");
 const HTMLWebpackPlugin = require("html-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
 
 function resolve(source) {
    return path.resolve(__dirname, source);
@@ -88,6 +89,24 @@ if (env == "dev") {
    );
 } else {
    config.mode = "production";
+
+   config.optimization = {
+      minimize: true,
+      minimizer: [
+         new TerserPlugin({
+            terserOptions: {
+               compress: {
+                  pure_funcs: [
+                     "console.log",
+                     "console.info",
+                     "console.debug",
+                     "console.warn",
+                  ],
+               },
+            },
+         }),
+      ],
+   };
 }
 
 module.exports = config;

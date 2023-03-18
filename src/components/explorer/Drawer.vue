@@ -43,9 +43,6 @@ function createFile(path: string) {
 function removeFile(path: string) {
    let isFile = path.indexOf(".") != -1;
 
-   console.log(path, isFile);
-   
-
    if (isFile) {
       drawer.removeFileFromPath(path);
    } else {
@@ -79,8 +76,6 @@ const emit = defineEmits([
 ]);
 
 onMounted(() => {
-   console.log(drawer);
-   
    drawer.appendTo("#drawer");
    
    for (let i = 0; i < 30; i++) {
@@ -94,20 +89,6 @@ onMounted(() => {
          emit("changeEditorModel", path);
       }
    });
-
-   /* drawer.on("change", (type, item) => {
-      console.log(type, item);
-
-      if (type == "move") {
-
-      } else if (type == "add") {
-         
-      } else if (type == "remove") {
-         
-      } else if (type == "rename") {
-         
-      }
-   }); */
 
    drawer.on("move", (item, from, to) => {
       emit("renameAsset", from, to, item.type);

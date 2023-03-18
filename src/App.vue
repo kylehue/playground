@@ -78,9 +78,14 @@
       </template>
    </Dialog>
    <Navbar
+      ref="navbar"
       :runnable="!state.bundlerLoading"
       @runProject="runProject"
+      @newProject="createNewProject"
       @openProject="openProject"
+      @saveProject="autosave"
+      @notify="addMessage"
+      :currentProjectId="state.currentProjectId"
    ></Navbar>
    <Splitpanes class="flex-grow-1 overflow-hidden">
       <Pane size="20" min-size="5" class="explorer-pane">
@@ -118,6 +123,24 @@
          <iframe ref="iframe" class="w-100 h-100"></iframe>
       </Pane>
    </Splitpanes>
+   <div class="position-absolute col-md-4 col-12" style="right: 20px">
+      <TransitionGroup name="p-message" tag="div">
+         <Message
+            v-for="msg of state.messages"
+            :key="msg.id"
+            :life="3000"
+            :sticky="false"
+            :severity="msg.severity"
+            @close="
+               () =>
+                  (state.messages = state.messages.filter(
+                     (m) => m.id !== msg.id
+                  ))
+            "
+            >{{ msg.content }}</Message
+         >
+      </TransitionGroup>
+   </div>
 </template>
 
 <script setup lang="ts">
@@ -142,15 +165,18 @@ import InputText from "primevue/inputtext";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
+import Message from "primevue/message";
 import { resolve, basename, join, dirname } from "path-browserify";
 import templates, { Template } from "./templates";
 import * as storage from "./utils/storage";
+import { nanoid } from "nanoid";
 
 const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
-
 const editorHTMLElement = ref();
 const drawer = ref();
 const iframe = ref();
+const navbar = ref();
+type MessageSeverityType = "info" | "warn" | "success" | "error";
 const state = reactive({
    showNewFileDialog: false,
    newFileDialogPath: "",
@@ -163,6 +189,11 @@ const state = reactive({
    bundlerLoading: true,
    packages: [] as Array<{ name: string; version: string }>,
    currentProjectId: "",
+   messages: [] as Array<{
+      id: string;
+      content: string;
+      severity: MessageSeverityType;
+   }>,
 });
 
 languages.typescript.typescriptDefaults.setCompilerOptions({
@@ -180,6 +211,14 @@ languages.typescript.typescriptDefaults.setCompilerOptions({
 
 let editor: null | monacoEditor.IStandaloneCodeEditor = null;
 const modelMap: Map<string, any> = new Map();
+
+function addMessage(message: string, severity: MessageSeverityType) {
+   state.messages.push({
+      id: nanoid(),
+      content: message,
+      severity: severity,
+   });
+}
 
 function removePackage(packageName: string) {
    for (let i = 0; i < state.packages.length; i++) {
@@ -349,23 +388,36 @@ function clearProject() {
    state.packages = [];
    drawer.value.self.clear();
    iframe.value.src = "";
+   state.currentProjectId = "";
+   state.bundlerLoading = false;
 }
 
-/* function loadStorage() {
-   let storage = localStorage.getItem(storageKey);
+function createNewProject(template?: Template) {
+   // Check if the current project is saved or not
+   let projects = storage.getProjects();
+   let project = projects.find((p) => p.id === state.currentProjectId);
+   let isSaved = !!project;
+   let currentProjectIsEmpty = !state.packages.length && !monacoEditor.getModels().length;
 
-   if (!storage) {
-      storage = JSON.stringify({
-         projects: []
-      });
+   // If not saved...
+   if (!isSaved && !currentProjectIsEmpty) {
+      let discardChanges = confirm(
+         "The current project is not saved. Do you want to discard changes and create a new project?"
+      );
 
-      localStorage.setItem(storageKey, storage);
+      if (!discardChanges) {
+         return;
+      }
    }
+   
+   if (template) {
+      loadTemplate(template);
+   } else {
+      clearProject();
+   }
+}
 
-   return JSON.parse(storage);
-} */
-
-function loadTemplate(template: Template) {
+function loadTemplate(template: Pick<Template, "files" | "packages">) {
    clearProject();
    if (template.files) {
       for (let file of template.files) {
@@ -403,27 +455,35 @@ function openProject(projectId: string) {
    }
 }
 
-function autosave() {
+function autosave(projectId?: string) {
    let files: Array<any> = [];
    let models = monacoEditor.getModels();
-      for (let model of models) {
-         files.push({
-            source: model.uri.path,
-            content: model.getValue(),
-         });
+   for (let model of models) {
+      files.push({
+         source: model.uri.path,
+         content: model.getValue(),
+      });
+   }
+
+   if (projectId) {
+      state.currentProjectId = projectId;
    }
 
    // Save in projects
    storage.updateProject(state.currentProjectId, {
       files: files,
-      packages: state.packages
+      packages: state.packages,
    });
 
    // Save in temp
-   localStorage.setItem("temp", JSON.stringify({
-      files: files,
-      packages: state.packages
-   }));
+   localStorage.setItem(
+      "temp",
+      JSON.stringify({
+         id: state.currentProjectId,
+         files: files,
+         packages: state.packages,
+      })
+   );
 }
 
 (window as any).clearProject = clearProject;
@@ -537,6 +597,32 @@ addEventListener("keydown", (event) => {
    if (event.code == "Escape") {
       closeNewFileDialog();
    }
+
+   if (event.ctrlKey) {
+      if (event.code == "KeyS") {
+         event.preventDefault();
+
+         // Check if saved
+         let projects = storage.getProjects();
+         let project = projects.find(f => f.id === state.currentProjectId);
+         let isSaved = !!project;
+         if (isSaved) {
+            addMessage("Psst! Every project autosaves!", "info");
+         } else {
+            navbar.value.state.showSaveProjectDialog = true;
+         }
+      }
+
+      if (event.code == "KeyO") {
+         event.preventDefault();
+         navbar.value.state.showProjectsDialog = true;
+      }
+   }
+
+   if (event.code == "F3" || (event.ctrlKey && event.code == "KeyF")) {
+      event.preventDefault();
+      editor?.trigger(null, "actions.find", null);
+   }
 });
 
 onMounted(() => {
@@ -609,6 +695,18 @@ onMounted(() => {
          }
       },
    });
+
+   // Load auto saved project
+   let autosaveTempProject = localStorage.getItem("temp");
+   if (autosaveTempProject) {
+      let parsedTemp = JSON.parse(autosaveTempProject);
+      loadTemplate({
+         files: parsedTemp.files,
+         packages: parsedTemp.packages,
+      });
+
+      state.currentProjectId = parsedTemp.id;
+   }
 
    createFile(
       "index.html",

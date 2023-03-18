@@ -3,7 +3,10 @@
       class="projects d-flex flex-wrap align-items-start align-content-start justify-content-start w-100 h-100"
    >
       <div class="new-project p-2 d-flex">
-         <button class="d-flex align-items-center w-100 h-100 p-3 fw-bold" @click="showNewProjectDialog">
+         <button
+            class="d-flex align-items-center w-100 h-100 p-3 fw-bold"
+            @click="showNewProjectDialog"
+         >
             <i class="pi pi-plus me-2"></i>
             <span>Create project</span>
          </button>
@@ -14,7 +17,9 @@
             :name="project.name"
             :lastEdited="project.lastEdited"
             @showMenu="showMenu($event, project.id)"
-            @click="openProject(project.id)"
+            @click="emit('openProject', project.id)"
+            @delete="emit('deleteProject', project.id)"
+            @useAsTemplate="emit('useProjectAsTemplate', project.id)"
          ></Project>
       </template>
    </div>
@@ -32,43 +37,53 @@ const props = defineProps<{
 const state = reactive({
    clickedProjectId: "",
 });
-const emit = defineEmits(["openProject", "showNewProjectDialog"]);
+const emit = defineEmits([
+   "openProject",
+   "showNewProjectDialog",
+   "deleteProject",
+   "renameProject",
+   "useProjectAsTemplate",
+]);
 const menu = ref();
 const menuModel = [
    {
       label: "Open",
       icon: "pi pi-arrow-up-right",
       command: () => {
-         openProject(state.clickedProjectId);
+         emit("openProject", state.clickedProjectId);
       },
    },
    {
       label: "Use as template",
       icon: "pi pi-copy",
-      command: () => {},
+      command: () => {
+         emit("useProjectAsTemplate", state.clickedProjectId);
+      },
    },
    {
       label: "Rename",
       icon: "pi pi-pencil",
-      command: () => {},
+      command: () => {
+         emit("renameProject", state.clickedProjectId);
+      },
    },
    {
       label: "Delete",
       icon: "pi pi-trash",
-      command: () => {},
+      command: () => {
+         emit("deleteProject", state.clickedProjectId);
+      },
    },
 ];
 
-const sortedModel = computed(() => props.modelValue.sort((a, b) => {
-   let current = a.lastEdited || Date.now();
-   let next = b.lastEdited || Date.now();
+const sortedModel = computed(() =>
+   props.modelValue.sort((a, b) => {
+      let current = a.lastEdited || Date.now();
+      let next = b.lastEdited || Date.now();
 
-   return next - current;
-}));
-
-function openProject(projectId: string) {
-   emit("openProject", projectId);
-}
+      return next - current;
+   })
+);
 
 function showNewProjectDialog() {
    emit("showNewProjectDialog");

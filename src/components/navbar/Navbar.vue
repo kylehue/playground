@@ -29,6 +29,9 @@
             v-model="state.projects"
             @openProject="openProject"
             @showNewProjectDialog="state.showNewProjectDialog = true"
+            @deleteProject="deleteProject"
+            @renameProject="showRenameProjectDialog"
+            @useProjectAsTemplate="useProjectAsTemplate"
          ></Projects>
       </template>
    </Dialog>
@@ -39,7 +42,7 @@
       class="col-10 col-md-5"
    >
       <template #header>
-         <h6>Create Project</h6>
+         <h6>Create new project</h6>
       </template>
       <template #default>
          <InputText
@@ -62,6 +65,66 @@
          ></Button>
       </template>
    </Dialog>
+   <Dialog
+      v-model:visible="state.showSaveProjectDialog"
+      dismissableMask
+      modal
+      class="col-10 col-md-5"
+   >
+      <template #header>
+         <h6>Save as...</h6>
+      </template>
+      <template #default>
+         <InputText
+            type="text"
+            v-model="state.saveProjectName"
+            v-focus
+            placeholder="Project Name"
+            spellcheck="false"
+            autocomplete="off"
+            autofill="off"
+            class="w-100"
+            @keypress.enter="saveProject(state.saveProjectName)"
+         ></InputText>
+      </template>
+      <template #footer>
+         <Button
+            label="Save"
+            class="w-100"
+            @click="saveProject(state.saveProjectName)"
+         ></Button>
+      </template>
+   </Dialog>
+   <Dialog
+      v-model:visible="state.showRenameProjectDialog"
+      dismissableMask
+      modal
+      class="col-10 col-md-5"
+   >
+      <template #header>
+         <h6>Rename {{ state.renameProjectOldName }}</h6>
+      </template>
+      <template #default>
+         <InputText
+            type="text"
+            v-model="state.renameProjectNewName"
+            v-focus
+            placeholder="New Project Name"
+            spellcheck="false"
+            autocomplete="off"
+            autofill="off"
+            class="w-100"
+            @keypress.enter="renameProject(state.renameProjectId, state.renameProjectNewName)"
+         ></InputText>
+      </template>
+      <template #footer>
+         <Button
+            label="Save"
+            class="w-100"
+            @click="renameProject(state.renameProjectId, state.renameProjectNewName)"
+         ></Button>
+      </template>
+   </Dialog>
 </template>
 
 <script setup lang="ts">
@@ -69,19 +132,31 @@ import Projects from "@app/components/navbar/Projects.vue";
 import Menubar from "primevue/menubar";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
+import Menu from "primevue/menuitem";
 import InputText from "primevue/inputtext";
 import logo from "@app/assets/logo_240x240.png";
-import { ref, reactive } from "vue";
+import { ref, reactive, watch } from "vue";
 import * as storage from "../../utils/storage";
 const props = defineProps({
    runnable: Boolean,
+   currentProjectId: String
 });
 
 const state = reactive({
    showProjectsDialog: false,
    showNewProjectDialog: false,
+   saveProjectName: "",
+   showSaveProjectDialog: false,
    newProjectName: "",
    projects: storage.getProjects(),
+   renameProjectNewName: "",
+   renameProjectOldName: "",
+   showRenameProjectDialog: false,
+   renameProjectId: ""
+});
+
+defineExpose({
+   state
 });
 
 const emit = defineEmits([
@@ -92,18 +167,22 @@ const emit = defineEmits([
    "downloadProjectDialog",
    "openOptionsDialog",
    "openProject",
+   "saveProject",
+   "newProject",
+   "notify"
 ]);
 const menu = ref();
-const items = [
+const unsavedProjectTitle = "Unsaved Project";
+const items = reactive([
    {
-      label: "Project",
+      label: unsavedProjectTitle,
       icon: "pi pi-fw pi-file",
       items: [
          {
             label: "New",
             icon: "pi pi-plus",
             command: () => {
-               state.showNewProjectDialog = true;
+               emit("newProject");
             },
          },
          {
@@ -116,7 +195,9 @@ const items = [
          {
             label: "Save As...",
             icon: "pi pi-save",
-            command: () => {},
+            command: () => {
+               state.showSaveProjectDialog = true;
+            },
          },
          {
             label: "Download",
@@ -135,10 +216,90 @@ const items = [
          },
       ],
    },
-];
+]);
+
+watch(() => props.currentProjectId, (newValue) => {
+   let projects = storage.getProjects();
+   let project = projects.find(p => p.id === newValue);
+
+   if (project) {
+      items[0].label = project.name || unsavedProjectTitle;
+   } else {
+      items[0].label = unsavedProjectTitle;
+   }
+});
 
 function toggle(event) {
    menu.value.toggle(event);
+}
+
+function saveProject(projectName: string) {
+   let project = storage.addProject({
+      name: projectName,
+   });
+
+   // Update state
+   state.projects = storage.getProjects();
+   state.showSaveProjectDialog = false;
+   state.saveProjectName = "";
+
+   emit("saveProject", project.id);
+   emit("notify", "Project has been saved.", "success");
+}
+
+function deleteProject(projectId: string) {
+   let projects = storage.getProjects();
+   let project = projects.find(p => p.id === projectId);
+
+   if (project) {
+      let doDelete = confirm(`Are you sure you want to delete the project "${project.name}"?`);
+
+      if (doDelete) {
+         storage.removeProjectById(project.id);
+
+         state.projects = storage.getProjects();
+      }
+   }
+}
+
+function showRenameProjectDialog(projectId: string) {
+   let projects = storage.getProjects();
+   let project = projects.find(p => p.id === projectId);
+
+   if (project) {
+      state.showRenameProjectDialog = true;
+      state.renameProjectOldName = project.name || "";
+      state.renameProjectNewName = project.name || "";
+      state.renameProjectId = projectId;
+   }
+}
+
+function renameProject(projectId: string, newProjectName: string) {
+   let projects = storage.getProjects();
+   let project = projects.find(p => p.id === projectId);
+   
+   if (project) {
+      storage.updateProject(projectId, {
+         name: newProjectName
+      });
+
+      state.projects = storage.getProjects();
+      state.showRenameProjectDialog = false;
+      state.renameProjectId = "";
+
+      if (project.id === props.currentProjectId) {
+         items[0].label = newProjectName;
+      }
+   }
+}
+
+function useProjectAsTemplate(projectId: string) {
+   let projects = storage.getProjects();
+   let project = projects.find(p => p.id === projectId);
+
+   if (project) {
+      emit("newProject", project);
+   }
 }
 
 function createProject(projectName: string) {

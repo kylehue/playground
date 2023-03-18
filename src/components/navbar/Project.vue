@@ -25,10 +25,10 @@
             class="sub-buttons d-flex flex-column"
             v-if="!button"
          >
-            <button class="sub" v-tooltip="'Delete'">
+            <button class="sub" v-tooltip="'Delete'" @click="emit('delete')">
                <i class="pi pi-trash"></i>
             </button>
-            <button class="sub" v-tooltip="'Use as a template'">
+            <button class="sub" v-tooltip="'Use as a template'" @click="emit('useAsTemplate')">
                <i class="pi pi-copy"></i>
             </button>
          </div>
@@ -46,7 +46,7 @@ const props = defineProps<{
    icon?: string;
 }>();
 
-const emit = defineEmits(["showMenu", "click"]);
+const emit = defineEmits(["showMenu", "click", "delete", "useAsTemplate"]);
 
 function contextMenu(event) {
    emit("showMenu", event);

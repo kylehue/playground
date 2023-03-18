@@ -17,7 +17,6 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
 import IconButton from "@app/components/basic/IconButton.vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
 
@@ -36,9 +35,6 @@ function removePackage(name: string) {
       emit('removePackage', name);
    }
 }
-onMounted(() => {
-   console.log(props.content);
-});
 </script>
 
 <style lang="scss" scoped>
