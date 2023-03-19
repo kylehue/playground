@@ -27,7 +27,7 @@ const templates: Template[] = [
       <script src="./src/main"></script>
    </head>
    <body>
-      Hello World!
+      <h1>Project Template</h1>
    </body>
 </html>`,
          },
@@ -94,12 +94,16 @@ ReactDOM.createRoot(
          },
          {
             source: "src/App.jsx",
-            content: `export default function App(props) {
-  return (
-   <div>
-      <h1>Hello World!</h1>
-   </div>
-  );
+            content: ` import { useState } from "react";
+
+export default function App(props) {
+   let [count, setCount] = useState(0);
+   return (
+      <div>
+         <h1>React Template</h1>
+         <button onClick={ () => setCount(count + 1) }>Count is: { count }</button>
+      </div>
+   );
 }`,
          },
       ],
@@ -141,7 +145,7 @@ app.mount("#app");`,
          {
             source: "src/App.vue",
             content: `<template>
-   <h1>Hello World!</h1>
+   <h1>Vue Template</h1>
    <button @click="count++">Count is: {{ count }}</button>
 </template>
 

@@ -1,4 +1,5 @@
 import Toypack from "toypack";
+import BabelLoader from "toypack/lib/loaders/BabelLoader";
 import NodePolyfillPlugin from "toypack/lib/NodePolyfillPlugin";
 import { join } from "path-browserify";
 const bundler = new Toypack({
@@ -13,6 +14,8 @@ const bundler = new Toypack({
       logs: true,
    },
 });
+
+globalThis.bundler = bundler;
 
 bundler.use(new NodePolyfillPlugin());
 
@@ -73,10 +76,8 @@ async function process() {
       }
 
       if (data.customCmd == "installPackage") {
-         let version = data.version ? "@" + data.version : "";
-
          // Install
-         await bundler.packageManager.install(data.name + version);
+         await bundler.packageManager.install(data.name, data.version);
 
          // Send
          postMessage({
@@ -181,24 +182,29 @@ onmessage = async (event) => {
    }
    console.log(bundler);
 };
-
 bundler.hooks.failedLoader(async (descriptor) => {
    let BabelPattern = /\.(t|j)sx?$/; // .js, .ts, .jsx, .tsx
    if (BabelPattern.test(descriptor.asset.source)) {
       let BabelLoader = await import("toypack/lib/BabelLoader.js");
       let loopProtectPlugin = await import("@freecodecamp/loop-protect");
-      let slowLoopTimeLimitMS = 100;
+      let slowLoopTimeLimitMS = 200;
 
-      let loader = new BabelLoader.default({
+      let loader: BabelLoader = new BabelLoader.default({
          registerPlugins: [
-            ["loopProtect", loopProtectPlugin.default(slowLoopTimeLimitMS)],
-         ],
-         transformOptions: {
-            plugins: ["loopProtect"],
-         },
+            ["loopProtect", loopProtectPlugin.default(slowLoopTimeLimitMS, () => {
+               console.warn("Loop Protection Warning: A slow loop has been terminated.");
+            }, 10000)],
+         ]
       });
 
-      bundler.loaders.push(loader);
+      // Why is this breaking vue?
+      let plugins = loader.options?.transformOptions?.plugins;
+
+      if (plugins) {
+         plugins.push("loopProtect");
+      }
+
+      bundler.loaders.push(loader as any);
    }
 
    let VuePattern = /\.vue$/; // .vue

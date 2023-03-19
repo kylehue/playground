@@ -1,16 +1,18 @@
 <template>
    <div class="navbar-wrapper w-100 d-flex flex-row align-items-center">
-      <Menubar ref="menu" :model="items" class="w-100 h-100">
+      <Menubar ref="contextMenu" :model="navbarItems" class="w-100 h-100">
          <template #start>
             <img :src="logo" alt="logo" width="40" height="40" class="me-2" />
          </template>
          <template #end>
-            <Button
+            <SplitButton
                label="Run"
-               icon="pi pi-play"
-               :loading="!props.runnable"
+               :icon="runnable ? 'pi pi-play' : 'pi pi-spin pi-spinner'"
+               :model="runButtonMenuItems"
+               :disabled="!runnable"
                @click="emit('runProject')"
-            ></Button>
+            >
+            </SplitButton>
          </template>
       </Menubar>
    </div>
@@ -114,14 +116,18 @@
             autocomplete="off"
             autofill="off"
             class="w-100"
-            @keypress.enter="renameProject(state.renameProjectId, state.renameProjectNewName)"
+            @keypress.enter="
+               renameProject(state.renameProjectId, state.renameProjectNewName)
+            "
          ></InputText>
       </template>
       <template #footer>
          <Button
             label="Save"
             class="w-100"
-            @click="renameProject(state.renameProjectId, state.renameProjectNewName)"
+            @click="
+               renameProject(state.renameProjectId, state.renameProjectNewName)
+            "
          ></Button>
       </template>
    </Dialog>
@@ -130,16 +136,17 @@
 <script setup lang="ts">
 import Projects from "@app/components/navbar/Projects.vue";
 import Menubar from "primevue/menubar";
+import SplitButton from "primevue/splitbutton";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
-import Menu from "primevue/menuitem";
+import InputSwitch from "primevue/inputswitch";
 import InputText from "primevue/inputtext";
 import logo from "@app/assets/logo_240x240.png";
 import { ref, reactive, watch } from "vue";
 import * as storage from "../../utils/storage";
 const props = defineProps({
    runnable: Boolean,
-   currentProjectId: String
+   currentProjectId: String,
 });
 
 const state = reactive({
@@ -152,11 +159,12 @@ const state = reactive({
    renameProjectNewName: "",
    renameProjectOldName: "",
    showRenameProjectDialog: false,
-   renameProjectId: ""
+   renameProjectId: "",
+   enableLoopProtection: true,
 });
 
 defineExpose({
-   state
+   state,
 });
 
 const emit = defineEmits([
@@ -169,11 +177,23 @@ const emit = defineEmits([
    "openProject",
    "saveProject",
    "newProject",
-   "notify"
+   "notify",
 ]);
-const menu = ref();
+
+const contextMenu = ref();
+
+const runButtonMenuItems = [
+   {
+      label: "Hard run",
+      icon: "pi pi-play",
+      command: () => {
+         emit("runProject", null, "hard");
+      },
+   }
+];
+
 const unsavedProjectTitle = "Unsaved Project";
-const items = reactive([
+const navbarItems = reactive([
    {
       label: unsavedProjectTitle,
       icon: "pi pi-fw pi-file",
@@ -218,19 +238,22 @@ const items = reactive([
    },
 ]);
 
-watch(() => props.currentProjectId, (newValue) => {
-   let projects = storage.getProjects();
-   let project = projects.find(p => p.id === newValue);
+watch(
+   () => props.currentProjectId,
+   (newValue) => {
+      let projects = storage.getProjects();
+      let project = projects.find((p) => p.id === newValue);
 
-   if (project) {
-      items[0].label = project.name || unsavedProjectTitle;
-   } else {
-      items[0].label = unsavedProjectTitle;
+      if (project) {
+         navbarItems[0].label = project.name || unsavedProjectTitle;
+      } else {
+         navbarItems[0].label = unsavedProjectTitle;
+      }
    }
-});
+);
 
 function toggle(event) {
-   menu.value.toggle(event);
+   contextMenu.value.toggle(event);
 }
 
 function saveProject(projectName: string) {
@@ -249,10 +272,12 @@ function saveProject(projectName: string) {
 
 function deleteProject(projectId: string) {
    let projects = storage.getProjects();
-   let project = projects.find(p => p.id === projectId);
+   let project = projects.find((p) => p.id === projectId);
 
    if (project) {
-      let doDelete = confirm(`Are you sure you want to delete the project "${project.name}"?`);
+      let doDelete = confirm(
+         `Are you sure you want to delete the project "${project.name}"?`
+      );
 
       if (doDelete) {
          storage.removeProjectById(project.id);
@@ -264,7 +289,7 @@ function deleteProject(projectId: string) {
 
 function showRenameProjectDialog(projectId: string) {
    let projects = storage.getProjects();
-   let project = projects.find(p => p.id === projectId);
+   let project = projects.find((p) => p.id === projectId);
 
    if (project) {
       state.showRenameProjectDialog = true;
@@ -276,11 +301,11 @@ function showRenameProjectDialog(projectId: string) {
 
 function renameProject(projectId: string, newProjectName: string) {
    let projects = storage.getProjects();
-   let project = projects.find(p => p.id === projectId);
-   
+   let project = projects.find((p) => p.id === projectId);
+
    if (project) {
       storage.updateProject(projectId, {
-         name: newProjectName
+         name: newProjectName,
       });
 
       state.projects = storage.getProjects();
@@ -288,16 +313,17 @@ function renameProject(projectId: string, newProjectName: string) {
       state.renameProjectId = "";
 
       if (project.id === props.currentProjectId) {
-         items[0].label = newProjectName;
+         navbarItems[0].label = newProjectName;
       }
    }
 }
 
 function useProjectAsTemplate(projectId: string) {
    let projects = storage.getProjects();
-   let project = projects.find(p => p.id === projectId);
+   let project = projects.find((p) => p.id === projectId);
 
    if (project) {
+      state.showProjectsDialog = false;
       emit("newProject", project);
    }
 }

@@ -10,7 +10,7 @@
                <span class="text-name">{{ pkg.name }}</span>
                <span class="text-version">{{ pkg.version }}</span>
             </div>
-            <IconButton class="delete-button" icon="close" @click="removePackage(pkg.name)"></IconButton>
+            <IconButton class="delete-button" icon="times" @click="removePackage(pkg.name)"></IconButton>
          </div>
       </div>
    </ExplorerSpace>
@@ -29,7 +29,7 @@ const props = defineProps<{
 
 const emit = defineEmits(["openNewPackageDialog", "removePackage"]);
 function removePackage(name: string) {
-   const doRemove = confirm(`Are you sure you want to remove the '${name}' package?`);
+   const doRemove = confirm(`Are you sure you want to remove the "${name}" package?`);
 
    if (doRemove) {
       emit('removePackage', name);

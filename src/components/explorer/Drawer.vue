@@ -1,16 +1,20 @@
 <template>
-   <ExplorerSpace @addClick="emit('openNewFileDialog')" title="Files" addTooltip="New file">
+   <ExplorerSpace
+      @addClick="emit('openNewFileDialog')"
+      title="Files"
+      addTooltip="New file"
+   >
       <div id="drawer" class="w-100 h-100 d-flex flex-column"></div>
    </ExplorerSpace>
 </template>
 
 <script setup lang="ts">
 import Drawer from "@kylehue/drawer";
-import { onMounted, defineExpose, defineEmits } from "vue";
+import { onMounted } from "vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
 import { resolve } from "path-browserify";
 const props = defineProps({
-   title: String
+   title: String,
 });
 
 const drawer = new Drawer({
@@ -18,12 +22,12 @@ const drawer = new Drawer({
       cut: false,
       rename: false,
       addDirectory: false,
-      copy: false
+      copy: false,
    },
    fileButton: {
       cut: false,
       rename: false,
-   }
+   },
 });
 
 function createFile(path: string) {
@@ -52,7 +56,7 @@ function removeFile(path: string) {
 
 function highlightFile(path: string) {
    let file = drawer.getFileFromPath(path);
-   
+
    if (file) {
       file.emit("click");
    }
@@ -62,7 +66,7 @@ defineExpose({
    createFile,
    removeFile,
    highlightFile,
-   self: drawer
+   self: drawer,
 });
 
 const emit = defineEmits([
@@ -77,15 +81,24 @@ const emit = defineEmits([
 
 onMounted(() => {
    drawer.appendTo("#drawer");
-   
-   for (let i = 0; i < 30; i++) {
+
+   /* for (let i = 0; i < 30; i++) {
       drawer.addFileFromPath(`${i}.html`);
-   }
+   } */
 
    drawer.on("click", (item, event) => {
+      const path = resolve(item.parent.path, item.title);
+
+      // Make sure it exists
+      let itemExists = !!drawer.getFileFromPath(path);
+
       // Only focus editor when item is not getting renamed
-      if (item.type == "file" && event.target.tagName != "INPUT") {
-         const path = resolve(item.parent.path, item.title);
+      let isEditable = event.target.tagName == "INPUT";
+      if (
+         item.type == "file" &&
+         !isEditable &&
+         itemExists
+      ) {
          emit("changeEditorModel", path);
       }
    });
@@ -105,7 +118,7 @@ onMounted(() => {
 
    drawer.on("removeClick", (item) => {
       const path = resolve(item.parent.path, item.title);
-      const doRemove = confirm("Are you sure you want to delete " + path);
+      const doRemove = confirm(`Are you sure you want to delete the ${item.type} "${path}"${item.type == "directory" ? " and its contents" : ""}?`);
       if (doRemove) {
          emit("removeButtonClick", path);
       }
@@ -129,6 +142,4 @@ onMounted(() => {
 }
 </style>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>

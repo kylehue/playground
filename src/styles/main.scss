@@ -52,3 +52,14 @@ body {
 .p-tooltip-text, .p-menuitem-text, .p-button-label {
    font-size: 0.8em;
 }
+
+.p-menuitem-text {
+   max-width: 200px;
+   overflow: hidden;
+   white-space: nowrap;
+   text-overflow: ellipsis;
+}
+
+.p-menuitem-text, .p-menuitem-icon {
+   padding-bottom: 3px;
+}

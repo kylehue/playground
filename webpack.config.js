@@ -100,7 +100,6 @@ if (env == "dev") {
                      "console.log",
                      "console.info",
                      "console.debug",
-                     "console.warn",
                   ],
                },
             },

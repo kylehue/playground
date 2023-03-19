@@ -10,7 +10,6 @@
 
 <script setup lang="ts">
 import IconButton from "@app/components/basic/IconButton.vue";
-import { defineProps } from "vue";
 const props = defineProps({
    title: String,
    addTooltip: String
@@ -18,6 +17,7 @@ const props = defineProps({
 </script>
 
 <style lang="scss" scoped>
+@import "@app/styles/variables.scss";
 .explorer-space {
    .header {
       height: 40px;

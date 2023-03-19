@@ -207,6 +207,7 @@ languages.typescript.typescriptDefaults.setCompilerOptions({
    noImplicitAny: false,
    skipLibCheck: true,
    useDefineForClassFields: true,
+   jsx: languages.typescript.JsxEmit.Preserve,
 });
 
 let editor: null | monacoEditor.IStandaloneCodeEditor = null;
@@ -276,6 +277,11 @@ function addPackage(name: string, version: string) {
       version,
    });
 
+   state.packages.push({
+      name,
+      version,
+   });
+
    closeNewPackageDialog();
 }
 
@@ -335,17 +341,25 @@ function removeFile(path: string) {
       // Remove from explorer
       drawer.value.removeFile(disposedPath);
 
-      // Remove from models
-      monacoEditor.getModel(getPathURI(disposedPath))?.dispose();
-
       // Remove from model map
       modelMap.delete(disposedPath);
+
+      // Remove from bundler
+      bundler.postMessage({
+         customCmd: "removeAsset",
+         path
+      });
+
+      // Remove from models
+      monacoEditor.getModel(getPathURI(disposedPath))?.dispose();
    }
 
    // Clear bundler
-   bundler.postMessage({
-      customCmd: "clear",
-   });
+   if (path == "/") {
+      bundler.postMessage({
+         customCmd: "clear",
+      });
+   }
 }
 
 function renameFile(fromPath: string, toPath: string) {
@@ -397,7 +411,8 @@ function createNewProject(template?: Template) {
    let projects = storage.getProjects();
    let project = projects.find((p) => p.id === state.currentProjectId);
    let isSaved = !!project;
-   let currentProjectIsEmpty = !state.packages.length && !monacoEditor.getModels().length;
+   let currentProjectIsEmpty =
+      !state.packages.length && !monacoEditor.getModels().length;
 
    // If not saved...
    if (!isSaved && !currentProjectIsEmpty) {
@@ -409,7 +424,7 @@ function createNewProject(template?: Template) {
          return;
       }
    }
-   
+
    if (template) {
       loadTemplate(template);
    } else {
@@ -531,11 +546,11 @@ function setModel(path: string, content = "") {
    return model;
 }
 
-function runProject() {
+function runProject(...args) {
    // Bundle
    bundler.postMessage({
       cmd: "bundle",
-      args: [],
+      args: [...args],
    });
 }
 
@@ -553,13 +568,6 @@ bundler.onmessage = (event) => {
          data.dts,
          data.name + ".d.ts"
       );
-   }
-
-   if (data.customCmd == "installPackage") {
-      state.packages.push({
-         name: data.name,
-         version: data.version,
-      });
    }
 
    // Loading state
@@ -604,7 +612,7 @@ addEventListener("keydown", (event) => {
 
          // Check if saved
          let projects = storage.getProjects();
-         let project = projects.find(f => f.id === state.currentProjectId);
+         let project = projects.find((f) => f.id === state.currentProjectId);
          let isSaved = !!project;
          if (isSaved) {
             addMessage("Psst! Every project autosaves!", "info");
@@ -706,11 +714,10 @@ onMounted(() => {
       });
 
       state.currentProjectId = parsedTemp.id;
-   }
-
-   createFile(
-      "index.html",
-      '<html>\
+   } else {
+      createFile(
+         "index.html",
+         '<html>\
 \
 <head>\
    <script src="src/main"><\/script>\
@@ -721,11 +728,11 @@ onMounted(() => {
 </body>\
 \
 </html>'
-   );
+      );
 
-   createFile(
-      "src/main.ts",
-      `import Circle from "./Circle";
+      createFile(
+         "src/main.ts",
+         `import Circle from "./Circle";
       import "../styles/a/main.css";
       let canvas = document.getElementById("game") as HTMLCanvasElement;
 let ctx = canvas.getContext("2d");
@@ -762,24 +769,25 @@ function animate() {
 }
 
 animate();`
-   );
+      );
 
-   createFile(
-      "src/Circle.ts",
-      `export default class Circle {
+      createFile(
+         "src/Circle.ts",
+         `export default class Circle {
    constructor(x: number) {
       
    }
 }`
-   );
+      );
 
-   createFile(
-      "styles/a/main.css",
-      `body {
+      createFile(
+         "styles/a/main.css",
+         `body {
          margin: 0;
          overflow: hidden;
       }`
-   );
+      );
+   }
 
    runProject();
 
