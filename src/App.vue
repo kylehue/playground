@@ -704,8 +704,17 @@ onMounted(() => {
       },
    });
 
-   // Load auto saved project
    let autosaveTempProject = localStorage.getItem("temp");
+   
+   if (!autosaveTempProject) {
+      let defaultProject = templates.find(p => p.id === "default");
+
+      if (defaultProject) {
+         autosaveTempProject = JSON.stringify(defaultProject);
+      }
+   }
+
+   // Load auto saved project
    if (autosaveTempProject) {
       let parsedTemp = JSON.parse(autosaveTempProject);
       loadTemplate({
@@ -714,79 +723,6 @@ onMounted(() => {
       });
 
       state.currentProjectId = parsedTemp.id;
-   } else {
-      createFile(
-         "index.html",
-         '<html>\
-\
-<head>\
-   <script src="src/main"><\/script>\
-</head>\
-\
-<body>\
-   <canvas id="game"></canvas>\
-</body>\
-\
-</html>'
-      );
-
-      createFile(
-         "src/main.ts",
-         `import Circle from "./Circle";
-      import "../styles/a/main.css";
-      let canvas = document.getElementById("game") as HTMLCanvasElement;
-let ctx = canvas.getContext("2d");
-canvas.width = innerWidth;
-canvas.height = innerHeight;
-console.log(canvas, 123, new Circle(1));
-
-let r = 20;
-let x = r;
-let y = r;
-let vx = 1;
-let vy = 1;
-function animate() {
-   ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-   ctx.fillRect(0, 0, canvas.width, canvas.height);
-   ctx.fillStyle = "yellow";
-   ctx.beginPath();
-   ctx.arc(x, y, r, 0, Math.PI * 2);
-   ctx.closePath();
-   ctx.fill();
-   x += vx;
-   y += vy;
-
-   vx += 0.1;
-   vy += 0.1;
-
-   if (x <= r - vx || x + vx >= canvas.width - r) {
-      vx = -vx;
-   }
-   if (y <= r - vy || y + vy >= canvas.height - r) {
-      vy = -vy;
-   }
-   requestAnimationFrame(animate);
-}
-
-animate();`
-      );
-
-      createFile(
-         "src/Circle.ts",
-         `export default class Circle {
-   constructor(x: number) {
-      
-   }
-}`
-      );
-
-      createFile(
-         "styles/a/main.css",
-         `body {
-         margin: 0;
-         overflow: hidden;
-      }`
-      );
    }
 
    runProject();
