@@ -1,5 +1,5 @@
 <template>
-   <button>
+   <button class="d-flex align-items-center justify-content-center">
       <i :class="'pi pi-' + props.icon" ></i>
    </button>
 </template>

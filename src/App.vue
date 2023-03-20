@@ -93,7 +93,6 @@
             <Pane size="60" min-size="10">
                <Drawer
                   ref="drawer"
-                  title="Files"
                   @openNewFileDialog="openCreateFileDialog"
                   @addFileButtonClick="openCreateFileDialog"
                   @removeButtonClick="removeFile"
@@ -101,6 +100,7 @@
                   @copyButtonClick="setCopiedFilePath"
                   @pasteButtonClick="pasteCopiedFilePath"
                   @renameAsset="renameFile"
+                  :clipboard-has-item="!!state.copiedFileDescriptor"
                ></Drawer>
             </Pane>
             <Pane size="40" min-size="10">
@@ -144,14 +144,16 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, ref, reactive } from "vue";
 import { Splitpanes, Pane } from "splitpanes";
 import Drawer from "@app/components/explorer/Drawer.vue";
 import Packages from "@app/components/explorer/Packages.vue";
-import SimpleButton from "@app/components/basic/SimpleButton.vue";
-import SimpleInput from "@app/components/basic/SimpleInput.vue";
-import IconButton from "@app/components/basic/IconButton.vue";
 import Navbar from "@app/components/navbar/Navbar.vue";
-import { onMounted, ref, reactive, nextTick } from "vue";
+import InputText from "primevue/inputtext";
+import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+import Dropdown from "primevue/dropdown";
+import Message, { MessageProps } from "primevue/message";
 import {
    editor as monacoEditor,
    KeyMod,
@@ -159,16 +161,11 @@ import {
    Uri,
    languages,
 } from "monaco-editor";
-import getLang from "./utils/getLang";
-import { searchPackagesByName, searchPackage } from "./utils/npmSearch";
-import InputText from "primevue/inputtext";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Dropdown from "primevue/dropdown";
-import Message from "primevue/message";
-import { resolve, basename, join, dirname } from "path-browserify";
-import templates, { Template } from "./templates";
-import * as storage from "./utils/storage";
+import getLang from "@app/utils/getLang";
+import * as storage from "@app/utils/storage";
+import { searchPackagesByName, searchPackage } from "@app/utils/npmSearch";
+import templates, { Template } from "@app/templates";
+import { resolve, basename, join, dirname, relative } from "path-browserify";
 import { nanoid } from "nanoid";
 
 const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
@@ -176,11 +173,10 @@ const editorHTMLElement = ref();
 const drawer = ref();
 const iframe = ref();
 const navbar = ref();
-type MessageSeverityType = "info" | "warn" | "success" | "error";
 const state = reactive({
    showNewFileDialog: false,
    newFileDialogPath: "",
-   copiedFilePath: "",
+   copiedFileDescriptor: null as any,
    showNewPackageDialog: false,
    selectedPackage: "",
    packageResults: [],
@@ -192,7 +188,7 @@ const state = reactive({
    messages: [] as Array<{
       id: string;
       content: string;
-      severity: MessageSeverityType;
+      severity: MessageProps["severity"];
    }>,
 });
 
@@ -213,7 +209,7 @@ languages.typescript.typescriptDefaults.setCompilerOptions({
 let editor: null | monacoEditor.IStandaloneCodeEditor = null;
 const modelMap: Map<string, any> = new Map();
 
-function addMessage(message: string, severity: MessageSeverityType) {
+function addMessage(message: string, severity: MessageProps["severity"]) {
    state.messages.push({
       id: nanoid(),
       content: message,
@@ -285,18 +281,34 @@ function addPackage(name: string, version: string) {
    closeNewPackageDialog();
 }
 
-function setCopiedFilePath(path: string) {
-   path = join("/", path);
-   state.copiedFilePath = path;
+function setCopiedFilePath(copiedFileDescriptor) {
+   state.copiedFileDescriptor = copiedFileDescriptor;
 }
 
 function pasteCopiedFilePath(targetDirectory: string) {
    targetDirectory = join("/", targetDirectory);
-   let model = monacoEditor.getModel(getPathURI(state.copiedFilePath));
 
-   if (model) {
-      let dest = resolve(targetDirectory, basename(state.copiedFilePath));
-      createFile(dest, model.getValue());
+   if (!state.copiedFileDescriptor) return;
+
+   let copiedFiles: { source: string; content: string; }[] = [];
+   for (let model of monacoEditor.getModels()) {
+      let modelPath = model.uri.path;
+      if (modelPath.startsWith(state.copiedFileDescriptor.fullPath)) {
+         copiedFiles.push({
+            source: modelPath.replace(state.copiedFileDescriptor.parentPath, ""),
+            content: model.getValue()
+         });
+      }
+   }
+
+   for (let copiedFile of copiedFiles) {
+      if (state.copiedFileDescriptor.type == "file") {
+         copiedFile.source = basename(copiedFile.source);
+      }
+
+      let dest = join("/", targetDirectory, copiedFile.source);
+
+      createFile(dest, copiedFile.content);
    }
 }
 
@@ -336,22 +348,27 @@ function removeFile(path: string) {
       }
    }
 
+   // Remove from explorer
+   drawer.value.removeFile(path);
+
    // Iterate through disposedPaths
    for (let disposedPath of disposedPaths) {
-      // Remove from explorer
-      drawer.value.removeFile(disposedPath);
-
       // Remove from model map
       modelMap.delete(disposedPath);
 
       // Remove from bundler
       bundler.postMessage({
          customCmd: "removeAsset",
-         path
+         path: disposedPath,
       });
 
       // Remove from models
       monacoEditor.getModel(getPathURI(disposedPath))?.dispose();
+
+      // Remove from clipboard
+      if (state.copiedFileDescriptor?.fullPath == disposedPath) {
+         state.copiedFileDescriptor = null;
+      }
    }
 
    // Clear bundler
@@ -393,6 +410,11 @@ function renameFile(fromPath: string, toPath: string) {
          let value = model.getValue();
          setModel(targetPath, value);
          model.dispose();
+      }
+
+      // Remove from clipboard
+      if (state.copiedFileDescriptor?.fullPath == oldPath) {
+         state.copiedFileDescriptor = null;
       }
    }
 }
@@ -501,11 +523,6 @@ function autosave(projectId?: string) {
    );
 }
 
-(window as any).clearProject = clearProject;
-(window as any).loadTemplate = loadTemplate;
-(window as any).templates = templates;
-(window as any).monacoEditor = monacoEditor;
-
 function openCreateFileDialog(path = "") {
    if (path) {
       path = join("/", path);
@@ -547,6 +564,8 @@ function setModel(path: string, content = "") {
 }
 
 function runProject(...args) {
+   if (state.bundlerLoading) return;
+
    // Bundle
    bundler.postMessage({
       cmd: "bundle",
@@ -566,7 +585,7 @@ bundler.onmessage = (event) => {
    if (data.dts) {
       languages.typescript.typescriptDefaults.addExtraLib(
          data.dts,
-         data.name + ".d.ts"
+         join("/node_modules", "@types", data.name, "index.d.ts")
       );
    }
 
@@ -580,13 +599,6 @@ bundler.onmessage = (event) => {
    // Autosave
    autosave();
    console.log(data);
-};
-
-(window as any).bundle = function () {
-   let result = bundler.postMessage({
-      cmd: "bundle",
-      args: [],
-   });
 };
 
 monacoEditor.defineTheme("theme-dark", {
@@ -624,6 +636,11 @@ addEventListener("keydown", (event) => {
       if (event.code == "KeyO") {
          event.preventDefault();
          navbar.value.state.showProjectsDialog = true;
+      }
+
+      if (event.code == "KeyR") {
+         event.preventDefault();
+         runProject();
       }
    }
 
@@ -705,9 +722,9 @@ onMounted(() => {
    });
 
    let autosaveTempProject = localStorage.getItem("temp");
-   
+
    if (!autosaveTempProject) {
-      let defaultProject = templates.find(p => p.id === "default");
+      let defaultProject = templates.find((p) => p.id === "default");
 
       if (defaultProject) {
          autosaveTempProject = JSON.stringify(defaultProject);
@@ -728,6 +745,8 @@ onMounted(() => {
    runProject();
 
    (window as any).editor = editor;
+   (window as any).monacoEditor = monacoEditor;
+   (window as any).getPathURI = getPathURI;
 });
 </script>
 

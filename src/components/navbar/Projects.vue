@@ -14,7 +14,7 @@
 
       <template v-for="project in sortedModel" :key="project.id">
          <Project
-            :name="project.name"
+            :name="project.name || ''"
             :lastEdited="project.lastEdited"
             @showMenu="showMenu($event, project.id)"
             @click="emit('openProject', project.id)"
@@ -30,7 +30,7 @@
 import { ref, reactive, computed } from "vue";
 import Project from "@app/components/navbar/Project.vue";
 import ContextMenu from "primevue/contextmenu";
-import { Template } from "../../templates";
+import { Template } from "@app/templates";
 const props = defineProps<{
    modelValue: Array<Template>;
 }>();
@@ -55,7 +55,7 @@ const menuModel = [
    },
    {
       label: "Use as template",
-      icon: "pi pi-copy",
+      icon: "pi pi-clone",
       command: () => {
          emit("useProjectAsTemplate", state.clickedProjectId);
       },

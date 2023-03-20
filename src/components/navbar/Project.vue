@@ -29,7 +29,7 @@
                <i class="pi pi-trash"></i>
             </button>
             <button class="sub" v-tooltip="'Use as a template'" @click="emit('useAsTemplate')">
-               <i class="pi pi-copy"></i>
+               <i class="pi pi-clone"></i>
             </button>
          </div>
       </button>

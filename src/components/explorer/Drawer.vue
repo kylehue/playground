@@ -1,20 +1,23 @@
 <template>
    <ExplorerSpace
       @addClick="emit('openNewFileDialog')"
+      @contextmenu="showMenu($event, null)"
       title="Files"
       addTooltip="New file"
    >
       <div id="drawer" class="w-100 h-100 d-flex flex-column"></div>
    </ExplorerSpace>
+   <ContextMenu :model="contextMenuModel" ref="contextMenu"></ContextMenu>
 </template>
 
 <script setup lang="ts">
 import Drawer from "@kylehue/drawer";
-import { onMounted } from "vue";
+import { ref, reactive, onMounted, watch } from "vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
-import { resolve } from "path-browserify";
+import ContextMenu from "primevue/contextmenu";
+import { resolve, extname, dirname, relative } from "path-browserify";
 const props = defineProps({
-   title: String,
+   clipboardHasItem: Boolean,
 });
 
 const drawer = new Drawer({
@@ -30,8 +33,65 @@ const drawer = new Drawer({
    },
 });
 
+(window as any).drawer = drawer;
+
+const contextMenu = ref();
+const contextMenuFocusedItem = ref();
+const contextMenuModel = reactive([
+   {
+      label: "New file",
+      icon: "pi pi-plus",
+      command: () => {
+         addFileClick(contextMenuFocusedItem.value);
+      },
+   },
+   {
+      label: "Copy",
+      icon: "pi pi-copy",
+      command: () => {
+         copyClick(contextMenuFocusedItem.value);
+      },
+   },
+   {
+      label: "Paste",
+      icon: "pi pi-calendar",
+      disabled: !props.clipboardHasItem,
+      command: () => {
+         pasteClick(contextMenuFocusedItem.value);
+      },
+   },
+   {
+      label: "Rename",
+      icon: "pi pi-pencil",
+      disabled: true,
+      command: () => {
+         contextMenuFocusedItem.value?.element.makeEditable();
+      },
+   },
+   {
+      label: "Delete",
+      icon: "pi pi-trash",
+      command: () => {
+         removeClick(contextMenuFocusedItem.value);
+      },
+   },
+]);
+
+watch(contextMenuFocusedItem, (value) => {
+   contextMenuModel[1].disabled = !value;
+   contextMenuModel[3].disabled = !value;
+   contextMenuModel[4].disabled = !value;
+});
+
+watch(
+   () => props.clipboardHasItem,
+   (hasItem) => {
+      contextMenuModel[2].disabled = !hasItem;
+   }
+);
+
 function createFile(path: string) {
-   let isFile = path.indexOf(".") != -1;
+   let isFile = !!extname(path);
 
    if (isFile) {
       if (drawer.getFileFromPath(path)) return null;
@@ -45,7 +105,7 @@ function createFile(path: string) {
 }
 
 function removeFile(path: string) {
-   let isFile = path.indexOf(".") != -1;
+   let isFile = !!extname(path);
 
    if (isFile) {
       drawer.removeFileFromPath(path);
@@ -79,6 +139,61 @@ const emit = defineEmits([
    "renameAsset",
 ]);
 
+function removeClick(item) {
+   const path = resolve(item.parent.path, item.title);
+   const doRemove = confirm(
+      `Are you sure you want to delete the ${item.type} "${path}"${
+         item.type == "directory" ? " and its contents" : ""
+      }?`
+   );
+   if (doRemove) {
+      emit("removeButtonClick", path);
+   }
+}
+
+function addFileClick(item) {
+   let path = "";
+
+   if (item?.parent) {
+      path = resolve(item.parent.path, item.title);
+
+      if (item.type == "file") {
+         path = dirname(path);
+      }
+   }
+
+   emit("addFileButtonClick", path);
+}
+
+function copyClick(item) {
+   const path = resolve(item.parent.path, item.title);
+   emit("copyButtonClick", {
+      type: item.type,
+      fullPath: path,
+      parentPath: item.parent.path,
+      headPath: path.replace(item.parent.path, "")
+   });
+}
+
+function pasteClick(item) {
+   let path = "";
+
+   if (item?.parent) {
+      path = resolve(item.parent.path, item.title);
+
+      if (item.type == "file") {
+         path = dirname(path);
+      }
+   }
+
+   emit("pasteButtonClick", path);
+}
+
+function showMenu(event, item) {
+   contextMenu.value.show(event);
+   contextMenuFocusedItem.value = item;
+}
+
 onMounted(() => {
    drawer.appendTo("#drawer");
 
@@ -94,13 +209,13 @@ onMounted(() => {
 
       // Only focus editor when item is not getting renamed
       let isEditable = event.target.tagName == "INPUT";
-      if (
-         item.type == "file" &&
-         !isEditable &&
-         itemExists
-      ) {
+      if (item.type == "file" && !isEditable && itemExists) {
          emit("changeEditorModel", path);
       }
+   });
+
+   drawer.on("contextmenu", (item, event) => {
+      showMenu(event, item);
    });
 
    drawer.on("move", (item, from, to) => {
@@ -111,28 +226,13 @@ onMounted(() => {
       emit("renameAsset", from, to, item.type);
    });
 
-   drawer.on("addFileClick", (item) => {
-      const path = resolve(item.parent.path, item.title);
-      emit("addFileButtonClick", path);
-   });
+   drawer.on("addFileClick", addFileClick);
 
-   drawer.on("removeClick", (item) => {
-      const path = resolve(item.parent.path, item.title);
-      const doRemove = confirm(`Are you sure you want to delete the ${item.type} "${path}"${item.type == "directory" ? " and its contents" : ""}?`);
-      if (doRemove) {
-         emit("removeButtonClick", path);
-      }
-   });
+   drawer.on("removeClick", removeClick);
 
-   drawer.on("copyClick", (item) => {
-      const path = resolve(item.parent.path, item.title);
-      emit("copyButtonClick", path);
-   });
+   drawer.on("copyClick", copyClick);
 
-   drawer.on("pasteClick", (item) => {
-      const path = resolve(item.parent.path, item.title);
-      emit("pasteButtonClick", path);
-   });
+   drawer.on("pasteClick", pasteClick);
 });
 </script>
 

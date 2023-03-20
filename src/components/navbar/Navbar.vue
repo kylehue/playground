@@ -143,7 +143,7 @@ import InputSwitch from "primevue/inputswitch";
 import InputText from "primevue/inputtext";
 import logo from "@app/assets/logo_240x240.png";
 import { ref, reactive, watch } from "vue";
-import * as storage from "../../utils/storage";
+import * as storage from "@app/utils/storage";
 const props = defineProps({
    runnable: Boolean,
    currentProjectId: String,

@@ -6,24 +6,18 @@
       "moduleResolution": "Node",
       "useDefineForClassFields": true,
       "strict": true,
-      "isolatedModules": false,
+      "allowSyntheticDefaultImports": true,
       "esModuleInterop": true,
-      "noEmit": false,
-      "noUnusedLocals": false,
-      "noUnusedParameters": false,
-      "noImplicitReturns": false,
-      "skipLibCheck": true,
       "baseUrl": ".",
       "rootDir": "./src",
       "paths": {
-         //"@app/*": ["./src/*"],
+         "@app/*": ["./src/*"],
          "toypack": ["./node_modules/toypack/"]
       },
       "sourceMap": true,
       "outDir": "dist",
       "declaration": false,
       "noImplicitAny": false,
-      "allowSyntheticDefaultImports": true
    },
-   "include": ["./src/**/*.*"]
+   "include": ["./src/**/*.*", "./src/global.d.ts"]
 }

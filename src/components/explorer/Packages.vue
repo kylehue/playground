@@ -51,12 +51,12 @@ function removePackage(name: string) {
 
    &:hover {
       .delete-button {
-         display: block !important;
+         display: flex !important;
       }
    }
 
    .delete-button {
-      display: none;
+      display: none !important;
    }
 }
 </style>

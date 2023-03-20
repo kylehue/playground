@@ -65,7 +65,7 @@ countButton.addEventListener("click", () => {
       <script src="./src/main.ts"></script>
    </head>
    <body>
-      <h1>Default Template</h1>
+      <h1>TypeScript Template</h1>
       <button id="countButton">Count is: <span>0</span></button>
    </body>
 </html>`,
