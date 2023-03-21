@@ -15,7 +15,7 @@ import Drawer from "@kylehue/drawer";
 import { ref, reactive, onMounted, watch } from "vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
 import ContextMenu from "primevue/contextmenu";
-import { resolve, extname, dirname, relative } from "path-browserify";
+import { resolve, extname, dirname, basename } from "path-browserify";
 const props = defineProps({
    clipboardHasItem: Boolean,
 });
@@ -218,12 +218,12 @@ onMounted(() => {
       showMenu(event, item);
    });
 
-   drawer.on("move", (item, from, to) => {
-      emit("renameAsset", from, to, item.type);
+   drawer.on("move", (item, fromPath, toPath) => {
+      emit("renameAsset", fromPath, toPath, item.type);
    });
 
-   drawer.on("rename", (item, from, to) => {
-      emit("renameAsset", from, to, item.type);
+   drawer.on("rename", (item, fromPath, toPath) => {
+      emit("renameAsset", fromPath, toPath, item.type);
    });
 
    drawer.on("addFileClick", addFileClick);

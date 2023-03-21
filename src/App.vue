@@ -165,10 +165,13 @@ import getLang from "@app/utils/getLang";
 import * as storage from "@app/utils/storage";
 import { searchPackagesByName, searchPackage } from "@app/utils/npmSearch";
 import templates, { Template } from "@app/templates";
-import { resolve, basename, join, dirname, relative } from "path-browserify";
+import { loadGrammars, loadTheme } from "monaco-volar";
+import { basename, join } from "path-browserify";
 import { nanoid } from "nanoid";
+import * as theme from "./theme";
 
 const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
+let editor: null | monacoEditor.IStandaloneCodeEditor = null;
 const editorHTMLElement = ref();
 const drawer = ref();
 const iframe = ref();
@@ -206,7 +209,6 @@ languages.typescript.typescriptDefaults.setCompilerOptions({
    jsx: languages.typescript.JsxEmit.Preserve,
 });
 
-let editor: null | monacoEditor.IStandaloneCodeEditor = null;
 const modelMap: Map<string, any> = new Map();
 
 function addMessage(message: string, severity: MessageProps["severity"]) {
@@ -290,13 +292,16 @@ function pasteCopiedFilePath(targetDirectory: string) {
 
    if (!state.copiedFileDescriptor) return;
 
-   let copiedFiles: { source: string; content: string; }[] = [];
+   let copiedFiles: { source: string; content: string }[] = [];
    for (let model of monacoEditor.getModels()) {
       let modelPath = model.uri.path;
       if (modelPath.startsWith(state.copiedFileDescriptor.fullPath)) {
          copiedFiles.push({
-            source: modelPath.replace(state.copiedFileDescriptor.parentPath, ""),
-            content: model.getValue()
+            source: modelPath.replace(
+               state.copiedFileDescriptor.parentPath,
+               ""
+            ),
+            content: model.getValue(),
          });
       }
    }
@@ -538,7 +543,8 @@ function getPathURI(path: string) {
 
 function setModel(path: string, content = "") {
    if (!editor) {
-      throw new Error("Set Model Error: Editor is not yet created.");
+      console.warn("Set Model Error: Editor is not yet created.");
+      return;
    }
 
    path = join("/", path);
@@ -549,7 +555,7 @@ function setModel(path: string, content = "") {
 
    // Create model if it doesn't exist
    if (!model) {
-      model = monacoEditor.createModel(content, getLang(path), uri);
+      model = monacoEditor.createModel(content, getLang(path as any), uri);
 
       if (!modelMap.get(path)) {
          modelMap.set(path, {});
@@ -604,11 +610,12 @@ bundler.onmessage = (event) => {
 monacoEditor.defineTheme("theme-dark", {
    base: "vs-dark",
    inherit: true,
-   rules: [],
    colors: {
+      ...theme.colors,
       "editor.background": "#1c1f25",
       "editorWidget.background": "#1c1f25",
    },
+   rules: theme.rules
 });
 
 monacoEditor.setTheme("theme-dark");
@@ -671,6 +678,8 @@ onMounted(() => {
       },
       mouseWheelZoom: true,
    });
+
+   loadGrammars(editor);
 
    // Content change
    editor.onDidChangeModelContent((e) => {

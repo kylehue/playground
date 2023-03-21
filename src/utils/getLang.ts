@@ -11,11 +11,16 @@ const languages = {
    ts: "typescript",
    tsx: "typescript",
    json: "json",
-   vue: "text/html",
+   vue: "vue",
 };
 
-export default function getLang(str: string) {
+type Filename = `${string}.${string}`;
+
+export default function getLang(str: Filename) {
    let ext = extname(str);
 
    return languages[ext.substring(1)];
 }
+
+(window as any).getLang = getLang;
+(window as any).extname = extname;

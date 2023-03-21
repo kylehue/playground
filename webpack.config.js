@@ -42,7 +42,7 @@ const config = {
             use: ["style-loader", "css-loader", "sass-loader"],
          },
          {
-            test: /\.png$/,
+            test: /\.(png|wasm)$/,
             type: "asset/resource",
          },
       ],
@@ -50,8 +50,12 @@ const config = {
    resolve: {
       alias: {
          "@app": resolve("src"),
+         "monaco-editor-core": "monaco-editor",
       },
       extensions: [".ts", ".js", ".json"],
+      fallback: {
+         path: require.resolve("path-browserify"),
+      },
    },
    plugins: [
       new webpack.DefinePlugin({
@@ -62,6 +66,11 @@ const config = {
       new MonacoEditorPlugin({
          languages: ["javascript", "css", "html", "typescript", "scss", "json"],
       }),
+      new webpack.ContextReplacementPlugin(
+         /(.+)?monaco-volar(.+)?/,
+         resolve("./../src"),
+         {}
+      ),
    ],
 };
 
