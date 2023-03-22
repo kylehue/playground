@@ -1,7 +1,7 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import { defineAsyncComponent } from "vue";
 import Splash from "./Splash.vue";
-import { loadOnigasm, setupMonacoEnv } from "@app/utils/monacoSetup";
+import { setupMonacoEnv, loadOnigasm } from "@app/monacoSetup";
 
 const App = defineAsyncComponent({
    loader: async () => {

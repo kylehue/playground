@@ -351,6 +351,8 @@ function openProject(projectId: string) {
 .navbar-wrapper {
    height: fit-content;
    background: $slate-700;
+   position: relative;
+   z-index: 2;
 
    .p-menubar {
       background: $slate-700;

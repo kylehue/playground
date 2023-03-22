@@ -55,6 +55,7 @@ const config = {
       extensions: [".ts", ".js", ".json"],
       fallback: {
          path: require.resolve("path-browserify"),
+         "perf_hooks": false
       },
    },
    plugins: [
@@ -69,6 +70,26 @@ const config = {
       new webpack.ContextReplacementPlugin(
          /(.+)?monaco-volar(.+)?/,
          resolve("./../src"),
+         {}
+      ),
+      new webpack.ContextReplacementPlugin(
+         /(.+)?@volar-plugins(\\|\/)css(.+)?/,
+         path.resolve(__dirname, "./../src"),
+         {}
+      ),
+      new webpack.ContextReplacementPlugin(
+         /(.+)?@volar-plugins(\\|\/)html(.+)?/,
+         path.resolve(__dirname, "./../src"),
+         {}
+      ),
+      new webpack.ContextReplacementPlugin(
+         /(.+)?@volar(\\|\/)vue-language-core(.+)?/,
+         path.resolve(__dirname, "./../src"),
+         {}
+      ),
+      new webpack.ContextReplacementPlugin(
+         /(.+)?typescript(\\|\/)lib(.+)?/,
+         path.resolve(__dirname, "./../src"),
          {}
       ),
    ],

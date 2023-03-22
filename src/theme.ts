@@ -695,4 +695,8 @@ export const rules = [
       foreground: "#B267E6",
       token: "token.debug-token",
    },
+   {
+      foreground: "#9cdcfe",
+      token: "attribute.name.scss",
+   },
 ];

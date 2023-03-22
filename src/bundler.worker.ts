@@ -1,6 +1,7 @@
 import Toypack from "toypack";
 import BabelLoader from "toypack/lib/loaders/BabelLoader";
 import NodePolyfillPlugin from "toypack/lib/NodePolyfillPlugin";
+import DefinePlugin from "toypack/lib/DefinePlugin";
 import { join } from "path-browserify";
 const bundler = new Toypack({
    bundleOptions: {
@@ -18,6 +19,12 @@ const bundler = new Toypack({
 globalThis.bundler = bundler;
 
 bundler.use(new NodePolyfillPlugin());
+bundler.use(
+   new DefinePlugin({
+      __VUE_OPTIONS_API__: true,
+      __VUE_PROD_DEVTOOLS__: false
+   })
+);
 
 const typesSourceURL = "https://esm.sh/";
 function getSimplifiedAssets() {
@@ -140,14 +147,18 @@ bundler.hooks.installPackage(async (pkg) => {
       // Produce dts
       for (let i = 0; i < graph.length; i++) {
          let asset = graph[i];
-         let source = join(name, asset.source);
+         let source = join(name + pkgVersion, asset.source);
 
          // First asset is the entry, so we're gonna set its module source to installed module name
          if (i == 0) {
             source = name;
          }
 
-         dts += `declare module "${source}" { ${asset.content} }`;
+         dts += `
+declare module "${source}" {
+   ${asset.content}
+}
+`;
       }
    }
 

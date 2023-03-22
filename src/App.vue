@@ -87,7 +87,7 @@
       @notify="addMessage"
       :currentProjectId="state.currentProjectId"
    ></Navbar>
-   <Splitpanes class="flex-grow-1 overflow-hidden">
+   <Splitpanes v-fill-content>
       <Pane size="20" min-size="5" class="explorer-pane">
          <Splitpanes horizontal>
             <Pane size="60" min-size="10">
@@ -227,6 +227,8 @@ function removePackage(packageName: string) {
          break;
       }
    }
+
+   autosave();
 }
 
 async function fetchPackage(searchText: string) {
@@ -501,6 +503,10 @@ function autosave(projectId?: string) {
    let files: Array<any> = [];
    let models = monacoEditor.getModels();
    for (let model of models) {
+      if (model.uri.path.startsWith("/node_modules/")) {
+         continue;
+      }
+
       files.push({
          source: model.uri.path,
          content: model.getValue(),
@@ -549,7 +555,6 @@ function setModel(path: string, content = "") {
 
    path = join("/", path);
 
-   // Check if model already exists
    let uri = getPathURI(path);
    let model = monacoEditor.getModel(uri);
 
@@ -615,7 +620,7 @@ monacoEditor.defineTheme("theme-dark", {
       "editor.background": "#1c1f25",
       "editorWidget.background": "#1c1f25",
    },
-   rules: theme.rules
+   rules: theme.rules,
 });
 
 monacoEditor.setTheme("theme-dark");
@@ -677,6 +682,7 @@ onMounted(() => {
          horizontal: "auto",
       },
       mouseWheelZoom: true,
+      autoClosingBrackets: "always",
    });
 
    loadGrammars(editor);
@@ -685,12 +691,32 @@ onMounted(() => {
    editor.onDidChangeModelContent((e) => {
       // Update bundler asset content
       let currentModel = editor?.getModel();
-      bundler.postMessage({
-         cmd: "addAsset",
-         args: [currentModel?.uri.path, currentModel?.getValue()],
-      });
+      let currentModelPath = currentModel?.uri.path;
+
+      if (currentModelPath?.endsWith(".d.ts")) {
+         languages.typescript.typescriptDefaults.addExtraLib(
+            currentModel?.getValue() || "",
+            currentModelPath
+         );
+      } else {
+         bundler.postMessage({
+            cmd: "addAsset",
+            args: [currentModel?.uri.path, currentModel?.getValue()],
+         });
+      }
 
       autosave();
+   });
+
+   editor.onDidChangeModelDecorations((e) => {
+      const model = editor?.getModel();
+      if (model === null || model?.getLanguageId() !== "javascript") return;
+
+      const markers = monacoEditor.getModelMarkers({
+         owner: model?.getLanguageId(),
+         resource: model.uri,
+      });
+      console.log(markers);
    });
 
    // Save cursor position
@@ -704,7 +730,8 @@ onMounted(() => {
 
    editor.onDidChangeModel(function () {
       let currentModel = editor?.getModel();
-      let modelMapModel = modelMap.get(currentModel?.uri.path || "");
+      let currentModelPath = currentModel?.uri.path;
+      let modelMapModel = modelMap.get(currentModelPath || "");
       // Restore cursor position
       if (modelMapModel?.position) {
          editor?.setPosition(modelMapModel.position);
@@ -715,7 +742,7 @@ onMounted(() => {
       }
 
       // Highlight item in explorer
-      drawer.value.highlightFile(currentModel?.uri.path);
+      drawer.value?.highlightFile(currentModelPath);
    });
 
    // Add shortcut for block commentada
@@ -755,6 +782,7 @@ onMounted(() => {
 
    (window as any).editor = editor;
    (window as any).monacoEditor = monacoEditor;
+   (window as any).languages = languages;
    (window as any).getPathURI = getPathURI;
 });
 </script>

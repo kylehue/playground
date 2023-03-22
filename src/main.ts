@@ -23,6 +23,17 @@ app.directive("focus", {
       } else {
          el.focus();
       }
+   },
+});
+app.directive("fill-content", {
+   mounted(el: HTMLElement) {
+      let navbar: HTMLElement | null = document.querySelector(".navbar-wrapper");
+
+      if (navbar) {
+         let navbarHeight = navbar.offsetHeight;
+
+         el.style.height = `calc(100vh - ${navbarHeight}px)`;
+      }
    }
 });
 
