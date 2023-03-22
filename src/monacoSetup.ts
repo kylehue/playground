@@ -74,6 +74,16 @@ export async function setupMonacoEnv() {
 
       initialized = true;
 
+      addEventListener("unhandledrejection", function (event) {
+         if (event.reason && event.reason.name === "Canceled") {
+            // monaco editor promise cancelation
+            event.preventDefault();
+         }
+      });
+      
+      languages.typescript.typescriptDefaults.setEagerModelSync(true);
+      languages.typescript.typescriptDefaults.setMaximumWorkerIdleTime(-1);
+
       (self as any).MonacoEnvironment = {
          getWorker(_: any, label: string) {
             console.log(label);
@@ -98,6 +108,7 @@ export async function setupMonacoEnv() {
          moduleId: "vs/language/vue/vueWorker",
          label: "vue",
          createData: {},
+         keepIdleModels: true
       });
 
       const languageId = [

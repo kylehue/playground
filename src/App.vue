@@ -685,6 +685,8 @@ onMounted(() => {
       autoClosingBrackets: "always",
    });
 
+   editor.getModel()?.dispose();
+
    loadGrammars(editor);
 
    // Content change

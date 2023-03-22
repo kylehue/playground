@@ -28,7 +28,7 @@
     "@volar/vue-language-service": "^1.2.2-alpha.0",
     "bootstrap": "^5.2.3",
     "moment": "^2.29.4",
-    "monaco-editor": "^0.34.1",
+    "monaco-editor": "^0.36.1",
     "monaco-editor-textmate": "^4.0.0",
     "monaco-textmate": "^3.0.1",
     "monaco-volar": "^0.1.1",
