@@ -1,5 +1,5 @@
 import { LanguageService } from "@volar/vue-language-service";
-import { editor, languages } from "monaco-editor";
+import { editor, languages, Uri } from "monaco-editor";
 import * as volar from "@volar/monaco";
 import * as onigasm from "onigasm";
 import onigasmWasm from "onigasm/lib/onigasm.wasm";
@@ -108,8 +108,19 @@ export async function setupMonacoEnv() {
          moduleId: "vs/language/vue/vueWorker",
          label: "vue",
          createData: {},
-         keepIdleModels: true
       });
+
+      // let uri = Uri.parse("src/hello/index.ts");
+      // editor.createModel(
+      //    `export interface Hello {
+      //       hi: string;
+      //       goodmorning: number;
+      //    }`,
+      //    "typescript",
+      //    uri
+      // );
+
+      (window as any).gets = await (await worker.getProxy()).callHierarchy
 
       const languageId = [
          "html",

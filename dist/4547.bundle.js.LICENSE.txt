@@ -1,0 +1,4697 @@
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+ * @license  MIT
+ */
+
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <https://feross.org>
+ * @license  MIT
+ */
+
+/*!
+ * mime-db
+ * Copyright(c) 2014 Jonathan Ong
+ * Copyright(c) 2015-2022 Douglas Christopher Wilson
+ * MIT Licensed
+ */
+
+/*!
+ * mime-types
+ * Copyright(c) 2014 Jonathan Ong
+ * Copyright(c) 2015 Douglas Christopher Wilson
+ * MIT Licensed
+ */
+
+/*! .. */
+
+/*! ../.. */
+
+/*! ../../ */
+
+/*! ../../builders/generated */
+
+/*! ../../data/agents */
+
+/*! ../../data/browserVersions */
+
+/*! ../../data/browsers */
+
+/*! ../../definitions */
+
+/*! ../../errors/config-error */
+
+/*! ../../modifications/flow/removeTypeDuplicates */
+
+/*! ../../modifications/typescript/removeTypeDuplicates */
+
+/*! ../../traverse-node */
+
+/*! ../../utils/react/cleanJSXElementLiteralChild */
+
+/*! ../../utils/shallowEqual */
+
+/*! ../../validators/generated */
+
+/*! ../../validators/generated/index */
+
+/*! ../../validators/is */
+
+/*! ../../visitors */
+
+/*! ../assert */
+
+/*! ../back */
+
+/*! ../buildMatchMemberExpression */
+
+/*! ../builders/generated */
+
+/*! ../cache */
+
+/*! ../caching */
+
+/*! ../clone/cloneNode */
+
+/*! ../comments/inheritsComments */
+
+/*! ../config/helpers/deep-array */
+
+/*! ../config/plugin */
+
+/*! ../constants */
+
+/*! ../definitions */
+
+/*! ../errors */
+
+/*! ../errors/config-error */
+
+/*! ../errors/rewrite-stack-trace */
+
+/*! ../generated */
+
+/*! ../gensync-utils/async */
+
+/*! ../gensync-utils/functional */
+
+/*! ../index */
+
+/*! ../matcher */
+
+/*! ../modifications/removePropertiesDeep */
+
+/*! ../node */
+
+/*! ../parser */
+
+/*! ../retrievers/getBindingIdentifiers */
+
+/*! ../scope */
+
+/*! ../sort.js */
+
+/*! ../transformation/file/file */
+
+/*! ../traverse-node */
+
+/*! ../traverse/traverseFast */
+
+/*! ../utils/inherit */
+
+/*! ../utils/shallowEqual */
+
+/*! ../validateNode */
+
+/*! ../validators/generated */
+
+/*! ../validators/is */
+
+/*! ../validators/isNode */
+
+/*! ../validators/isValidIdentifier */
+
+/*! ../validators/validate */
+
+/*! ../visitors */
+
+/*! ../void-tag */
+
+/*! ./ */
+
+/*! ./Hooks */
+
+/*! ./PackageManager */
+
+/*! ./SourceMap */
+
+/*! ./Toypack */
+
+/*! ./_DataView */
+
+/*! ./_DataView.js */
+
+/*! ./_Hash */
+
+/*! ./_Hash.js */
+
+/*! ./_ListCache */
+
+/*! ./_ListCache.js */
+
+/*! ./_Map */
+
+/*! ./_Map.js */
+
+/*! ./_MapCache */
+
+/*! ./_MapCache.js */
+
+/*! ./_Promise */
+
+/*! ./_Promise.js */
+
+/*! ./_Set */
+
+/*! ./_Set.js */
+
+/*! ./_SetCache */
+
+/*! ./_Stack */
+
+/*! ./_Stack.js */
+
+/*! ./_Symbol */
+
+/*! ./_Symbol.js */
+
+/*! ./_Uint8Array */
+
+/*! ./_Uint8Array.js */
+
+/*! ./_WeakMap */
+
+/*! ./_WeakMap.js */
+
+/*! ./_apply.js */
+
+/*! ./_arrayEach.js */
+
+/*! ./_arrayFilter */
+
+/*! ./_arrayFilter.js */
+
+/*! ./_arrayLikeKeys */
+
+/*! ./_arrayLikeKeys.js */
+
+/*! ./_arrayMap */
+
+/*! ./_arrayPush */
+
+/*! ./_arrayPush.js */
+
+/*! ./_arraySome */
+
+/*! ./_assignMergeValue.js */
+
+/*! ./_assignValue.js */
+
+/*! ./_assocIndexOf */
+
+/*! ./_assocIndexOf.js */
+
+/*! ./_baseAssign.js */
+
+/*! ./_baseAssignIn.js */
+
+/*! ./_baseAssignValue.js */
+
+/*! ./_baseClone.js */
+
+/*! ./_baseCreate.js */
+
+/*! ./_baseEach */
+
+/*! ./_baseFor */
+
+/*! ./_baseFor.js */
+
+/*! ./_baseForOwn */
+
+/*! ./_baseGet */
+
+/*! ./_baseGetAllKeys */
+
+/*! ./_baseGetAllKeys.js */
+
+/*! ./_baseGetTag */
+
+/*! ./_baseGetTag.js */
+
+/*! ./_baseHasIn */
+
+/*! ./_baseIsArguments */
+
+/*! ./_baseIsArguments.js */
+
+/*! ./_baseIsEqual */
+
+/*! ./_baseIsEqualDeep */
+
+/*! ./_baseIsMap.js */
+
+/*! ./_baseIsMatch */
+
+/*! ./_baseIsNative */
+
+/*! ./_baseIsNative.js */
+
+/*! ./_baseIsSet.js */
+
+/*! ./_baseIsTypedArray */
+
+/*! ./_baseIsTypedArray.js */
+
+/*! ./_baseIteratee */
+
+/*! ./_baseKeys */
+
+/*! ./_baseKeys.js */
+
+/*! ./_baseKeysIn.js */
+
+/*! ./_baseMatches */
+
+/*! ./_baseMatchesProperty */
+
+/*! ./_baseMerge.js */
+
+/*! ./_baseMergeDeep.js */
+
+/*! ./_baseProperty */
+
+/*! ./_basePropertyDeep */
+
+/*! ./_baseRest.js */
+
+/*! ./_baseSetToString.js */
+
+/*! ./_baseSome */
+
+/*! ./_baseTimes */
+
+/*! ./_baseTimes.js */
+
+/*! ./_baseToString */
+
+/*! ./_baseUnary */
+
+/*! ./_baseUnary.js */
+
+/*! ./_cacheHas */
+
+/*! ./_castPath */
+
+/*! ./_cloneArrayBuffer.js */
+
+/*! ./_cloneBuffer.js */
+
+/*! ./_cloneDataView.js */
+
+/*! ./_cloneRegExp.js */
+
+/*! ./_cloneSymbol.js */
+
+/*! ./_cloneTypedArray.js */
+
+/*! ./_copyArray.js */
+
+/*! ./_copyObject.js */
+
+/*! ./_copySymbols.js */
+
+/*! ./_copySymbolsIn.js */
+
+/*! ./_coreJsData */
+
+/*! ./_coreJsData.js */
+
+/*! ./_createAssigner.js */
+
+/*! ./_createBaseEach */
+
+/*! ./_createBaseFor */
+
+/*! ./_createBaseFor.js */
+
+/*! ./_defineProperty.js */
+
+/*! ./_equalArrays */
+
+/*! ./_equalByTag */
+
+/*! ./_equalObjects */
+
+/*! ./_freeGlobal */
+
+/*! ./_freeGlobal.js */
+
+/*! ./_getAllKeys */
+
+/*! ./_getAllKeys.js */
+
+/*! ./_getAllKeysIn.js */
+
+/*! ./_getMapData */
+
+/*! ./_getMapData.js */
+
+/*! ./_getMatchData */
+
+/*! ./_getNative */
+
+/*! ./_getNative.js */
+
+/*! ./_getPrototype */
+
+/*! ./_getPrototype.js */
+
+/*! ./_getRawTag */
+
+/*! ./_getRawTag.js */
+
+/*! ./_getSymbols */
+
+/*! ./_getSymbols.js */
+
+/*! ./_getSymbolsIn.js */
+
+/*! ./_getTag */
+
+/*! ./_getTag.js */
+
+/*! ./_getValue */
+
+/*! ./_getValue.js */
+
+/*! ./_hasPath */
+
+/*! ./_hashClear */
+
+/*! ./_hashClear.js */
+
+/*! ./_hashDelete */
+
+/*! ./_hashDelete.js */
+
+/*! ./_hashGet */
+
+/*! ./_hashGet.js */
+
+/*! ./_hashHas */
+
+/*! ./_hashHas.js */
+
+/*! ./_hashSet */
+
+/*! ./_hashSet.js */
+
+/*! ./_initCloneArray.js */
+
+/*! ./_initCloneByTag.js */
+
+/*! ./_initCloneObject.js */
+
+/*! ./_isIndex */
+
+/*! ./_isIndex.js */
+
+/*! ./_isIterateeCall */
+
+/*! ./_isIterateeCall.js */
+
+/*! ./_isKey */
+
+/*! ./_isKeyable */
+
+/*! ./_isKeyable.js */
+
+/*! ./_isMasked */
+
+/*! ./_isMasked.js */
+
+/*! ./_isPrototype */
+
+/*! ./_isPrototype.js */
+
+/*! ./_isStrictComparable */
+
+/*! ./_listCacheClear */
+
+/*! ./_listCacheClear.js */
+
+/*! ./_listCacheDelete */
+
+/*! ./_listCacheDelete.js */
+
+/*! ./_listCacheGet */
+
+/*! ./_listCacheGet.js */
+
+/*! ./_listCacheHas */
+
+/*! ./_listCacheHas.js */
+
+/*! ./_listCacheSet */
+
+/*! ./_listCacheSet.js */
+
+/*! ./_mapCacheClear */
+
+/*! ./_mapCacheClear.js */
+
+/*! ./_mapCacheDelete */
+
+/*! ./_mapCacheDelete.js */
+
+/*! ./_mapCacheGet */
+
+/*! ./_mapCacheGet.js */
+
+/*! ./_mapCacheHas */
+
+/*! ./_mapCacheHas.js */
+
+/*! ./_mapCacheSet */
+
+/*! ./_mapCacheSet.js */
+
+/*! ./_mapToArray */
+
+/*! ./_matchesStrictComparable */
+
+/*! ./_memoizeCapped */
+
+/*! ./_nativeCreate */
+
+/*! ./_nativeCreate.js */
+
+/*! ./_nativeKeys */
+
+/*! ./_nativeKeys.js */
+
+/*! ./_nativeKeysIn.js */
+
+/*! ./_nodeUtil */
+
+/*! ./_nodeUtil.js */
+
+/*! ./_objectToString */
+
+/*! ./_objectToString.js */
+
+/*! ./_overArg */
+
+/*! ./_overArg.js */
+
+/*! ./_overRest.js */
+
+/*! ./_root */
+
+/*! ./_root.js */
+
+/*! ./_safeGet.js */
+
+/*! ./_setCacheAdd */
+
+/*! ./_setCacheHas */
+
+/*! ./_setToArray */
+
+/*! ./_setToString.js */
+
+/*! ./_shortOut.js */
+
+/*! ./_stackClear */
+
+/*! ./_stackClear.js */
+
+/*! ./_stackDelete */
+
+/*! ./_stackDelete.js */
+
+/*! ./_stackGet */
+
+/*! ./_stackGet.js */
+
+/*! ./_stackHas */
+
+/*! ./_stackHas.js */
+
+/*! ./_stackSet */
+
+/*! ./_stackSet.js */
+
+/*! ./_stringToPath */
+
+/*! ./_toKey */
+
+/*! ./_toSource */
+
+/*! ./_toSource.js */
+
+/*! ./addComments */
+
+/*! ./aliases.js */
+
+/*! ./ancestry */
+
+/*! ./array-collapser */
+
+/*! ./array-property-collapser */
+
+/*! ./array-set */
+
+/*! ./asserts/assertNode */
+
+/*! ./asserts/generated */
+
+/*! ./asset */
+
+/*! ./assignment-expression */
+
+/*! ./ast */
+
+/*! ./ast-types/generated */
+
+/*! ./async */
+
+/*! ./at-rule */
+
+/*! ./attributes.js */
+
+/*! ./base */
+
+/*! ./base64 */
+
+/*! ./base64-vlq */
+
+/*! ./bfs-traverse */
+
+/*! ./binary-search */
+
+/*! ./binding */
+
+/*! ./block-hoist-plugin */
+
+/*! ./browserVersions */
+
+/*! ./browsers */
+
+/*! ./buffer */
+
+/*! ./builder */
+
+/*! ./builders/flow/createFlowUnionType */
+
+/*! ./builders/flow/createTypeAnnotationBasedOnTypeof */
+
+/*! ./builders/generated */
+
+/*! ./builders/generated/uppercase */
+
+/*! ./builders/react/buildChildren */
+
+/*! ./builders/typescript/createTSUnionType */
+
+/*! ./bundle */
+
+/*! ./cache */
+
+/*! ./caching */
+
+/*! ./charset */
+
+/*! ./classes */
+
+/*! ./clone/clone */
+
+/*! ./clone/cloneDeep */
+
+/*! ./clone/cloneDeepWithoutLoc */
+
+/*! ./clone/cloneNode */
+
+/*! ./clone/cloneWithoutLoc */
+
+/*! ./cloneNode */
+
+/*! ./code */
+
+/*! ./collapser */
+
+/*! ./comment */
+
+/*! ./comments */
+
+/*! ./comments/addComment */
+
+/*! ./comments/addComments */
+
+/*! ./comments/inheritInnerComments */
+
+/*! ./comments/inheritLeadingComments */
+
+/*! ./comments/inheritTrailingComments */
+
+/*! ./comments/inheritsComments */
+
+/*! ./comments/removeComments */
+
+/*! ./common */
+
+/*! ./compile.js */
+
+/*! ./conditional-expression */
+
+/*! ./config */
+
+/*! ./config-chain */
+
+/*! ./config-descriptors */
+
+/*! ./config/files */
+
+/*! ./config/helpers/environment */
+
+/*! ./constant.js */
+
+/*! ./constants */
+
+/*! ./constants/generated */
+
+/*! ./container */
+
+/*! ./context */
+
+/*! ./conversion */
+
+/*! ./conversions */
+
+/*! ./converters/ensureBlock */
+
+/*! ./converters/toBindingIdentifierName */
+
+/*! ./converters/toBlock */
+
+/*! ./converters/toComputedKey */
+
+/*! ./converters/toExpression */
+
+/*! ./converters/toIdentifier */
+
+/*! ./converters/toKeyAlias */
+
+/*! ./converters/toSequenceExpression */
+
+/*! ./converters/toStatement */
+
+/*! ./converters/valueToNode */
+
+/*! ./core */
+
+/*! ./counted-set */
+
+/*! ./createGraph */
+
+/*! ./css-syntax-error */
+
+/*! ./data/native-modules.json */
+
+/*! ./data/plugins.json */
+
+/*! ./db.json */
+
+/*! ./debug */
+
+/*! ./declaration */
+
+/*! ./decode.js */
+
+/*! ./decode_codepoint.js */
+
+/*! ./definitions */
+
+/*! ./document */
+
+/*! ./dynamic-import */
+
+/*! ./encode.js */
+
+/*! ./eq */
+
+/*! ./eq.js */
+
+/*! ./error */
+
+/*! ./errors/rewrite-stack-trace */
+
+/*! ./escape-string-literal */
+
+/*! ./escape.js */
+
+/*! ./evaluation */
+
+/*! ./experimental */
+
+/*! ./expressions */
+
+/*! ./family */
+
+/*! ./feeds.js */
+
+/*! ./file/file */
+
+/*! ./file/generate */
+
+/*! ./files */
+
+/*! ./filter-items */
+
+/*! ./filters.js */
+
+/*! ./find-suggestion */
+
+/*! ./fixup-var-scoping */
+
+/*! ./flow */
+
+/*! ./foreignNames.js */
+
+/*! ./formatters */
+
+/*! ./fromJSON */
+
+/*! ./full */
+
+/*! ./gatherSequenceExpressions */
+
+/*! ./general.js */
+
+/*! ./generated */
+
+/*! ./generated/decode-data-html.js */
+
+/*! ./generated/decode-data-xml.js */
+
+/*! ./generated/encode-html.js */
+
+/*! ./generators */
+
+/*! ./get */
+
+/*! ./get-module-name */
+
+/*! ./getBindingIdentifiers */
+
+/*! ./globals.json */
+
+/*! ./hasIn */
+
+/*! ./helpers */
+
+/*! ./helpers-generated */
+
+/*! ./helpers.js */
+
+/*! ./helpers/config-api */
+
+/*! ./helpers/deep-array */
+
+/*! ./helpers/environment */
+
+/*! ./hub */
+
+/*! ./identifier */
+
+/*! ./identity */
+
+/*! ./identity.js */
+
+/*! ./if-statement */
+
+/*! ./implementation */
+
+/*! ./import-builder */
+
+/*! ./import-injector */
+
+/*! ./index */
+
+/*! ./inference */
+
+/*! ./inferer-reference */
+
+/*! ./inferers */
+
+/*! ./inheritInnerComments */
+
+/*! ./inheritLeadingComments */
+
+/*! ./inheritTrailingComments */
+
+/*! ./input */
+
+/*! ./internal/assert/assertion_error */
+
+/*! ./internal/errors */
+
+/*! ./internal/util/comparisons */
+
+/*! ./introspection */
+
+/*! ./is-label-identifier */
+
+/*! ./is-module */
+
+/*! ./isArguments */
+
+/*! ./isArguments.js */
+
+/*! ./isArray */
+
+/*! ./isArray.js */
+
+/*! ./isArrayLike */
+
+/*! ./isArrayLike.js */
+
+/*! ./isArrayLikeObject.js */
+
+/*! ./isBuffer */
+
+/*! ./isBuffer.js */
+
+/*! ./isFunction */
+
+/*! ./isFunction.js */
+
+/*! ./isLength */
+
+/*! ./isLength.js */
+
+/*! ./isLet */
+
+/*! ./isMap.js */
+
+/*! ./isObject */
+
+/*! ./isObject.js */
+
+/*! ./isObjectLike */
+
+/*! ./isObjectLike.js */
+
+/*! ./isPlaceholderType */
+
+/*! ./isPlainObject.js */
+
+/*! ./isSet.js */
+
+/*! ./isSymbol */
+
+/*! ./isType */
+
+/*! ./isTypedArray */
+
+/*! ./isTypedArray.js */
+
+/*! ./isURL */
+
+/*! ./isValidIdentifier */
+
+/*! ./item */
+
+/*! ./iterator.js */
+
+/*! ./jsx */
+
+/*! ./keys */
+
+/*! ./keys.js */
+
+/*! ./keysIn.js */
+
+/*! ./keyword */
+
+/*! ./lazy-result */
+
+/*! ./legacy.js */
+
+/*! ./lib/hoister */
+
+/*! ./lib/mappings-from-map */
+
+/*! ./lib/path-is-absolute */
+
+/*! ./lib/removal-hooks */
+
+/*! ./lib/renamer */
+
+/*! ./lib/source-map-consumer */
+
+/*! ./lib/source-map-generator */
+
+/*! ./lib/source-node */
+
+/*! ./lib/virtual-types */
+
+/*! ./lib/virtual-types-validator */
+
+/*! ./list */
+
+/*! ./literal */
+
+/*! ./logical-expression */
+
+/*! ./manipulation.js */
+
+/*! ./map-generator */
+
+/*! ./mapping-list */
+
+/*! ./matchesPattern */
+
+/*! ./memoize */
+
+/*! ./merge-map */
+
+/*! ./methods */
+
+/*! ./misc */
+
+/*! ./modification */
+
+/*! ./modifications/appendToMemberExpression */
+
+/*! ./modifications/flow/removeTypeDuplicates */
+
+/*! ./modifications/inherits */
+
+/*! ./modifications/prependToMemberExpression */
+
+/*! ./modifications/removeProperties */
+
+/*! ./modifications/removePropertiesDeep */
+
+/*! ./modules */
+
+/*! ./no-work-result */
+
+/*! ./node */
+
+/*! ./node.js */
+
+/*! ./node_modules/buffer/index.js */
+
+/*! ./node_modules/console-browserify/index.js */
+
+/*! ./node_modules/process/browser.js */
+
+/*! ./nodes/comment */
+
+/*! ./nodes/html */
+
+/*! ./nodes/node */
+
+/*! ./nodes/text */
+
+/*! ./nodes/type */
+
+/*! ./normalize-and-load-metadata */
+
+/*! ./normalize-file */
+
+/*! ./normalize-opts */
+
+/*! ./object-collapser */
+
+/*! ./option-assertions */
+
+/*! ./options */
+
+/*! ./parentheses */
+
+/*! ./parse */
+
+/*! ./parse.js */
+
+/*! ./parser */
+
+/*! ./partial */
+
+/*! ./path */
+
+/*! ./path/lib/virtual-types */
+
+/*! ./pattern-match */
+
+/*! ./pattern-to-regex */
+
+/*! ./placeholders */
+
+/*! ./plugin */
+
+/*! ./plugin-pass */
+
+/*! ./polyfill */
+
+/*! ./populate */
+
+/*! ./postcss.js */
+
+/*! ./pretty */
+
+/*! ./previous-map */
+
+/*! ./printer */
+
+/*! ./processor */
+
+/*! ./property */
+
+/*! ./property-name */
+
+/*! ./pseudo-selectors/index.js */
+
+/*! ./pseudo-selectors/subselects.js */
+
+/*! ./pseudos.js */
+
+/*! ./querying.js */
+
+/*! ./quick-sort */
+
+/*! ./removal */
+
+/*! ./remove-use-strict */
+
+/*! ./removeProperties */
+
+/*! ./removed */
+
+/*! ./replacement */
+
+/*! ./replacements */
+
+/*! ./replacements.js */
+
+/*! ./resolve */
+
+/*! ./resolve-targets */
+
+/*! ./result */
+
+/*! ./result.js */
+
+/*! ./retrievers/getBindingIdentifiers */
+
+/*! ./retrievers/getOuterBindingIdentifiers */
+
+/*! ./rewrite-live-references */
+
+/*! ./rewrite-stack-trace */
+
+/*! ./rewrite-this */
+
+/*! ./root */
+
+/*! ./route */
+
+/*! ./rule */
+
+/*! ./scope */
+
+/*! ./scope-tracker */
+
+/*! ./set-collapser */
+
+/*! ./shams */
+
+/*! ./shim */
+
+/*! ./sort.js */
+
+/*! ./source-map */
+
+/*! ./source-map-generator */
+
+/*! ./statements */
+
+/*! ./string */
+
+/*! ./stringifier */
+
+/*! ./stringify */
+
+/*! ./stringify.js */
+
+/*! ./stubArray */
+
+/*! ./stubArray.js */
+
+/*! ./stubFalse */
+
+/*! ./stubFalse.js */
+
+/*! ./subselects.js */
+
+/*! ./support/isBuffer */
+
+/*! ./support/types */
+
+/*! ./symbols */
+
+/*! ./targets */
+
+/*! ./template-literals */
+
+/*! ./templates.js */
+
+/*! ./terminal-highlight */
+
+/*! ./text */
+
+/*! ./toBlock */
+
+/*! ./toIdentifier */
+
+/*! ./toPlainObject.js */
+
+/*! ./toString */
+
+/*! ./tokenize */
+
+/*! ./tools/build-external-helpers */
+
+/*! ./transform */
+
+/*! ./transform-ast */
+
+/*! ./transform-file */
+
+/*! ./transformation */
+
+/*! ./transformation/file/file */
+
+/*! ./transformation/normalize-opts */
+
+/*! ./traversal.js */
+
+/*! ./traverse-node */
+
+/*! ./traverse/traverse */
+
+/*! ./traverse/traverseFast */
+
+/*! ./type */
+
+/*! ./types */
+
+/*! ./typescript */
+
+/*! ./unit */
+
+/*! ./util */
+
+/*! ./util/clone-deep */
+
+/*! ./util/missing-plugin-helper */
+
+/*! ./utils */
+
+/*! ./utils/shallowEqual */
+
+/*! ./valid */
+
+/*! ./validation/options */
+
+/*! ./validation/plugins */
+
+/*! ./validator */
+
+/*! ./validators/buildMatchMemberExpression */
+
+/*! ./validators/generated */
+
+/*! ./validators/is */
+
+/*! ./validators/isBinding */
+
+/*! ./validators/isBlockScoped */
+
+/*! ./validators/isImmutable */
+
+/*! ./validators/isLet */
+
+/*! ./validators/isNode */
+
+/*! ./validators/isNodesEquivalent */
+
+/*! ./validators/isPlaceholderType */
+
+/*! ./validators/isReferenced */
+
+/*! ./validators/isScope */
+
+/*! ./validators/isSpecifierDefault */
+
+/*! ./validators/isType */
+
+/*! ./validators/isValidES3Identifier */
+
+/*! ./validators/isValidIdentifier */
+
+/*! ./validators/isVar */
+
+/*! ./validators/matchesPattern */
+
+/*! ./validators/react/isCompatTag */
+
+/*! ./validators/react/isReactComponent */
+
+/*! ./validators/validate */
+
+/*! ./visitors */
+
+/*! ./walk */
+
+/*! ./warn-once */
+
+/*! ./warning */
+
+/*! ./whitespace */
+
+/*! @ampproject/remapping */
+
+/*! @babel/code-frame */
+
+/*! @babel/compat-data/native-modules */
+
+/*! @babel/compat-data/plugins */
+
+/*! @babel/core */
+
+/*! @babel/generator */
+
+/*! @babel/helper-compilation-targets */
+
+/*! @babel/helper-environment-visitor */
+
+/*! @babel/helper-function-name */
+
+/*! @babel/helper-hoist-variables */
+
+/*! @babel/helper-module-imports */
+
+/*! @babel/helper-module-transforms */
+
+/*! @babel/helper-simple-access */
+
+/*! @babel/helper-split-export-declaration */
+
+/*! @babel/helper-string-parser */
+
+/*! @babel/helper-validator-identifier */
+
+/*! @babel/helper-validator-option */
+
+/*! @babel/helpers */
+
+/*! @babel/highlight */
+
+/*! @babel/parser */
+
+/*! @babel/template */
+
+/*! @babel/traverse */
+
+/*! @babel/types */
+
+/*! @jridgewell/gen-mapping */
+
+/*! @jridgewell/resolve-uri */
+
+/*! @jridgewell/set-array */
+
+/*! @jridgewell/sourcemap-codec */
+
+/*! @jridgewell/trace-mapping */
+
+/*! @toypack/core/Toypack */
+
+/*! @toypack/core/options */
+
+/*! @toypack/formats/umd */
+
+/*! @toypack/loaders */
+
+/*! @toypack/plugins */
+
+/*! @toypack/utils */
+
+/*! ansi-styles */
+
+/*! assert */
+
+/*! available-typed-arrays */
+
+/*! babel-helper-evaluate-path */
+
+/*! babel-helper-flip-expressions */
+
+/*! babel-helper-is-void-0 */
+
+/*! babel-helper-mark-eval-scopes */
+
+/*! babel-helper-remove-or-void */
+
+/*! babel-helper-to-multiple-sequence-expressions */
+
+/*! babel-minify */
+
+/*! babel-plugin-minify-builtins */
+
+/*! babel-plugin-minify-constant-folding */
+
+/*! babel-plugin-minify-dead-code-elimination */
+
+/*! babel-plugin-minify-flip-comparisons */
+
+/*! babel-plugin-minify-guarded-expressions */
+
+/*! babel-plugin-minify-infinity */
+
+/*! babel-plugin-minify-mangle-names */
+
+/*! babel-plugin-minify-numeric-literals */
+
+/*! babel-plugin-minify-replace */
+
+/*! babel-plugin-minify-simplify */
+
+/*! babel-plugin-minify-type-constructors */
+
+/*! babel-plugin-transform-inline-consecutive-adds */
+
+/*! babel-plugin-transform-member-expression-literals */
+
+/*! babel-plugin-transform-merge-sibling-variables */
+
+/*! babel-plugin-transform-minify-booleans */
+
+/*! babel-plugin-transform-property-literals */
+
+/*! babel-plugin-transform-regexp-constructors */
+
+/*! babel-plugin-transform-remove-console */
+
+/*! babel-plugin-transform-remove-debugger */
+
+/*! babel-plugin-transform-remove-undefined */
+
+/*! babel-plugin-transform-simplify-comparison-operators */
+
+/*! babel-plugin-transform-undefined-to-void */
+
+/*! babel-preset-minify */
+
+/*! base64-js */
+
+/*! boolbase */
+
+/*! browserslist */
+
+/*! call-bind */
+
+/*! call-bind/callBound */
+
+/*! caniuse-lite/dist/unpacker/agents */
+
+/*! chalk */
+
+/*! color-convert */
+
+/*! color-name */
+
+/*! combine-source-map */
+
+/*! convert-source-map */
+
+/*! css-select */
+
+/*! css-what */
+
+/*! debug */
+
+/*! define-properties */
+
+/*! dom-serializer */
+
+/*! domelementtype */
+
+/*! domhandler */
+
+/*! domutils */
+
+/*! electron-to-chromium/versions */
+
+/*! entities */
+
+/*! es6-object-assign */
+
+/*! escape-string-regexp */
+
+/*! esutils */
+
+/*! for-each */
+
+/*! fs */
+
+/*! function-bind */
+
+/*! gensync */
+
+/*! get-intrinsic */
+
+/*! globals */
+
+/*! gopd */
+
+/*! has */
+
+/*! has-property-descriptors */
+
+/*! has-symbols */
+
+/*! has-symbols/shams */
+
+/*! has-tostringtag/shams */
+
+/*! he */
+
+/*! https://mths.be/he v1.2.0 by @mathias | MIT license */
+
+/*! ieee754 */
+
+/*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
+
+/*! inherits */
+
+/*! inline-source-map */
+
+/*! is-arguments */
+
+/*! is-callable */
+
+/*! is-generator-function */
+
+/*! is-nan */
+
+/*! is-typed-array */
+
+/*! js-tokens */
+
+/*! jsesc */
+
+/*! lodash-es */
+
+/*! lodash.memoize */
+
+/*! lodash/isPlainObject */
+
+/*! lodash/some */
+
+/*! lru-cache */
+
+/*! magic-string */
+
+/*! merge-source-map */
+
+/*! mime-db */
+
+/*! mime-types */
+
+/*! ms */
+
+/*! nanoid/non-secure */
+
+/*! node-html-parser */
+
+/*! node-releases/data/processed/envs.json */
+
+/*! node-releases/data/release-schedule/release-schedule.json */
+
+/*! nth-check */
+
+/*! object-is */
+
+/*! object-keys */
+
+/*! parse-package-name */
+
+/*! path */
+
+/*! path-browserify */
+
+/*! picocolors */
+
+/*! postcss */
+
+/*! postcss-value-parser */
+
+/*! semver */
+
+/*! source-map */
+
+/*! source-map-js */
+
+/*! supports-color */
+
+/*! to-fast-properties */
+
+/*! url */
+
+/*! util */
+
+/*! util/ */
+
+/*! whatwg-fetch */
+
+/*! which-typed-array */
+
+/*! yallist */
+
+/*!********************!*\
+  !*** fs (ignored) ***!
+  \********************/
+
+/*!*********************!*\
+  !*** url (ignored) ***!
+  \*********************/
+
+/*!**********************!*\
+  !*** ./src/index.ts ***!
+  \**********************/
+
+/*!**********************!*\
+  !*** path (ignored) ***!
+  \**********************/
+
+/*!***************************!*\
+  !*** ./src/core/Hooks.ts ***!
+  \***************************/
+
+/*!***************************!*\
+  !*** ./src/core/asset.ts ***!
+  \***************************/
+
+/*!****************************!*\
+  !*** ./src/core/bundle.ts ***!
+  \****************************/
+
+/*!****************************!*\
+  !*** ./src/formats/umd.ts ***!
+  \****************************/
+
+/*!****************************!*\
+  !*** ./src/utils/isURL.ts ***!
+  \****************************/
+
+/*!*****************************!*\
+  !*** ./src/core/Toypack.ts ***!
+  \*****************************/
+
+/*!*****************************!*\
+  !*** ./src/core/options.ts ***!
+  \*****************************/
+
+/*!*****************************!*\
+  !*** ./src/core/resolve.ts ***!
+  \*****************************/
+
+/*!******************************!*\
+  !*** ./src/utils/getBtoa.ts ***!
+  \******************************/
+
+/*!******************************!*\
+  !*** ./src/utils/isLocal.ts ***!
+  \******************************/
+
+/*!*******************************!*\
+  !*** ./node_modules/he/he.js ***!
+  \*******************************/
+
+/*!*******************************!*\
+  !*** ./src/core/SourceMap.ts ***!
+  \*******************************/
+
+/*!*******************************!*\
+  !*** ./src/utils/cleanStr.ts ***!
+  \*******************************/
+
+/*!*******************************!*\
+  !*** source-map-js (ignored) ***!
+  \*******************************/
+
+/*!*********************************!*\
+  !*** ./src/core/createGraph.ts ***!
+  \*********************************/
+
+/*!*********************************!*\
+  !*** ./src/utils/formatPath.ts ***!
+  \*********************************/
+
+/*!**********************************!*\
+  !*** ./node_modules/ms/index.js ***!
+  \**********************************/
+
+/*!**********************************!*\
+  !*** ./src/loaders/CSSLoader.ts ***!
+  \**********************************/
+
+/*!**********************************!*\
+  !*** ./src/utils/minimizeStr.ts ***!
+  \**********************************/
+
+/*!***********************************!*\
+  !*** ./node_modules/lodash/eq.js ***!
+  \***********************************/
+
+/*!***********************************!*\
+  !*** ./node_modules/util/util.js ***!
+  \***********************************/
+
+/*!***********************************!*\
+  !*** ./src/loaders/HTMLLoader.ts ***!
+  \***********************************/
+
+/*!***********************************!*\
+  !*** ./src/loaders/JSONLoader.ts ***!
+  \***********************************/
+
+/*!************************************!*\
+  !*** ./node_modules/gopd/index.js ***!
+  \************************************/
+
+/*!************************************!*\
+  !*** ./node_modules/lodash/get.js ***!
+  \************************************/
+
+/*!************************************!*\
+  !*** ./src/core/PackageManager.ts ***!
+  \************************************/
+
+/*!************************************!*\
+  !*** ./src/loaders/AssetLoader.ts ***!
+  \************************************/
+
+/*!************************************!*\
+  !*** ./src/utils/getASTImports.ts ***!
+  \************************************/
+
+/*!*************************************!*\
+  !*** ./node_modules/chalk/index.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./node_modules/is-nan/shim.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./node_modules/jsesc/jsesc.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./node_modules/lodash/_Map.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./node_modules/lodash/_Set.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./node_modules/lodash/keys.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./node_modules/lodash/some.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./src/plugins/DefinePlugin.ts ***!
+  \*************************************/
+
+/*!**************************************!*\
+  !*** ./node_modules/buffer/index.js ***!
+  \**************************************/
+
+/*!**************************************!*\
+  !*** ./node_modules/is-nan/index.js ***!
+  \**************************************/
+
+/*!**************************************!*\
+  !*** ./node_modules/lodash-es/eq.js ***!
+  \**************************************/
+
+/*!**************************************!*\
+  !*** ./node_modules/lodash/_Hash.js ***!
+  \**************************************/
+
+/*!**************************************!*\
+  !*** ./node_modules/lodash/_root.js ***!
+  \**************************************/
+
+/*!**************************************!*\
+  !*** ./node_modules/lodash/hasIn.js ***!
+  \**************************************/
+
+/*!**************************************!*\
+  !*** ./node_modules/mime-db/db.json ***!
+  \**************************************/
+
+/*!**************************************!*\
+  !*** ./terminal-highlight (ignored) ***!
+  \**************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/gensync/index.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/globals/index.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/has/src/index.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/ieee754/index.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/lodash/_Stack.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/lodash/_isKey.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/lodash/_toKey.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/mime-db/index.js ***!
+  \***************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/boolbase/index.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/for-each/index.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/lodash-es/_Map.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/lodash-es/_Set.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/lodash-es/keys.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/lodash/_Symbol.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/lodash/_getTag.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/lodash/isArray.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/lodash/memoize.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/object-is/shim.js ***!
+  \****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/base64-js/index.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/call-bind/index.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/chalk/templates.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/esutils/lib/ast.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/is-nan/polyfill.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/js-tokens/index.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash-es/_Hash.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash-es/_root.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash-es/isMap.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash-es/isSet.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash-es/merge.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/_Promise.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/_WeakMap.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/_baseFor.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/_baseGet.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/_hasPath.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/_hashGet.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/_hashHas.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/_hashSet.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/_isIndex.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/_overArg.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/identity.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/isBuffer.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/isLength.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/isObject.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/isSymbol.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/property.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/lodash/toString.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/object-is/index.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/process/browser.js ***!
+  \*****************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/color-name/index.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/debug/src/common.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/esutils/lib/code.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash-es/_Stack.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash-es/_apply.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash-es/keysIn.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_DataView.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_MapCache.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_SetCache.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_arrayMap.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_baseEach.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_baseKeys.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_baseSome.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_cacheHas.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_castPath.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_getValue.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_isMasked.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_nodeUtil.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_stackGet.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_stackHas.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_stackSet.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/_toSource.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/stubArray.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/lodash/stubFalse.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/mime-types/index.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/postcss/lib/list.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/postcss/lib/node.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/postcss/lib/root.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/postcss/lib/rule.js ***!
+  \******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/ansi-styles/index.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/debug/src/browser.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/esutils/lib/utils.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/globals/globals.json ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/has-symbols/index.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/has-symbols/shams.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/is-callable/index.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash-es/_Symbol.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash-es/_getTag.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash-es/isArray.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash/_ListCache.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash/_arrayPush.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash/_arraySome.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash/_baseHasIn.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash/_baseTimes.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash/_baseUnary.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash/_getNative.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash/_getRawTag.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash/_hashClear.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash/_isKeyable.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/lodash/isFunction.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/object-keys/index.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/postcss/lib/input.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/postcss/lib/parse.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./src/plugins/NodePolyfillPlugin.ts ***!
+  \*******************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/browserslist/error.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/browserslist/index.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/browserslist/parse.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/domutils/lib/feeds.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/domutils/lib/index.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/entities/lib/index.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/is-arguments/index.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/_Promise.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/_WeakMap.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/_baseFor.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/_hashGet.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/_hashHas.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/_hashSet.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/_isIndex.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/_overArg.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/_safeGet.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/constant.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/identity.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/isBuffer.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/isLength.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash-es/isObject.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_Uint8Array.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_baseForOwn.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_baseGetTag.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_coreJsData.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_equalByTag.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_freeGlobal.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_getAllKeys.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_getMapData.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_getSymbols.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_hashDelete.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_mapToArray.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_nativeKeys.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_setToArray.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/_stackClear.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/isArguments.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/lodash/isArrayLike.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/object-is/polyfill.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/postcss/lib/parser.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/postcss/lib/result.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/util/support/types.js ***!
+  \********************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/whatwg-fetch/fetch.js ***!
+  \********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/assert/build/assert.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/call-bind/callBound.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/color-convert/index.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/color-convert/route.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/css-select/lib/sort.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/domhandler/lib/node.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/domutils/lib/legacy.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/entities/lib/decode.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/entities/lib/encode.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/entities/lib/escape.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/esutils/lib/keyword.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/function-bind/index.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/get-intrinsic/index.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_DataView.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_MapCache.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_baseKeys.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_baseRest.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_getValue.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_isMasked.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_nodeUtil.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_overRest.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_shortOut.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_stackGet.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_stackHas.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_stackSet.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_toSource.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/cloneDeep.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/stubArray.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/stubFalse.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_arrayFilter.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_baseIsEqual.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_baseIsMatch.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_baseMatches.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_equalArrays.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_isPrototype.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_mapCacheGet.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_mapCacheHas.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_mapCacheSet.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_setCacheAdd.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_setCacheHas.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/_stackDelete.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/isObjectLike.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/lodash/isTypedArray.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/nth-check/lib/index.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/nth-check/lib/parse.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/postcss/lib/at-rule.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/postcss/lib/comment.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/postcss/lib/postcss.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/postcss/lib/symbols.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/postcss/lib/warning.js ***!
+  \*********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/browserslist/browser.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/css-select/lib/index.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/domhandler/lib/index.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/domutils/lib/helpers.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/is-typed-array/index.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_ListCache.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_arrayEach.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_arrayPush.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_baseClone.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_baseIsMap.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_baseIsSet.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_baseMerge.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_baseTimes.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_baseUnary.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_copyArray.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_getNative.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_getRawTag.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_hashClear.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/_isKeyable.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash-es/isFunction.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash.memoize/index.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_assocIndexOf.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_baseIsNative.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_baseIteratee.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_baseProperty.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_baseToString.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_equalObjects.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_getMatchData.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_getPrototype.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_listCacheGet.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_listCacheHas.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_listCacheSet.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_nativeCreate.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/_stringToPath.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/lodash/isPlainObject.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/postcss/lib/document.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/postcss/lib/fromJSON.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/postcss/lib/postcss.mjs ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/postcss/lib/tokenize.js ***!
+  \**********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/@babel/core/lib/index.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/@babel/core/lib/parse.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/css-what/lib/es/index.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/css-what/lib/es/parse.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/css-what/lib/es/types.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/domutils/lib/querying.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/has-tostringtag/shams.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/is-nan/implementation.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_Uint8Array.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_baseAssign.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_baseCreate.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_baseGetTag.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_baseKeysIn.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_copyObject.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_coreJsData.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_freeGlobal.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_getAllKeys.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_getMapData.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_getSymbols.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_hashDelete.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_nativeKeys.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/_stackClear.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/isArguments.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash-es/isArrayLike.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash/_arrayLikeKeys.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash/_createBaseFor.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash/_mapCacheClear.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/lodash/_memoizeCapped.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/nth-check/lib/compile.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/path-browserify/index.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/postcss/lib/container.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/postcss/lib/processor.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/postcss/lib/stringify.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/postcss/lib/warn-once.js ***!
+  \***********************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/@babel/types/lib/index.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/babel-minify/lib/index.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/css-select/lib/compile.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/css-select/lib/general.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/domutils/lib/stringify.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/domutils/lib/traversal.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_arrayFilter.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_assignValue.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_cloneBuffer.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_cloneRegExp.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_cloneSymbol.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_copySymbols.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_isPrototype.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_mapCacheGet.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_mapCacheHas.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_mapCacheSet.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_setToString.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/_stackDelete.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/isObjectLike.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash-es/isTypedArray.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash/_baseGetAllKeys.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash/_createBaseEach.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash/_isIterateeCall.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash/_listCacheClear.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash/_mapCacheDelete.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/lodash/_objectToString.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/merge-source-map/index.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/supports-color/browser.js ***!
+  \************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/@babel/parser/lib/index.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/hub.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/define-properties/index.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/es6-object-assign/index.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/inline-source-map/index.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/_assocIndexOf.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/_baseAssignIn.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/_baseIsNative.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/_getAllKeysIn.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/_getPrototype.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/_getSymbolsIn.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/_listCacheGet.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/_listCacheHas.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/_listCacheSet.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/_nativeCreate.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/_nativeKeysIn.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/isPlainObject.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash-es/toPlainObject.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash/_baseIsArguments.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash/_baseIsEqualDeep.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/lodash/_listCacheDelete.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/object-keys/isArguments.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/postcss/lib/declaration.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/postcss/lib/lazy-result.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/postcss/lib/stringifier.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/which-typed-array/index.js ***!
+  \*************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@babel/helpers/lib/index.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/caniuse-lite/data/agents.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/combine-source-map/index.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/console-browserify/index.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/convert-source-map/index.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/dom-serializer/lib/index.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/domelementtype/lib/index.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/lodash-es/_arrayLikeKeys.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/lodash-es/_baseMergeDeep.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/lodash-es/_cloneDataView.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/lodash-es/_copySymbolsIn.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/lodash-es/_createBaseFor.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/lodash-es/_mapCacheClear.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/lodash/_baseIsTypedArray.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/lodash/_basePropertyDeep.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/nanoid/non-secure/index.cjs ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/object-is/implementation.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/postcss/lib/previous-map.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/to-fast-properties/index.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./src/plugins/AutoImportJSXPragmaPlugin.ts ***!
+  \**************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transform.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/@babel/template/lib/index.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/@babel/template/lib/parse.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/cache.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/index.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/color-convert/conversions.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/css-select/lib/attributes.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/css-what/lib/es/stringify.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/domutils/lib/manipulation.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/inherits/inherits_browser.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/lodash-es/_baseGetAllKeys.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/lodash-es/_createAssigner.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/lodash-es/_defineProperty.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/lodash-es/_initCloneArray.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/lodash-es/_initCloneByTag.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/lodash-es/_isIterateeCall.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/lodash-es/_listCacheClear.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/lodash-es/_mapCacheDelete.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/lodash-es/_objectToString.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/postcss/lib/map-generator.js ***!
+  \***************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@babel/compat-data/plugins.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/index.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@babel/helpers/lib/helpers.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@babel/highlight/lib/index.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@babel/template/lib/string.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/caniuse-lite/data/browsers.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/escape-string-regexp/index.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/lodash-es/_baseAssignValue.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/lodash-es/_baseIsArguments.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/lodash-es/_baseSetToString.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/lodash-es/_cloneTypedArray.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/lodash-es/_initCloneObject.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/lodash-es/_listCacheDelete.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/lodash/_isStrictComparable.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/node-html-parser/dist/back.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/object-keys/implementation.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/postcss/lib/no-work-result.js ***!
+  \****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@babel/code-frame/lib/index.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/full.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/item.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/util.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/buffer.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@babel/template/lib/builder.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@babel/template/lib/literal.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@babel/template/lib/options.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/context.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/is-generator-function/index.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/lodash-es/_assignMergeValue.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/lodash-es/_baseIsTypedArray.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/lodash-es/_cloneArrayBuffer.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/lodash-es/isArrayLikeObject.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/lodash/_baseMatchesProperty.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/node-html-parser/dist/index.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/node-html-parser/dist/parse.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/node-html-parser/dist/valid.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./src/plugins/AutoInstallSubPackagesPlugin.ts ***!
+  \*****************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/index.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@babel/core/lib/parser/index.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/printer.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@babel/template/lib/populate.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/visitors.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@babel/types/lib/clone/clone.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/assert/build/internal/errors.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/available-typed-arrays/index.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/function-bind/implementation.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/postcss/lib/css-syntax-error.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/util/support/isBufferBrowser.js ***!
+  \******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/plugin.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transform-ast.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/babel-preset-minify/lib/index.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/electron-to-chromium/versions.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/entities/lib/decode_codepoint.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/node-html-parser/dist/matcher.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/picocolors/picocolors.browser.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/postcss-value-parser/lib/unit.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/postcss-value-parser/lib/walk.js ***!
+  \*******************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/caching.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/partial.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/printer.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@babel/template/lib/formatters.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/index.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@babel/types/lib/utils/inherit.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/is.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/has-property-descriptors/index.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/node-html-parser/dist/void-tag.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/parse-package-name/dist/index.mjs ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/postcss-value-parser/lib/index.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/postcss-value-parser/lib/parse.js ***!
+  \********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/node/index.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/source-map.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/family.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/scope/index.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/dom-serializer/lib/foreignNames.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/lodash/_matchesStrictComparable.js ***!
+  \*********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/context.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/removal.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@babel/types/lib/clone/cloneDeep.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@babel/types/lib/clone/cloneNode.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@babel/types/lib/constants/index.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@babel/types/lib/definitions/jsx.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/babel-helper-is-void-0/lib/index.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/node-html-parser/dist/nodes/html.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/node-html-parser/dist/nodes/node.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/node-html-parser/dist/nodes/text.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/node-html-parser/dist/nodes/type.js ***!
+  \**********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@babel/compat-data/data/plugins.json ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@babel/compat-data/native-modules.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/ancestry.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/comments.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/scope/binding.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/traverse-node.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@babel/types/lib/definitions/core.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@babel/types/lib/definitions/flow.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@babel/types/lib/definitions/misc.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isLet.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isVar.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/caniuse-lite/data/browserVersions.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/caniuse-lite/dist/unpacker/agents.js ***!
+  \***********************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/definitions/index.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/definitions/utils.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/traverse/traverse.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isNode.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isType.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/entities/lib/generated/encode-html.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/magic-string/dist/magic-string.es.mjs ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/postcss-value-parser/lib/stringify.js ***!
+  \************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/config-chain.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/errors/config-error.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/gensync-utils/async.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/jsx.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/conversion.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/evaluation.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/asserts/assertNode.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/converters/toBlock.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/utils/shallowEqual.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isScope.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/caniuse-lite/dist/unpacker/browsers.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/node-html-parser/dist/nodes/comment.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/node-releases/data/processed/envs.json ***!
+  \*************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transformation/index.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/base.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/flow.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/node/whitespace.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@babel/helpers/lib/helpers-generated.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/lib/hoister.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/replacement.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/comments/addComment.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/validate.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/babel-helper-evaluate-path/lib/index.js ***!
+  \**************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@ampproject/remapping/dist/remapping.mjs ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/index.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/types.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/node/parentheses.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/helper-function-name/lib/index.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/helper-simple-access/lib/index.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/helper-string-parser/lib/index.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/modification.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/scope/lib/renamer.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/comments/addComments.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isBinding.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/babel-helper-remove-or-void/lib/index.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-replace/lib/index.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/css-select/lib/pseudo-selectors/index.js ***!
+  \***************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transform-file-browser.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/@babel/core/node_modules/semver/semver.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/@babel/helper-module-imports/lib/index.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/introspection.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/builders/validateNode.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/clone/cloneWithoutLoc.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/converters/toKeyAlias.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/traverse/traverseFast.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/assert/build/internal/util/comparisons.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-builtins/lib/index.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-infinity/lib/index.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-simplify/lib/index.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/entities/lib/generated/decode-data-xml.js ***!
+  \****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/pattern-to-regex.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/classes.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/methods.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/modules.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/helper-hoist-variables/lib/index.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/inference/util.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/converters/ensureBlock.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/converters/toStatement.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/converters/valueToNode.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/definitions/typescript.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/modifications/inherits.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isImmutable.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/babel-helper-flip-expressions/lib/index.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/babel-helper-mark-eval-scopes/lib/index.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/combine-source-map/lib/path-is-absolute.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/css-select/lib/pseudo-selectors/aliases.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/css-select/lib/pseudo-selectors/filters.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/css-select/lib/pseudo-selectors/pseudos.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/entities/lib/generated/decode-data-html.js ***!
+  \*****************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/@babel/compat-data/data/native-modules.json ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/gensync-utils/functional.js ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transformation/file/file.js ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/@babel/helper-validator-option/lib/index.js ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/inference/index.js ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/asserts/generated/index.js ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/comments/removeComments.js ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/converters/toExpression.js ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/converters/toIdentifier.js ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isReferenced.js ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/@jridgewell/set-array/dist/set-array.umd.js ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-simplify/lib/helpers.js ***!
+  \******************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/combine-source-map/lib/mappings-from-map.js ***!
+  \******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/config-descriptors.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/helpers/config-api.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/helpers/deep-array.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/validation/options.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/validation/plugins.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/validation/removed.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/helper-module-transforms/lib/index.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/builders/generated/index.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/converters/toComputedKey.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/definitions/experimental.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/definitions/placeholders.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isBlockScoped.js ***!
+  \*******************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/files/index-browser.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/helpers/environment.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/errors/rewrite-stack-trace.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transformation/plugin-pass.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/statements.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/typescript.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/helper-module-imports/lib/is-module.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/lib/removal-hooks.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/lib/virtual-types.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/ast-types/generated/index.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/clone/cloneDeepWithoutLoc.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/comments/inheritsComments.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/constants/generated/index.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/matchesPattern.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-mangle-names/lib/index.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/caniuse-lite/dist/unpacker/browserVersions.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/css-select/lib/pseudo-selectors/subselects.js ***!
+  \********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/expressions.js ***!
+  \*********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/@babel/helper-compilation-targets/lib/debug.js ***!
+  \*********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/@babel/helper-compilation-targets/lib/index.js ***!
+  \*********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/@babel/helper-compilation-targets/lib/utils.js ***!
+  \*********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/@babel/helper-environment-visitor/lib/index.js ***!
+  \*********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/inference/inferers.js ***!
+  \*********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/generated/index.js ***!
+  \*********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/tools/build-external-helpers.js ***!
+  \**********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transformation/file/generate.js ***!
+  \**********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/@babel/helper-compilation-targets/lib/pretty.js ***!
+  \**********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/@babel/helper-validator-identifier/lib/index.js ***!
+  \**********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/@babel/helper-validator-option/lib/validator.js ***!
+  \**********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/@jridgewell/gen-mapping/dist/gen-mapping.umd.js ***!
+  \**********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/@jridgewell/resolve-uri/dist/resolve-uri.umd.js ***!
+  \**********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/assert/build/internal/assert/assertion_error.js ***!
+  \**********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-mangle-names/lib/charset.js ***!
+  \**********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transformation/file/merge-map.js ***!
+  \***********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transformation/normalize-file.js ***!
+  \***********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transformation/normalize-opts.js ***!
+  \***********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/@babel/helper-compilation-targets/lib/options.js ***!
+  \***********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/@babel/helper-compilation-targets/lib/targets.js ***!
+  \***********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/builders/generated/uppercase.js ***!
+  \***********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/builders/react/buildChildren.js ***!
+  \***********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isNodesEquivalent.js ***!
+  \***********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isPlaceholderType.js ***!
+  \***********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isValidIdentifier.js ***!
+  \***********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/react/isCompatTag.js ***!
+  \***********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-simplify/lib/if-statement.js ***!
+  \***********************************************************************/
+
+/*!************************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/resolve-targets-browser.js ***!
+  \************************************************************************/
+
+/*!************************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transformation/util/clone-deep.js ***!
+  \************************************************************************/
+
+/*!************************************************************************!*\
+  !*** ./node_modules/@babel/helper-validator-identifier/lib/keyword.js ***!
+  \************************************************************************/
+
+/*!************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/comments/inheritInnerComments.js ***!
+  \************************************************************************/
+
+/*!************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isSpecifierDefault.js ***!
+  \************************************************************************/
+
+/*!************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-constant-folding/lib/index.js ***!
+  \************************************************************************/
+
+/*!************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-flip-comparisons/lib/index.js ***!
+  \************************************************************************/
+
+/*!************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-numeric-literals/lib/index.js ***!
+  \************************************************************************/
+
+/*!************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-simplify/lib/pattern-match.js ***!
+  \************************************************************************/
+
+/*!*************************************************************************!*\
+  !*** ./node_modules/@babel/helper-module-imports/lib/import-builder.js ***!
+  \*************************************************************************/
+
+/*!*************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/modifications/removeProperties.js ***!
+  \*************************************************************************/
+
+/*!*************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-type-constructors/lib/index.js ***!
+  \*************************************************************************/
+
+/*!*************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-remove-console/lib/index.js ***!
+  \*************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/@babel/helper-module-imports/lib/import-injector.js ***!
+  \**************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/@babel/helper-module-transforms/lib/rewrite-this.js ***!
+  \**************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/@babel/helper-split-export-declaration/lib/index.js ***!
+  \**************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/comments/inheritLeadingComments.js ***!
+  \**************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/converters/toSequenceExpression.js ***!
+  \**************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/isValidES3Identifier.js ***!
+  \**************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/@jridgewell/trace-mapping/dist/trace-mapping.umd.js ***!
+  \**************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-mangle-names/lib/counted-set.js ***!
+  \**************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-minify-booleans/lib/index.js ***!
+  \**************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-remove-debugger/lib/index.js ***!
+  \**************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/parser/util/missing-plugin-helper.js ***!
+  \***************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/transformation/block-hoist-plugin.js ***!
+  \***************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/@babel/core/node_modules/convert-source-map/index.js ***!
+  \***************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/@babel/generator/lib/generators/template-literals.js ***!
+  \***************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/@babel/helper-validator-identifier/lib/identifier.js ***!
+  \***************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/comments/inheritTrailingComments.js ***!
+  \***************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/retrievers/getBindingIdentifiers.js ***!
+  \***************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-guarded-expressions/lib/index.js ***!
+  \***************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-mangle-names/lib/bfs-traverse.js ***!
+  \***************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-remove-undefined/lib/index.js ***!
+  \***************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/merge-source-map/node_modules/source-map/lib/util.js ***!
+  \***************************************************************************/
+
+/*!****************************************************************************!*\
+  !*** ./node_modules/@babel/helper-compilation-targets/lib/filter-items.js ***!
+  \****************************************************************************/
+
+/*!****************************************************************************!*\
+  !*** ./node_modules/@babel/helper-module-transforms/lib/dynamic-import.js ***!
+  \****************************************************************************/
+
+/*!****************************************************************************!*\
+  !*** ./node_modules/@babel/helper-validator-option/lib/find-suggestion.js ***!
+  \****************************************************************************/
+
+/*!****************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/builders/flow/createFlowUnionType.js ***!
+  \****************************************************************************/
+
+/*!****************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/react/isReactComponent.js ***!
+  \****************************************************************************/
+
+/*!****************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-mangle-names/lib/scope-tracker.js ***!
+  \****************************************************************************/
+
+/*!****************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-property-literals/lib/index.js ***!
+  \****************************************************************************/
+
+/*!****************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-undefined-to-void/lib/index.js ***!
+  \****************************************************************************/
+
+/*!****************************************************************************!*\
+  !*** ./node_modules/inline-source-map/node_modules/source-map/lib/util.js ***!
+  \****************************************************************************/
+
+/*!*****************************************************************************!*\
+  !*** ./node_modules/@babel/core/lib/config/validation/option-assertions.js ***!
+  \*****************************************************************************/
+
+/*!*****************************************************************************!*\
+  !*** ./node_modules/@babel/helper-module-transforms/lib/get-module-name.js ***!
+  \*****************************************************************************/
+
+/*!*****************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/converters/toBindingIdentifierName.js ***!
+  \*****************************************************************************/
+
+/*!*****************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/modifications/removePropertiesDeep.js ***!
+  \*****************************************************************************/
+
+/*!*****************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-dead-code-elimination/lib/index.js ***!
+  \*****************************************************************************/
+
+/*!*****************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-simplify/lib/logical-expression.js ***!
+  \*****************************************************************************/
+
+/*!*****************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/source-map/lib/util.js ***!
+  \*****************************************************************************/
+
+/*!*****************************************************************************!*\
+  !*** ./node_modules/merge-source-map/node_modules/source-map/lib/base64.js ***!
+  \*****************************************************************************/
+
+/*!*****************************************************************************!*\
+  !*** ./node_modules/merge-source-map/node_modules/source-map/source-map.js ***!
+  \*****************************************************************************/
+
+/*!******************************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/inference/inferer-reference.js ***!
+  \******************************************************************************/
+
+/*!******************************************************************************!*\
+  !*** ./node_modules/@babel/traverse/lib/path/lib/virtual-types-validator.js ***!
+  \******************************************************************************/
+
+/*!******************************************************************************!*\
+  !*** ./node_modules/@jridgewell/sourcemap-codec/dist/sourcemap-codec.umd.js ***!
+  \******************************************************************************/
+
+/*!******************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-regexp-constructors/lib/index.js ***!
+  \******************************************************************************/
+
+/*!******************************************************************************!*\
+  !*** ./node_modules/inline-source-map/node_modules/source-map/lib/base64.js ***!
+  \******************************************************************************/
+
+/*!******************************************************************************!*\
+  !*** ./node_modules/inline-source-map/node_modules/source-map/source-map.js ***!
+  \******************************************************************************/
+
+/*!*******************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/converters/gatherSequenceExpressions.js ***!
+  \*******************************************************************************/
+
+/*!*******************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-constant-folding/lib/replacements.js ***!
+  \*******************************************************************************/
+
+/*!*******************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/source-map/lib/base64.js ***!
+  \*******************************************************************************/
+
+/*!*******************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/source-map/source-map.js ***!
+  \*******************************************************************************/
+
+/*!********************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/builders/typescript/createTSUnionType.js ***!
+  \********************************************************************************/
+
+/*!********************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/retrievers/getOuterBindingIdentifiers.js ***!
+  \********************************************************************************/
+
+/*!********************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/validators/buildMatchMemberExpression.js ***!
+  \********************************************************************************/
+
+/*!********************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-mangle-names/lib/fixup-var-scoping.js ***!
+  \********************************************************************************/
+
+/*!********************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-simplify/lib/assignment-expression.js ***!
+  \********************************************************************************/
+
+/*!********************************************************************************!*\
+  !*** ./node_modules/merge-source-map/node_modules/source-map/lib/array-set.js ***!
+  \********************************************************************************/
+
+/*!********************************************************************************!*\
+  !*** ./node_modules/node-releases/data/release-schedule/release-schedule.json ***!
+  \********************************************************************************/
+
+/*!*********************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/modifications/appendToMemberExpression.js ***!
+  \*********************************************************************************/
+
+/*!*********************************************************************************!*\
+  !*** ./node_modules/babel-helper-to-multiple-sequence-expressions/lib/index.js ***!
+  \*********************************************************************************/
+
+/*!*********************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-simplify/lib/conditional-expression.js ***!
+  \*********************************************************************************/
+
+/*!*********************************************************************************!*\
+  !*** ./node_modules/inline-source-map/node_modules/source-map/lib/array-set.js ***!
+  \*********************************************************************************/
+
+/*!*********************************************************************************!*\
+  !*** ./node_modules/merge-source-map/node_modules/source-map/lib/base64-vlq.js ***!
+  \*********************************************************************************/
+
+/*!*********************************************************************************!*\
+  !*** ./node_modules/merge-source-map/node_modules/source-map/lib/quick-sort.js ***!
+  \*********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/modifications/flow/removeTypeDuplicates.js ***!
+  \**********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/modifications/prependToMemberExpression.js ***!
+  \**********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/utils/react/cleanJSXElementLiteralChild.js ***!
+  \**********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-mangle-names/lib/is-label-identifier.js ***!
+  \**********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-inline-consecutive-adds/lib/index.js ***!
+  \**********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-merge-sibling-variables/lib/index.js ***!
+  \**********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/convert-source-map/index.js ***!
+  \**********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/source-map/lib/array-set.js ***!
+  \**********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/inline-source-map/node_modules/source-map/lib/base64-vlq.js ***!
+  \**********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/inline-source-map/node_modules/source-map/lib/quick-sort.js ***!
+  \**********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/merge-source-map/node_modules/source-map/lib/source-node.js ***!
+  \**********************************************************************************/
+
+/*!***********************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/source-map/lib/base64-vlq.js ***!
+  \***********************************************************************************/
+
+/*!***********************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/source-map/lib/quick-sort.js ***!
+  \***********************************************************************************/
+
+/*!***********************************************************************************!*\
+  !*** ./node_modules/inline-source-map/node_modules/source-map/lib/source-node.js ***!
+  \***********************************************************************************/
+
+/*!***********************************************************************************!*\
+  !*** ./node_modules/merge-source-map/node_modules/source-map/lib/mapping-list.js ***!
+  \***********************************************************************************/
+
+/*!************************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-property-literals/lib/property-name.js ***!
+  \************************************************************************************/
+
+/*!************************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/source-map/lib/source-node.js ***!
+  \************************************************************************************/
+
+/*!************************************************************************************!*\
+  !*** ./node_modules/inline-source-map/node_modules/source-map/lib/mapping-list.js ***!
+  \************************************************************************************/
+
+/*!************************************************************************************!*\
+  !*** ./node_modules/merge-source-map/node_modules/source-map/lib/binary-search.js ***!
+  \************************************************************************************/
+
+/*!*************************************************************************************!*\
+  !*** ./node_modules/@babel/helper-module-transforms/lib/rewrite-live-references.js ***!
+  \*************************************************************************************/
+
+/*!*************************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-member-expression-literals/lib/index.js ***!
+  \*************************************************************************************/
+
+/*!*************************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/source-map/lib/mapping-list.js ***!
+  \*************************************************************************************/
+
+/*!*************************************************************************************!*\
+  !*** ./node_modules/inline-source-map/node_modules/source-map/lib/binary-search.js ***!
+  \*************************************************************************************/
+
+/*!**************************************************************************************!*\
+  !*** ./node_modules/@babel/helper-compilation-targets/node_modules/semver/semver.js ***!
+  \**************************************************************************************/
+
+/*!**************************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-inline-consecutive-adds/lib/collapser.js ***!
+  \**************************************************************************************/
+
+/*!**************************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/source-map/lib/binary-search.js ***!
+  \**************************************************************************************/
+
+/*!****************************************************************************************!*\
+  !*** ./node_modules/@babel/helper-compilation-targets/node_modules/lru-cache/index.js ***!
+  \****************************************************************************************/
+
+/*!****************************************************************************************!*\
+  !*** ./node_modules/@babel/helper-compilation-targets/node_modules/yallist/yallist.js ***!
+  \****************************************************************************************/
+
+/*!****************************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/modifications/typescript/removeTypeDuplicates.js ***!
+  \****************************************************************************************/
+
+/*!****************************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-simplify-comparison-operators/lib/index.js ***!
+  \****************************************************************************************/
+
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/@babel/helper-compilation-targets/node_modules/yallist/iterator.js ***!
+  \*****************************************************************************************/
+
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/@babel/helper-module-transforms/lib/normalize-and-load-metadata.js ***!
+  \*****************************************************************************************/
+
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/babel-plugin-minify-dead-code-elimination/lib/remove-use-strict.js ***!
+  \*****************************************************************************************/
+
+/*!******************************************************************************************!*\
+  !*** ./node_modules/@babel/types/lib/builders/flow/createTypeAnnotationBasedOnTypeof.js ***!
+  \******************************************************************************************/
+
+/*!******************************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-inline-consecutive-adds/lib/set-collapser.js ***!
+  \******************************************************************************************/
+
+/*!******************************************************************************************!*\
+  !*** ./node_modules/merge-source-map/node_modules/source-map/lib/source-map-consumer.js ***!
+  \******************************************************************************************/
+
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/inline-source-map/node_modules/source-map/lib/source-map-consumer.js ***!
+  \*******************************************************************************************/
+
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/merge-source-map/node_modules/source-map/lib/source-map-generator.js ***!
+  \*******************************************************************************************/
+
+/*!********************************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-inline-consecutive-adds/lib/array-collapser.js ***!
+  \********************************************************************************************/
+
+/*!********************************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-property-literals/lib/escape-string-literal.js ***!
+  \********************************************************************************************/
+
+/*!********************************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/source-map/lib/source-map-consumer.js ***!
+  \********************************************************************************************/
+
+/*!********************************************************************************************!*\
+  !*** ./node_modules/inline-source-map/node_modules/source-map/lib/source-map-generator.js ***!
+  \********************************************************************************************/
+
+/*!*********************************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-inline-consecutive-adds/lib/object-collapser.js ***!
+  \*********************************************************************************************/
+
+/*!*********************************************************************************************!*\
+  !*** ./node_modules/combine-source-map/node_modules/source-map/lib/source-map-generator.js ***!
+  \*********************************************************************************************/
+
+/*!*****************************************************************************************************!*\
+  !*** ./node_modules/babel-plugin-transform-inline-consecutive-adds/lib/array-property-collapser.js ***!
+  \*****************************************************************************************************/
+
+/*!*********************************************************************************************************!*\
+  !*** ./node_modules/@ampproject/remapping/node_modules/@jridgewell/gen-mapping/dist/gen-mapping.umd.js ***!
+  \*********************************************************************************************************/

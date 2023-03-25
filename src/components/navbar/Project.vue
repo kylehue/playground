@@ -4,6 +4,7 @@
          class="main-button d-flex flex-row align-items-center justify-content-between p-3 w-100 h-100"
          @contextmenu="contextMenu"
          @click.self="emit('click', $event)"
+         :disabled="disabled"
       >
          <i :class="icon + ' me-3 fs-5 text-muted'" v-if="typeof icon == 'string'"></i>
          <div class="details d-flex flex-column pe-none">
@@ -37,13 +38,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import moment from "moment";
 const props = defineProps<{
    name: string;
    button?: boolean;
    lastEdited?: number;
    icon?: string;
+   disabled?: boolean;
 }>();
 
 const emit = defineEmits(["showMenu", "click", "delete", "useAsTemplate"]);
@@ -64,7 +65,13 @@ function contextMenu(event) {
       border-radius: 5px;
       border: 1px solid $slate-300;
 
-      &:hover {
+      &:disabled {
+         background-color: $slate-500;
+         opacity: 0.75;
+         pointer-events: none;
+      }
+
+      &:not(:disabled):hover {
          background-color: $slate-300;
 
          .sub-buttons {
@@ -72,7 +79,7 @@ function contextMenu(event) {
          }
       }
 
-      &:active {
+      &:not(:disabled):active {
          background-color: $slate-200;
       }
       .sub-buttons {

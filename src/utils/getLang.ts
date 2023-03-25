@@ -14,9 +14,7 @@ const languages = {
    vue: "vue",
 };
 
-type Filename = `${string}.${string}`;
-
-export default function getLang(str: Filename) {
+export default function getLang(str: string) {
    let ext = extname(str);
 
    return languages[ext.substring(1)];

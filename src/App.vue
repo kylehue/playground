@@ -52,6 +52,7 @@
             placeholder="Search packages"
             class="col-7 me-2"
             v-focus
+            :loading="busyState.packageSearch"
          >
          </Dropdown>
          <Dropdown
@@ -63,6 +64,7 @@
             optionValue="value"
             placeholder="Version"
             class="col-5"
+            :loading="busyState.packageSearchVersion"
          >
          </Dropdown>
       </div>
@@ -74,17 +76,18 @@
             @click="
                addPackage(state.selectedPackage, state.selectedPackageVersion)
             "
+            :loading="busyState.packageSearch"
          />
       </template>
    </Dialog>
    <Navbar
       ref="navbar"
-      :runnable="!state.bundlerLoading"
+      :isBusy="busyState.bundler"
       @runProject="runProject"
       @newProject="createNewProject"
       @openProject="openProject"
-      @saveProject="autosave"
-      @notify="addMessage"
+      @saveProject="saveProject"
+      @notify="pushNotification"
       :currentProjectId="state.currentProjectId"
    ></Navbar>
    <Splitpanes v-fill-content>
@@ -100,7 +103,8 @@
                   @copyButtonClick="setCopiedFilePath"
                   @pasteButtonClick="pasteCopiedFilePath"
                   @renameAsset="renameFile"
-                  :clipboard-has-item="!!state.copiedFileDescriptor"
+                  :clipboardHasItem="!!state.copiedFileDescriptor"
+                  :isBusy="busyState.files"
                ></Drawer>
             </Pane>
             <Pane size="40" min-size="10">
@@ -108,27 +112,40 @@
                   :content="state.packages"
                   @openNewPackageDialog="state.showNewPackageDialog = true"
                   @removePackage="removePackage"
+                  :is-busy="busyState.packageList"
                ></Packages>
             </Pane>
          </Splitpanes>
       </Pane>
       <Pane size="40" min-size="5">
-         <div ref="editorHTMLElement" class="editor d-flex w-100 h-100"></div>
+         <MonacoEditor
+            ref="monaco"
+            @onDidChangeModel="highlightDrawerFile"
+            @onDidChangeModelContent="onDidChangeModelContent"
+         ></MonacoEditor>
       </Pane>
       <Pane
          size="40"
          min-size="5"
-         class="d-flex align-items-center justify-content-center"
+         class="position-relative d-flex align-items-center justify-content-center"
       >
          <iframe ref="iframe" class="w-100 h-100"></iframe>
+         <ProgressBar
+            v-if="busyState.bundler"
+            mode="indeterminate"
+            class="bundle-progressbar"
+         ></ProgressBar>
       </Pane>
    </Splitpanes>
-   <div class="position-absolute col-md-4 col-12" style="right: 20px">
+   <div
+      class="position-absolute col-md-4 col-12"
+      style="right: 20px; z-index: 999"
+   >
       <TransitionGroup name="p-message" tag="div">
          <Message
             v-for="msg of state.messages"
             :key="msg.id"
-            :life="3000"
+            :life="msg.severity == 'error' ? 15000 : 3000"
             :sticky="false"
             :severity="msg.severity"
             @close="
@@ -149,45 +166,36 @@ import { Splitpanes, Pane } from "splitpanes";
 import Drawer from "@app/components/explorer/Drawer.vue";
 import Packages from "@app/components/explorer/Packages.vue";
 import Navbar from "@app/components/navbar/Navbar.vue";
+import MonacoEditor from "@app/components/editor/MonacoEditor.vue";
 import InputText from "primevue/inputtext";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
+import ProgressBar from "primevue/progressbar";
 import Message, { MessageProps } from "primevue/message";
-import {
-   editor as monacoEditor,
-   KeyMod,
-   KeyCode,
-   Uri,
-   languages,
-} from "monaco-editor";
-import getLang from "@app/utils/getLang";
 import * as storage from "@app/utils/storage";
 import { searchPackagesByName, searchPackage } from "@app/utils/npmSearch";
 import templates, { Template } from "@app/templates";
-import { loadGrammars, loadTheme } from "monaco-volar";
 import { basename, join } from "path-browserify";
 import { nanoid } from "nanoid";
-import * as theme from "./theme";
+import * as bundler from "@app/bundler";
+import { Uri, editor } from "monaco-editor";
 
-const bundler = new Worker(new URL("./bundler.worker.ts", import.meta.url));
-let editor: null | monacoEditor.IStandaloneCodeEditor = null;
-const editorHTMLElement = ref();
-const drawer = ref();
-const iframe = ref();
-const navbar = ref();
+const monaco = ref<InstanceType<typeof MonacoEditor>>();
+const drawer = ref<InstanceType<typeof Drawer>>();
+const iframe = ref<InstanceType<typeof HTMLIFrameElement>>();
+const navbar = ref<InstanceType<typeof Navbar>>();
 const state = reactive({
-   showNewFileDialog: false,
+   currentProjectId: "",
    newFileDialogPath: "",
+   showNewFileDialog: false,
    copiedFileDescriptor: null as any,
    showNewPackageDialog: false,
    selectedPackage: "",
-   packageResults: [],
    selectedPackageVersion: "",
+   packageResults: [],
    selectedPackageVersionResults: [] as object[],
-   bundlerLoading: true,
    packages: [] as Array<{ name: string; version: string }>,
-   currentProjectId: "",
    messages: [] as Array<{
       id: string;
       content: string;
@@ -195,23 +203,19 @@ const state = reactive({
    }>,
 });
 
-languages.typescript.typescriptDefaults.setCompilerOptions({
-   module: languages.typescript.ModuleKind.ESNext,
-   target: languages.typescript.ScriptTarget.ES2015,
-   moduleResolution: languages.typescript.ModuleResolutionKind.NodeJs,
-   allowJs: true,
-   allowSyntheticDefaultImports: true,
-   esModuleInterop: true,
-   noEmit: true,
-   noImplicitAny: false,
-   skipLibCheck: true,
-   useDefineForClassFields: true,
-   jsx: languages.typescript.JsxEmit.Preserve,
+const busyState = reactive({
+   bundler: false,
+   files: false,
+   packageList: false,
+   packageSearch: false,
+   packageSearchVersion: false,
 });
 
-const modelMap: Map<string, any> = new Map();
+function highlightDrawerFile(source: string) {
+   drawer.value?.highlightFile(source);
+}
 
-function addMessage(message: string, severity: MessageProps["severity"]) {
+function pushNotification(message: string, severity: MessageProps["severity"]) {
    state.messages.push({
       id: nanoid(),
       content: message,
@@ -228,38 +232,52 @@ function removePackage(packageName: string) {
       }
    }
 
-   autosave();
+   saveProject();
 }
 
 async function fetchPackage(searchText: string) {
+   busyState.packageSearch = true;
    state.selectedPackageVersion = "";
    state.selectedPackageVersionResults = [];
 
-   let searchResult = await searchPackagesByName(searchText, {
-      size: 10,
-   });
+   try {
+      let searchResult = await searchPackagesByName(searchText, {
+         size: 10,
+      });
 
-   state.packageResults = searchResult;
+      state.packageResults = searchResult;
+   } catch (error: any) {
+      pushNotification(error, "error");
+   }
+
+   busyState.packageSearch = false;
 }
 
 async function fetchSelectPackageVersions(packageName: string) {
-   state.selectedPackageVersion = "";
-   state.selectedPackageVersionResults = [];
+   busyState.packageSearchVersion = true;
 
-   let result = await searchPackage(packageName);
-   let distTags = result["dist-tags"];
+   try {
+      state.selectedPackageVersion = "";
+      state.selectedPackageVersionResults = [];
+      let result = await searchPackage(packageName);
+      let distTags = result["dist-tags"];
 
-   state.selectedPackageVersionResults = Object.values(result.versions)
-      .reverse()
-      .map((el: any) => ({
-         name:
-            distTags.latest == el.version
-               ? el.version + " (latest)"
-               : el.version,
-         value: el.version,
-      }));
+      state.selectedPackageVersionResults = Object.values(result.versions)
+         .reverse()
+         .map((el: any) => ({
+            name:
+               distTags.latest == el.version
+                  ? el.version + " (latest)"
+                  : el.version,
+            value: el.version,
+         }));
 
-   state.selectedPackageVersion = distTags.latest;
+      state.selectedPackageVersion = distTags.latest;
+   } catch (error: any) {
+      pushNotification(error, "error");
+   }
+
+   busyState.packageSearchVersion = false;
 }
 
 function closeNewPackageDialog() {
@@ -270,32 +288,43 @@ function closeNewPackageDialog() {
    state.selectedPackageVersionResults = [];
 }
 
-function addPackage(name: string, version: string) {
-   bundler.postMessage({
-      customCmd: "installPackage",
-      name,
-      version,
-   });
+async function addPackage(name: string, version: string) {
+   busyState.bundler = true;
+   busyState.packageSearch = true;
+   busyState.packageList = true;
 
-   state.packages.push({
-      name,
-      version,
-   });
+   pushNotification(`Installing ${name}...`, "info");
+   let status = await bundler.installPackage(name, version);
 
-   closeNewPackageDialog();
+   if (status?._error) {
+      pushNotification(status._error, "error");
+   } else {
+      state.packages.push({
+         name,
+         version,
+      });
+
+      if (!!status) {
+         saveProject();
+      }
+   }
+
+   busyState.bundler = false;
+   busyState.packageSearch = false;
+   busyState.packageList = false;
 }
 
 function setCopiedFilePath(copiedFileDescriptor) {
    state.copiedFileDescriptor = copiedFileDescriptor;
 }
 
-function pasteCopiedFilePath(targetDirectory: string) {
+async function pasteCopiedFilePath(targetDirectory: string) {
    targetDirectory = join("/", targetDirectory);
 
    if (!state.copiedFileDescriptor) return;
 
    let copiedFiles: { source: string; content: string }[] = [];
-   for (let model of monacoEditor.getModels()) {
+   for (let model of editor.getModels()) {
       let modelPath = model.uri.path;
       if (modelPath.startsWith(state.copiedFileDescriptor.fullPath)) {
          copiedFiles.push({
@@ -315,7 +344,7 @@ function pasteCopiedFilePath(targetDirectory: string) {
 
       let dest = join("/", targetDirectory, copiedFile.source);
 
-      createFile(dest, copiedFile.content);
+      await createFile(dest, copiedFile.content);
    }
 }
 
@@ -324,149 +353,186 @@ function closeNewFileDialog() {
    state.newFileDialogPath = "";
 }
 
-function createFile(path: string, content = "") {
-   path = join("/", path);
+async function createFile(source: string, content = "") {
+   source = join("/", source);
    closeNewFileDialog();
-
    // Create file in explorer
-   let newFile = drawer.value.createFile(path);
+   let newFile = drawer.value?.createFile(source);
 
    // Create file in bundler IF we successfully created a file in the explorer
    let hasCreatedFile = !!newFile;
    if (hasCreatedFile) {
-      setModel(path, content);
-      bundler.postMessage({
-         cmd: "addAsset",
-         args: [path, content],
-      });
+      setModel(source, content);
+
+      busyState.bundler = true;
+      busyState.files = true;
+      let status = await bundler.addAsset(source, content);
+      if (status?._error) {
+         pushNotification(status._error, "error");
+      } else if (!!status) {
+         saveProject();
+      }
+
+      busyState.bundler = false;
+      busyState.files = false;
    }
 }
 
-function removeFile(path: string) {
-   path = join("/", path);
+async function createBulkFiles(files: bundler.SimpleAsset[]) {
+   closeNewFileDialog();
 
+   let bulkQueue: bundler.SimpleAsset[] = [];
+   // Create files in explorer
+   for (let file of files) {
+      let source = join("/", file.source);
+      let newFile = drawer.value?.createFile(source);
+
+      if (newFile) {
+         bulkQueue.push(file);
+         setModel(file.source, file.content);
+      }
+   }
+
+   // Create files in bundler
+   busyState.bundler = true;
+   busyState.files = true;
+   let result = await bundler.addBulkAssets(bulkQueue);
+   if (result?._error) {
+      pushNotification(result._error, "error");
+   }
+   busyState.bundler = false;
+   busyState.files = false;
+
+   if (!!status) {
+      saveProject();
+   }
+}
+
+async function removeFile(path: string) {
+   path = join("/", path);
    // Get an array of paths of itself and its children
    let disposedPaths: string[] = [];
-   for (let model of monacoEditor.getModels()) {
+   for (let model of editor.getModels()) {
       let modelPath = model.uri.path;
-
       if (modelPath.startsWith(path)) {
          disposedPaths.push(modelPath);
       }
    }
 
    // Remove from explorer
-   drawer.value.removeFile(path);
-
+   drawer.value?.removeFile(path);
    // Iterate through disposedPaths
+   busyState.bundler = true;
+   busyState.files = true;
    for (let disposedPath of disposedPaths) {
-      // Remove from model map
-      modelMap.delete(disposedPath);
-
       // Remove from bundler
-      bundler.postMessage({
-         customCmd: "removeAsset",
-         path: disposedPath,
-      });
+      let result = await bundler.removeAsset(disposedPath);
 
-      // Remove from models
-      monacoEditor.getModel(getPathURI(disposedPath))?.dispose();
+      if (result?._error) {
+         pushNotification(result._error, "error");
+      }
 
       // Remove from clipboard
       if (state.copiedFileDescriptor?.fullPath == disposedPath) {
          state.copiedFileDescriptor = null;
       }
+
+      // Remove from models
+      monaco.value?.removeModel(disposedPath);
    }
+   busyState.bundler = false;
+   busyState.files = false;
 
    // Clear bundler
    if (path == "/") {
-      bundler.postMessage({
-         customCmd: "clear",
-      });
+      busyState.bundler = true;
+      busyState.files = true;
+      let result = await bundler.clearAssets();
+      if (result?._error) {
+         pushNotification(result._error, "error");
+      }
+      busyState.bundler = false;
+      busyState.files = false;
+   } else {
+      saveProject();
    }
 }
 
-function renameFile(fromPath: string, toPath: string) {
+async function renameFile(fromPath: string, toPath: string) {
    // Get an array of paths of itself and its children
    let renamedPaths: string[] = [];
-   for (let model of monacoEditor.getModels()) {
+   for (let model of editor.getModels()) {
       let modelPath = model.uri.path;
-
       if (modelPath.startsWith(fromPath)) {
          renamedPaths.push(modelPath);
       }
    }
 
+   busyState.bundler = true;
+   busyState.files = true;
    for (let oldPath of renamedPaths) {
       let targetPath = oldPath.replace(fromPath, toPath);
-
       // Rename in bundler
-      bundler.postMessage({
-         customCmd: "renameAsset",
-         from: oldPath,
-         to: targetPath,
-      });
-
-      // Rename in model maps
-      modelMap.set(targetPath, modelMap.get(oldPath));
-      modelMap.delete(oldPath);
+      let result = await bundler.renameAsset(oldPath, targetPath);
+      if (result?._error) {
+         pushNotification(result._error, "error");
+      }
 
       // Rename in models
-      let model = monacoEditor.getModel(getPathURI(oldPath));
-      if (model) {
-         let value = model.getValue();
-         setModel(targetPath, value);
-         model.dispose();
-      }
+      monaco.value?.renameModel(oldPath, targetPath);
 
       // Remove from clipboard
       if (state.copiedFileDescriptor?.fullPath == oldPath) {
          state.copiedFileDescriptor = null;
       }
    }
+   busyState.bundler = false;
+   busyState.files = false;
+
+   saveProject();
 }
 
-function clearProject() {
-   removeFile("/");
+async function clearProject() {
+   busyState.bundler = true;
+   busyState.files = true;
+   await removeFile("/");
    state.packages = [];
-   drawer.value.self.clear();
-   iframe.value.src = "";
+   drawer.value?.self.clear();
+   if (iframe.value) iframe.value.src = "";
    state.currentProjectId = "";
-   state.bundlerLoading = false;
+   busyState.bundler = false;
+   busyState.files = false;
 }
 
-function createNewProject(template?: Template) {
+async function createNewProject(template?: Template) {
    // Check if the current project is saved or not
    let projects = storage.getProjects();
    let project = projects.find((p) => p.id === state.currentProjectId);
    let isSaved = !!project;
    let currentProjectIsEmpty =
-      !state.packages.length && !monacoEditor.getModels().length;
-
+      !state.packages.length && !editor.getModels().length;
    // If not saved...
    if (!isSaved && !currentProjectIsEmpty) {
       let discardChanges = confirm(
          "The current project is not saved. Do you want to discard changes and create a new project?"
       );
-
       if (!discardChanges) {
          return;
       }
    }
-
    if (template) {
-      loadTemplate(template);
+      await loadTemplate(template);
    } else {
-      clearProject();
+      await clearProject();
    }
+
+   saveProject();
 }
 
-function loadTemplate(template: Pick<Template, "files" | "packages">) {
-   clearProject();
+async function loadTemplate(template: Pick<Template, "files" | "packages">) {
+   await clearProject();
    if (template.files) {
-      for (let file of template.files) {
-         createFile(file.source, file.content);
-      }
+      await createBulkFiles(template.files);
 
       // Focus main file
       for (let file of template.files) {
@@ -479,14 +545,15 @@ function loadTemplate(template: Pick<Template, "files" | "packages">) {
 
    if (template.packages) {
       for (let pkg of template.packages) {
-         addPackage(pkg.name, pkg.version);
+         await addPackage(pkg.name, pkg.version);
       }
    }
 }
 
-function openProject(projectId: string) {
-   // Clear
-   clearProject();
+async function openProject(projectId: string) {
+   saveProject();
+
+   if (busyState.bundler || busyState.files || busyState.packageList) return;
 
    // Get project
    let projects = storage.getProjects();
@@ -494,19 +561,18 @@ function openProject(projectId: string) {
 
    if (project) {
       // Load
-      loadTemplate(project);
+      await loadTemplate(project);
       state.currentProjectId = projectId;
+      await runProject();
    }
 }
 
-function autosave(projectId?: string) {
-   let files: Array<any> = [];
-   let models = monacoEditor.getModels();
-   for (let model of models) {
+function saveProject(projectId?: string) {
+   let files: Array<bundler.SimpleAsset> = [];
+   for (let model of editor.getModels()) {
       if (model.uri.path.startsWith("/node_modules/")) {
          continue;
       }
-
       files.push({
          source: model.uri.path,
          content: model.getValue(),
@@ -548,82 +614,51 @@ function getPathURI(path: string) {
 }
 
 function setModel(path: string, content = "") {
-   if (!editor) {
-      console.warn("Set Model Error: Editor is not yet created.");
-      return;
+   return monaco.value?.setModel(path, content);
+}
+
+async function runProject(isHardRun = false) {
+   if (busyState.bundler) return;
+
+   // Sync assets
+   busyState.bundler = true;
+   let status = await bundler.addBulkAssets(
+      editor.getModels().map((m) => ({
+         source: m.uri.path,
+         content: m.getValue(),
+      }))
+   );
+
+   if (!!status) {
+      saveProject();
    }
 
-   path = join("/", path);
+   // Bundle
+   let result = await bundler.bundle(isHardRun);
 
-   let uri = getPathURI(path);
-   let model = monacoEditor.getModel(uri);
-
-   // Create model if it doesn't exist
-   if (!model) {
-      model = monacoEditor.createModel(content, getLang(path as any), uri);
-
-      if (!modelMap.get(path)) {
-         modelMap.set(path, {});
+   if (result?._error) {
+      pushNotification(result?._error, "error");
+   } else {
+      if (iframe.value && result) {
+         iframe.value.src = result.contentDocURL;
       }
    }
 
-   // Set
-   editor.setModel(model);
-   editor.focus();
-
-   return model;
+   saveProject();
+   busyState.bundler = false;
 }
 
-function runProject(...args) {
-   if (state.bundlerLoading) return;
-
-   // Bundle
-   bundler.postMessage({
-      cmd: "bundle",
-      args: [...args],
-   });
+function onDidChangeModelContent() {
+   saveProject();
+   busyState.bundler = false;
 }
 
-bundler.onmessage = (event) => {
-   const data = event.data;
-
-   // Update iframe every bundle
-   if (data.cmd == "bundle") {
-      iframe.value.src = data.result.contentDocURL;
-   }
-
-   // Add dts
+bundler.worker.worker.addEventListener("message", (event) => {
+   let data = event.data;
    if (data.dts) {
-      languages.typescript.typescriptDefaults.addExtraLib(
-         data.dts,
-         join("/node_modules", "@types", data.name, "index.d.ts")
-      );
+      monaco.value?.addDts(data.name, data.dts);
    }
-
-   // Loading state
-   if (data.loadStart) {
-      state.bundlerLoading = true;
-   } else if (data.loadEnd) {
-      state.bundlerLoading = false;
-   }
-
-   // Autosave
-   autosave();
-   console.log(data);
-};
-
-monacoEditor.defineTheme("theme-dark", {
-   base: "vs-dark",
-   inherit: true,
-   colors: {
-      ...theme.colors,
-      "editor.background": "#1c1f25",
-      "editorWidget.background": "#1c1f25",
-   },
-   rules: theme.rules,
 });
-
-monacoEditor.setTheme("theme-dark");
 
 addEventListener("keydown", (event) => {
    if (event.code == "Escape") {
@@ -639,15 +674,19 @@ addEventListener("keydown", (event) => {
          let project = projects.find((f) => f.id === state.currentProjectId);
          let isSaved = !!project;
          if (isSaved) {
-            addMessage("Psst! Every project autosaves!", "info");
+            pushNotification("Psst! Every project autosaves!", "info");
          } else {
-            navbar.value.state.showSaveProjectDialog = true;
+            if (navbar.value) {
+               navbar.value.state.showSaveProjectDialog = true;
+            }
          }
       }
 
       if (event.code == "KeyO") {
          event.preventDefault();
-         navbar.value.state.showProjectsDialog = true;
+         if (navbar.value) {
+            navbar.value.state.showProjectsDialog = true;
+         }
       }
 
       if (event.code == "KeyR") {
@@ -658,107 +697,11 @@ addEventListener("keydown", (event) => {
 
    if (event.code == "F3" || (event.ctrlKey && event.code == "KeyF")) {
       event.preventDefault();
-      editor?.trigger(null, "actions.find", null);
+      monaco.value?.editorInstance?.trigger(null, "actions.find", null);
    }
 });
 
-onMounted(() => {
-   // Initialize monaco editor
-   editor = monacoEditor.create(editorHTMLElement.value, {
-      lineNumbers: "on",
-      roundedSelection: true,
-      scrollBeyondLastLine: true,
-      readOnly: false,
-      theme: "theme-dark",
-      wordWrap: "on",
-      wrappingIndent: "indent",
-      insertSpaces: true,
-      tabSize: 3,
-      useShadowDOM: true,
-      automaticLayout: true,
-      contextmenu: true,
-      scrollbar: {
-         vertical: "auto",
-         horizontal: "auto",
-      },
-      mouseWheelZoom: true,
-      autoClosingBrackets: "always",
-   });
-
-   editor.getModel()?.dispose();
-
-   loadGrammars(editor);
-
-   // Content change
-   editor.onDidChangeModelContent((e) => {
-      // Update bundler asset content
-      let currentModel = editor?.getModel();
-      let currentModelPath = currentModel?.uri.path;
-
-      if (currentModelPath?.endsWith(".d.ts")) {
-         languages.typescript.typescriptDefaults.addExtraLib(
-            currentModel?.getValue() || "",
-            currentModelPath
-         );
-      } else {
-         bundler.postMessage({
-            cmd: "addAsset",
-            args: [currentModel?.uri.path, currentModel?.getValue()],
-         });
-      }
-
-      autosave();
-   });
-
-   editor.onDidChangeModelDecorations((e) => {
-      const model = editor?.getModel();
-      if (model === null || model?.getLanguageId() !== "javascript") return;
-
-      const markers = monacoEditor.getModelMarkers({
-         owner: model?.getLanguageId(),
-         resource: model.uri,
-      });
-      console.log(markers);
-   });
-
-   // Save cursor position
-   editor.onDidChangeCursorPosition(() => {
-      let currentModel = editor?.getModel();
-      let modelMapModel = modelMap.get(currentModel?.uri.path || "");
-      if (modelMapModel) {
-         modelMapModel.position = editor?.getPosition();
-      }
-   });
-
-   editor.onDidChangeModel(function () {
-      let currentModel = editor?.getModel();
-      let currentModelPath = currentModel?.uri.path;
-      let modelMapModel = modelMap.get(currentModelPath || "");
-      // Restore cursor position
-      if (modelMapModel?.position) {
-         editor?.setPosition(modelMapModel.position);
-         editor?.revealPositionInCenter(
-            modelMapModel.position,
-            monacoEditor.ScrollType.Immediate
-         );
-      }
-
-      // Highlight item in explorer
-      drawer.value?.highlightFile(currentModelPath);
-   });
-
-   // Add shortcut for block commentada
-   editor.addAction({
-      id: "blockComment",
-      label: "Block Comment",
-      keybindings: [KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Slash],
-      run() {
-         if (editor) {
-            editor.trigger(null, "editor.action.blockComment", null);
-         }
-      },
-   });
-
+onMounted(async () => {
    let autosaveTempProject = localStorage.getItem("temp");
 
    if (!autosaveTempProject) {
@@ -772,19 +715,17 @@ onMounted(() => {
    // Load auto saved project
    if (autosaveTempProject) {
       let parsedTemp = JSON.parse(autosaveTempProject);
-      loadTemplate({
+      await loadTemplate({
          files: parsedTemp.files,
          packages: parsedTemp.packages,
       });
 
       state.currentProjectId = parsedTemp.id;
    }
+   
+   pushNotification("Running project...", "info");
+   await runProject();
 
-   runProject();
-
-   (window as any).editor = editor;
-   (window as any).monacoEditor = monacoEditor;
-   (window as any).languages = languages;
    (window as any).getPathURI = getPathURI;
 });
 </script>
@@ -809,5 +750,15 @@ onMounted(() => {
 
 iframe {
    background: white;
+}
+
+.bundle-progressbar {
+   position: absolute;
+   width: 100%;
+   height: 4px;
+   margin: 0 !important;
+   border-radius: 0;
+   bottom: 0;
+   left: 0;
 }
 </style>

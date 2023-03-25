@@ -145,11 +145,11 @@ const style = {
       packages: [
          {
             name: "react",
-            version: "18.2.0",
+            version: "^18.2.0",
          },
          {
             name: "react-dom",
-            version: "18.2.0",
+            version: "^18.2.0",
          },
       ],
    },
@@ -162,7 +162,7 @@ const style = {
             source: "index.html",
             content: `<html>
    <head>
-      <script src="./src/main.js"></script>
+      <script src="./src/main"></script>
    </head>
    <body>
       <div id="app"></div>
@@ -170,7 +170,7 @@ const style = {
 </html>`,
          },
          {
-            source: "src/main.js",
+            source: "src/main.ts",
             content: `import { createApp } from "vue";
 import App from "./App.vue";
 
@@ -181,11 +181,14 @@ app.mount("#app");`,
             source: "src/App.vue",
             content: `<template>
    <h1>Vue Template</h1>
-   <button @click="count++">Count is: {{ count }}</button>
+   <Button @click="count++">
+      Count is: {{ count }}
+   </Button>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { ref } from "vue";
+import Button from "./components/Button.vue";
 
 const count = ref(0);
 </script>
@@ -198,11 +201,39 @@ button {
 }
 </style>`,
          },
+         {
+            source: "src/components/Button.vue",
+            content: `<template>
+   <button>
+      <slot></slot>
+   </button>
+</template>
+
+<script lang="ts" setup>
+import { ref } from "vue";
+</script>
+
+<style scoped>
+button {
+   font-family: consolas;
+   padding: 10px 20px;
+   cursor: pointer;
+}
+</style>`,
+         },
+         {
+            source: "global.d.ts",
+            content: `declare module "*.vue" {
+   import type { DefineComponent } from "vue";
+   const component: DefineComponent<{}, {}, any>;
+   export default component;
+}`,
+         },
       ],
       packages: [
          {
             name: "vue",
-            version: "3.2.45",
+            version: "^3.2.45",
          },
       ],
    },

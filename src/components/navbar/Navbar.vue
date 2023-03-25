@@ -1,15 +1,15 @@
 <template>
    <div class="navbar-wrapper w-100 d-flex flex-row align-items-center">
-      <Menubar ref="contextMenu" :model="navbarItems" class="w-100 h-100">
+      <Menubar ref="menuBar" :model="navbarItems" class="w-100 h-100">
          <template #start>
             <img :src="logo" alt="logo" width="40" height="40" class="me-2" />
          </template>
          <template #end>
             <SplitButton
                label="Run"
-               :icon="runnable ? 'pi pi-play' : 'pi pi-spin pi-spinner'"
+               :icon="!isBusy ? 'pi pi-play' : 'pi pi-spin pi-spinner'"
                :model="runButtonMenuItems"
-               :disabled="!runnable"
+               :disabled="isBusy"
                @click="emit('runProject')"
             >
             </SplitButton>
@@ -34,6 +34,7 @@
             @deleteProject="deleteProject"
             @renameProject="showRenameProjectDialog"
             @useProjectAsTemplate="useProjectAsTemplate"
+            :loading="isBusy"
          ></Projects>
       </template>
    </Dialog>
@@ -139,13 +140,12 @@ import Menubar from "primevue/menubar";
 import SplitButton from "primevue/splitbutton";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
-import InputSwitch from "primevue/inputswitch";
 import InputText from "primevue/inputtext";
 import logo from "@app/assets/logo_240x240.png";
 import { ref, reactive, watch } from "vue";
 import * as storage from "@app/utils/storage";
 const props = defineProps({
-   runnable: Boolean,
+   isBusy: Boolean,
    currentProjectId: String,
 });
 
@@ -180,14 +180,14 @@ const emit = defineEmits([
    "notify",
 ]);
 
-const contextMenu = ref();
+const menuBar = ref<InstanceType<typeof Menubar>>();
 
 const runButtonMenuItems = [
    {
       label: "Hard run",
       icon: "pi pi-play",
       command: () => {
-         emit("runProject", null, "hard");
+         emit("runProject",true);
       },
    }
 ];
@@ -251,10 +251,6 @@ watch(
       }
    }
 );
-
-function toggle(event) {
-   contextMenu.value.toggle(event);
-}
 
 function saveProject(projectName: string) {
    let project = storage.addProject({

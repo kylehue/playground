@@ -1,6 +1,6 @@
 <template>
    <div
-      class="projects d-flex flex-wrap align-items-start align-content-start justify-content-start w-100 h-100"
+      class="projects d-flex flex-wrap align-items-start align-content-start justify-content-start w-100 h-100" :disabled="loading"
    >
       <div class="new-project p-2 d-flex">
          <button
@@ -20,19 +20,21 @@
             @click="emit('openProject', project.id)"
             @delete="emit('deleteProject', project.id)"
             @useAsTemplate="emit('useProjectAsTemplate', project.id)"
+            :disabled="loading"
          ></Project>
       </template>
    </div>
    <ContextMenu :model="menuModel" ref="menu"></ContextMenu>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import { ref, reactive, computed } from "vue";
 import Project from "@app/components/navbar/Project.vue";
 import ContextMenu from "primevue/contextmenu";
 import { Template } from "@app/templates";
 const props = defineProps<{
    modelValue: Array<Template>;
+   loading?: boolean;
 }>();
 const state = reactive({
    clickedProjectId: "",
@@ -44,7 +46,7 @@ const emit = defineEmits([
    "renameProject",
    "useProjectAsTemplate",
 ]);
-const menu = ref();
+const menu = ref<InstanceType<typeof ContextMenu>>();
 const menuModel = [
    {
       label: "Open",
@@ -90,7 +92,7 @@ function showNewProjectDialog() {
 }
 
 function showMenu(event, projectId: string) {
-   menu.value.show(event);
+   menu.value?.show(event);
    state.clickedProjectId = projectId;
 }
 </script>

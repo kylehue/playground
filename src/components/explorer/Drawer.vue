@@ -4,13 +4,15 @@
       @contextmenu="showMenu($event, null)"
       title="Files"
       addTooltip="New file"
+      :isBusy="isBusy"
+      icon="pi pi-copy"
    >
       <div id="drawer" class="w-100 h-100 d-flex flex-column"></div>
    </ExplorerSpace>
    <ContextMenu :model="contextMenuModel" ref="contextMenu"></ContextMenu>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import Drawer from "@kylehue/drawer";
 import { ref, reactive, onMounted, watch } from "vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
@@ -18,6 +20,7 @@ import ContextMenu from "primevue/contextmenu";
 import { resolve, extname, dirname, basename } from "path-browserify";
 const props = defineProps({
    clipboardHasItem: Boolean,
+   isBusy: Boolean,
 });
 
 const drawer = new Drawer({
@@ -35,7 +38,7 @@ const drawer = new Drawer({
 
 (window as any).drawer = drawer;
 
-const contextMenu = ref();
+const contextMenu = ref<InstanceType<typeof ContextMenu>>();
 const contextMenuFocusedItem = ref();
 const contextMenuModel = reactive([
    {
@@ -171,7 +174,7 @@ function copyClick(item) {
       type: item.type,
       fullPath: path,
       parentPath: item.parent.path,
-      headPath: path.replace(item.parent.path, "")
+      headPath: path.replace(item.parent.path, ""),
    });
 }
 
@@ -190,7 +193,7 @@ function pasteClick(item) {
 }
 
 function showMenu(event, item) {
-   contextMenu.value.show(event);
+   contextMenu.value?.show(event);
    contextMenuFocusedItem.value = item;
 }
 
