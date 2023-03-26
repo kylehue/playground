@@ -62,7 +62,7 @@ countButton.addEventListener("click", () => {
             source: "index.html",
             content: `<html>
    <head>
-      <script src="./src/main.ts"></script>
+      <script src="./src/main"></script>
    </head>
    <body>
       <h1>TypeScript Template</h1>
@@ -73,13 +73,13 @@ countButton.addEventListener("click", () => {
          {
             source: "src/main.ts",
             content: `import "../styles/style.css";
-let countButton = document.querySelector("#countButton");
+let countButton = document.querySelector<HTMLButtonElement>("#countButton");
 
 countButton.addEventListener("click", () => {
-   let span = countButton.querySelector("span");
+   let span = countButton.querySelector<HTMLSpanElement>("span");
    let currentCount = parseInt(span.textContent);
    
-   span.textContent = (currentCount + 1).toString();;
+   span.textContent = (currentCount + 1).toString();
 });`,
          },
          {
@@ -102,7 +102,7 @@ countButton.addEventListener("click", () => {
             source: "index.html",
             content: `<html>
    <head>
-      <script src="./src/main.jsx"></script>
+      <script src="./src/main"></script>
    </head>
    <body>
       <div id="root"></div>
@@ -110,26 +110,25 @@ countButton.addEventListener("click", () => {
 </html>`,
          },
          {
-            source: "src/main.jsx",
+            source: "src/main.tsx",
             content: `import ReactDOM from "react-dom/client";
-
-import App from "./App.jsx";
+import App from "./App";
 
 ReactDOM.createRoot( 
    document.querySelector("#root")
 ).render(<App />);`,
          },
          {
-            source: "src/App.jsx",
+            source: "src/App.tsx",
             content: ` import { useState } from "react";
 
 export default function App(props) {
    let [count, setCount] = useState(0);
    return (
-      <div>
+      <>
          <h1>React Template</h1>
          <button style={ style.button } onClick={ () => setCount(count + 1) }>Count is: { count }</button>
-      </div>
+      </>
    );
 }
 
@@ -191,15 +190,7 @@ import { ref } from "vue";
 import Button from "./components/Button.vue";
 
 const count = ref(0);
-</script>
-
-<style scoped>
-button {
-   font-family: consolas;
-   padding: 10px 20px;
-   cursor: pointer;
-}
-</style>`,
+</script>`,
          },
          {
             source: "src/components/Button.vue",
@@ -210,7 +201,7 @@ button {
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
+
 </script>
 
 <style scoped>
@@ -324,11 +315,11 @@ for (let i = 0; i < stack.bodies.length; i += 1) {
       packages: [
          {
             name: "matter-js",
-            version: "0.19.0",
+            version: "^0.19.0",
          },
          {
             name: "matter-wrap",
-            version: "0.2.0",
+            version: "^0.2.0",
          },
       ],
    },

@@ -2,7 +2,13 @@
    <div class="navbar-wrapper w-100 d-flex flex-row align-items-center">
       <Menubar ref="menuBar" :model="navbarItems" class="w-100 h-100">
          <template #start>
-            <img :src="logo" alt="logo" width="40" height="40" class="me-2" />
+            <img
+               :src="logo"
+               alt="logo"
+               width="40"
+               height="40"
+               class="ms-3 me-3"
+            />
          </template>
          <template #end>
             <SplitButton
@@ -62,6 +68,7 @@
       </template>
       <template #footer>
          <Button
+            :disabled="!state.newProjectName"
             label="Create"
             class="w-100"
             @click="createProject(state.newProjectName)"
@@ -141,8 +148,9 @@ import SplitButton from "primevue/splitbutton";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
+import { useConfirm } from "primevue/useconfirm";
 import logo from "@app/assets/logo_240x240.png";
-import { ref, reactive, watch } from "vue";
+import { ref, reactive, watch, getCurrentInstance } from "vue";
 import * as storage from "@app/utils/storage";
 const props = defineProps({
    isBusy: Boolean,
@@ -166,7 +174,7 @@ const state = reactive({
 defineExpose({
    state,
 });
-
+const confirm = useConfirm();
 const emit = defineEmits([
    "runProject",
    "newProjectDialog",
@@ -187,9 +195,9 @@ const runButtonMenuItems = [
       label: "Hard run",
       icon: "pi pi-play",
       command: () => {
-         emit("runProject",true);
+         emit("runProject", true);
       },
-   }
+   },
 ];
 
 const unsavedProjectTitle = "Unsaved Project";
@@ -202,7 +210,31 @@ const navbarItems = reactive([
             label: "New",
             icon: "pi pi-plus",
             command: () => {
-               emit("newProject");
+               // Check if the current project is saved or not
+               let projects = storage.getProjects();
+               let project = projects.find(
+                  (p) => p.id === props.currentProjectId
+               );
+               let isSaved = !!project;
+               // Check if empty
+               let temp = localStorage.getItem("temp");
+               let parsedTemp = JSON.parse(temp || "{}");
+               let currentProjectIsEmpty = !parsedTemp?.files?.length && !parsedTemp?.packages?.length;
+
+               // If not saved...
+               if (!isSaved && !currentProjectIsEmpty) {
+                  confirm.require({
+                     message:
+                        "The current project is not saved. Do you want to discard changes and create a new project?",
+                     header: `New project`,
+                     icon: "pi pi-exclamation-triangle",
+                     accept() {
+                        emit("newProject");
+                     },
+                  });
+               } else {
+                  emit("newProject");
+               }
             },
          },
          {
@@ -271,15 +303,15 @@ function deleteProject(projectId: string) {
    let project = projects.find((p) => p.id === projectId);
 
    if (project) {
-      let doDelete = confirm(
-         `Are you sure you want to delete the project "${project.name}"?`
-      );
-
-      if (doDelete) {
-         storage.removeProjectById(project.id);
-
-         state.projects = storage.getProjects();
-      }
+      confirm.require({
+         message: `Are you sure you want to delete the project "${project.name}"?`,
+         header: `Delete project`,
+         icon: "pi pi-exclamation-triangle",
+         accept() {
+            storage.removeProjectById(projectId);
+            state.projects = storage.getProjects();
+         },
+      });
    }
 }
 
@@ -325,6 +357,8 @@ function useProjectAsTemplate(projectId: string) {
 }
 
 function createProject(projectName: string) {
+   if (!projectName) return;
+
    storage.addProject({
       name: projectName,
    });
@@ -346,12 +380,12 @@ function openProject(projectId: string) {
 
 .navbar-wrapper {
    height: fit-content;
-   background: $slate-700;
    position: relative;
    z-index: 2;
+}
 
-   .p-menubar {
-      background: $slate-700;
-   }
+.p-menubar {
+   border-radius: 0;
+   padding: 0.4rem;
 }
 </style>

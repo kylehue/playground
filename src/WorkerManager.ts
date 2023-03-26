@@ -54,7 +54,7 @@ export class WorkerClient {
       this._queue = [];
    }
 
-   async send(name: string, data: any): Promise<any> {
+   async send(name: string, data: any, async = false): Promise<any> {
       return new Promise((resolveFn) => {
          let queueMessage: QueueMessage = {
             id: nanoid(),
@@ -70,7 +70,7 @@ export class WorkerClient {
 
          this._queue.push(queueMessage);
 
-         if (this._queue.length == 1) {
+         if (this._queue.length == 1 || async) {
             let workerMessage: WorkerMessage = {
                id: queueMessage.id,
                name: queueMessage.name,

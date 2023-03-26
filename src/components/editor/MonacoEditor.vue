@@ -10,12 +10,13 @@ import { loadGrammars } from "monaco-volar";
 import * as theme from "./theme";
 import { join } from "path-browserify";
 import getLang from "@app/utils/getLang";
+import validateFile from "@app/utils/validateFile";
 import editorOptions from "@app/options/editor";
 import typescriptOptions from "@app/options/typescript";
 
 // Definitions
 /* const props = defineProps<{
-   compilerOptions: languages.typescript.CompilerOptions;
+   typescriptOptions: languages.typescript.CompilerOptions;
    editorOptions: editor.IStandaloneEditorConstructionOptions;
 }>(); */
 
@@ -30,8 +31,8 @@ editor.defineTheme("theme-dark", {
    inherit: true,
    colors: {
       ...theme.colors,
-      "editor.background": "#1c1f25",
-      "editorWidget.background": "#1c1f25",
+      "editor.background": "#1e1e1e",
+      "editorWidget.background": "#1e1e1e",
    },
    rules: theme.rules,
 });
@@ -44,20 +45,23 @@ editorParentElement.classList.add("w-100", "h-100");
 let editorInstance: editor.IStandaloneCodeEditor = editor.create(
    editorParentElement,
    {
-      ...editorOptions,
+      .../* props. */editorOptions,
       automaticLayout: true,
+      model: editor.createModel("", "text/html", Uri.parse("/$dummy_file.txt")),
    }
 );
 
 loadGrammars(editorInstance);
 
-if (typescriptOptions) {
-   languages.typescript.typescriptDefaults.setCompilerOptions(typescriptOptions);
+if (/* props. */typescriptOptions) {
+   languages.typescript.typescriptDefaults.setCompilerOptions(
+      /* props. */typescriptOptions
+   );
 }
 
 // Watch stuff
-/* watch(
-   () => typescriptOptions,
+watch(
+   () => /* props. */typescriptOptions,
    (options) => {
       if (options) {
          languages.typescript.typescriptDefaults.setCompilerOptions(options);
@@ -66,18 +70,25 @@ if (typescriptOptions) {
 );
 
 watch(
-   () => editorOptions,
+   () => /* props. */editorOptions,
    (options) => {
       if (options) {
          editorInstance.updateOptions(options);
       }
    }
-); */
+);
 
 function removeModel(source: string) {
    let uri = Uri.parse(join("/", source));
    editor.getModel(uri)?.dispose();
    modelMap.delete(uri.path);
+
+   // Create dummy model if no models are left
+   if (editor.getModels().length == 0) {
+      editorInstance.setModel(
+         editor.createModel("", "text/html", Uri.parse("/$dummy_file.txt"))
+      );
+   }
 }
 
 function renameModel(source: string, newSource: string) {
@@ -113,11 +124,7 @@ function setModel(path: string, content = "") {
    let model = editor.getModel(uri);
    // Create model if it doesn't exist
    if (!model) {
-      model = editor.createModel(
-         content,
-         getLang(path as any),
-         uri
-      );
+      model = editor.createModel(content, getLang(path as any), uri);
       if (!modelMap.get(path)) {
          modelMap.set(path, {});
       }
@@ -129,6 +136,19 @@ function setModel(path: string, content = "") {
    return model;
 }
 
+function getValidModels() {
+   let models: editor.ITextModel[] = [];
+   for (let model of editor.getModels()) {
+      let isValid = !validateFile(model.uri.path);
+
+      if (isValid) {
+         models.push(model);
+      }
+   }
+
+   return models;
+}
+
 defineExpose({
    editorInstance,
    editor,
@@ -136,14 +156,15 @@ defineExpose({
    removeModel,
    renameModel,
    addDts,
-   setModel
+   setModel,
+   getValidModels
 });
 
 onMounted(() => {
    editorElement.value?.append(editorParentElement);
 
    // Dispose the starter model
-   editorInstance.getModel()?.dispose();
+   // editorInstance.getModel()?.dispose();
 
    // Content change
    editorInstance.onDidChangeModelContent((e) => {

@@ -1,4 +1,6 @@
 <template>
+   <Toast />
+   <ConfirmDialog />
    <!-- New file dialog -->
    <Dialog
       v-model:visible="state.showNewFileDialog"
@@ -20,6 +22,7 @@
          autocomplete="off"
          autofill="off"
          class="w-100"
+         filled
       />
       <template #footer>
          <Button
@@ -90,7 +93,7 @@
       @notify="pushNotification"
       :currentProjectId="state.currentProjectId"
    ></Navbar>
-   <Splitpanes v-fill-content>
+   <Splitpanes v-fill-remaining-height>
       <Pane size="20" min-size="5" class="explorer-pane">
          <Splitpanes horizontal>
             <Pane size="60" min-size="10">
@@ -103,6 +106,7 @@
                   @copyButtonClick="setCopiedFilePath"
                   @pasteButtonClick="pasteCopiedFilePath"
                   @renameAsset="renameFile"
+                  @push-notification="pushNotification"
                   :clipboardHasItem="!!state.copiedFileDescriptor"
                   :isBusy="busyState.files"
                ></Drawer>
@@ -137,27 +141,6 @@
          ></ProgressBar>
       </Pane>
    </Splitpanes>
-   <div
-      class="position-absolute col-md-4 col-12"
-      style="right: 20px; z-index: 999"
-   >
-      <TransitionGroup name="p-message" tag="div">
-         <Message
-            v-for="msg of state.messages"
-            :key="msg.id"
-            :life="msg.severity == 'error' ? 15000 : 3000"
-            :sticky="false"
-            :severity="msg.severity"
-            @close="
-               () =>
-                  (state.messages = state.messages.filter(
-                     (m) => m.id !== msg.id
-                  ))
-            "
-            >{{ msg.content }}</Message
-         >
-      </TransitionGroup>
-   </div>
 </template>
 
 <script setup lang="ts">
@@ -172,15 +155,21 @@ import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
 import ProgressBar from "primevue/progressbar";
-import Message, { MessageProps } from "primevue/message";
+import { MessageProps } from "primevue/message";
+import ConfirmDialog from "primevue/confirmdialog";
+import Toast from "primevue/toast";
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 import * as storage from "@app/utils/storage";
+import validateFile from "@app/utils/validateFile";
 import { searchPackagesByName, searchPackage } from "@app/utils/npmSearch";
 import templates, { Template } from "@app/templates";
-import { basename, join } from "path-browserify";
-import { nanoid } from "nanoid";
+import { basename, join, extname } from "path-browserify";
 import * as bundler from "@app/bundler";
-import { Uri, editor } from "monaco-editor";
+import { Uri } from "monaco-editor";
 
+const toast = useToast();
+const confirm = useConfirm();
 const monaco = ref<InstanceType<typeof MonacoEditor>>();
 const drawer = ref<InstanceType<typeof Drawer>>();
 const iframe = ref<InstanceType<typeof HTMLIFrameElement>>();
@@ -196,11 +185,6 @@ const state = reactive({
    packageResults: [],
    selectedPackageVersionResults: [] as object[],
    packages: [] as Array<{ name: string; version: string }>,
-   messages: [] as Array<{
-      id: string;
-      content: string;
-      severity: MessageProps["severity"];
-   }>,
 });
 
 const busyState = reactive({
@@ -215,11 +199,18 @@ function highlightDrawerFile(source: string) {
    drawer.value?.highlightFile(source);
 }
 
-function pushNotification(message: string, severity: MessageProps["severity"]) {
-   state.messages.push({
-      id: nanoid(),
-      content: message,
+function pushNotification(
+   title: string,
+   message: string,
+   severity: MessageProps["severity"]
+) {
+   toast.add({
+      life: severity == "error" ? 15000 : 3000,
+      closable: true,
       severity: severity,
+      summary: title,
+      detail:
+         message.length > 200 ? message.substring(0, 200) + "..." : message,
    });
 }
 
@@ -247,7 +238,7 @@ async function fetchPackage(searchText: string) {
 
       state.packageResults = searchResult;
    } catch (error: any) {
-      pushNotification(error, "error");
+      pushNotification("Fetch Error", error, "error");
    }
 
    busyState.packageSearch = false;
@@ -274,7 +265,7 @@ async function fetchSelectPackageVersions(packageName: string) {
 
       state.selectedPackageVersion = distTags.latest;
    } catch (error: any) {
-      pushNotification(error, "error");
+      pushNotification("Fetch Error", error, "error");
    }
 
    busyState.packageSearchVersion = false;
@@ -289,20 +280,35 @@ function closeNewPackageDialog() {
 }
 
 async function addPackage(name: string, version: string) {
+   if (state.packages.find((p) => p.name == name && p.version == version)) {
+      pushNotification(
+         "Install Package",
+         "Package is already installed!",
+         "warn"
+      );
+      return;
+   }
+
    busyState.bundler = true;
    busyState.packageSearch = true;
    busyState.packageList = true;
 
-   pushNotification(`Installing ${name}...`, "info");
+   pushNotification("Install Package", `Installing ${name}@${version}`, "info");
    let status = await bundler.installPackage(name, version);
 
    if (status?._error) {
-      pushNotification(status._error, "error");
+      pushNotification("Install Package", status._error, "error");
    } else {
       state.packages.push({
          name,
          version,
       });
+
+      pushNotification(
+         "Install Package",
+         `${name}@${version} has been installed!`,
+         "success"
+      );
 
       if (!!status) {
          saveProject();
@@ -322,18 +328,34 @@ async function pasteCopiedFilePath(targetDirectory: string) {
    targetDirectory = join("/", targetDirectory);
 
    if (!state.copiedFileDescriptor) return;
+   if (!monaco.value) {
+      console.error("Error: Monaco editor instance is undefined.");
+      return;
+   }
 
    let copiedFiles: { source: string; content: string }[] = [];
-   for (let model of editor.getModels()) {
+   for (let model of monaco.value.getValidModels()) {
       let modelPath = model.uri.path;
       if (modelPath.startsWith(state.copiedFileDescriptor.fullPath)) {
+         let source = modelPath.replace(
+            state.copiedFileDescriptor.parentPath,
+            ""
+         );
          copiedFiles.push({
-            source: modelPath.replace(
-               state.copiedFileDescriptor.parentPath,
-               ""
-            ),
+            source,
             content: model.getValue(),
          });
+
+         let validation = validateFile(source);
+         if (validation?.message) {
+            pushNotification(
+               validation.title,
+               validation.message,
+               validation.severity
+            );
+            console[validation.severity](validation.message);
+            return;
+         }
       }
    }
 
@@ -355,6 +377,18 @@ function closeNewFileDialog() {
 
 async function createFile(source: string, content = "") {
    source = join("/", source);
+
+   let validation = validateFile(source);
+   if (validation?.message) {
+      pushNotification(
+         validation.title,
+         validation.message,
+         validation.severity
+      );
+      console[validation.severity](validation.message);
+      return;
+   }
+
    closeNewFileDialog();
    // Create file in explorer
    let newFile = drawer.value?.createFile(source);
@@ -368,7 +402,13 @@ async function createFile(source: string, content = "") {
       busyState.files = true;
       let status = await bundler.addAsset(source, content);
       if (status?._error) {
-         pushNotification(status._error, "error");
+         let errorTitle = "Error";
+         let errorMessage = status._error;
+         if (status._error.message && status._error.stack) {
+            errorTitle = status._error.message;
+            errorMessage = status._error.stack;
+         }
+         pushNotification(errorTitle, errorMessage, "error");
       } else if (!!status) {
          saveProject();
       }
@@ -380,6 +420,20 @@ async function createFile(source: string, content = "") {
 
 async function createBulkFiles(files: bundler.SimpleAsset[]) {
    closeNewFileDialog();
+
+   for (let file of files) {
+      let source = join("/", file.source);
+      let validation = validateFile(source);
+      if (validation?.message) {
+         pushNotification(
+            validation.title,
+            validation.message,
+            validation.severity
+         );
+         console[validation.severity](validation.message);
+         return;
+      }
+   }
 
    let bulkQueue: bundler.SimpleAsset[] = [];
    // Create files in explorer
@@ -398,7 +452,13 @@ async function createBulkFiles(files: bundler.SimpleAsset[]) {
    busyState.files = true;
    let result = await bundler.addBulkAssets(bulkQueue);
    if (result?._error) {
-      pushNotification(result._error, "error");
+      let errorTitle = "Error";
+      let errorMessage = result._error;
+      if (result._error.message && result._error.stack) {
+         errorTitle = result._error.message;
+         errorMessage = result._error.stack;
+      }
+      pushNotification(errorTitle, errorMessage, "error");
    }
    busyState.bundler = false;
    busyState.files = false;
@@ -409,10 +469,15 @@ async function createBulkFiles(files: bundler.SimpleAsset[]) {
 }
 
 async function removeFile(path: string) {
+   if (!monaco.value) {
+      console.error("Error: Monaco editor instance is undefined.");
+      return;
+   }
+
    path = join("/", path);
    // Get an array of paths of itself and its children
    let disposedPaths: string[] = [];
-   for (let model of editor.getModels()) {
+   for (let model of monaco.value?.getValidModels()) {
       let modelPath = model.uri.path;
       if (modelPath.startsWith(path)) {
          disposedPaths.push(modelPath);
@@ -429,7 +494,13 @@ async function removeFile(path: string) {
       let result = await bundler.removeAsset(disposedPath);
 
       if (result?._error) {
-         pushNotification(result._error, "error");
+         let errorTitle = "Error";
+         let errorMessage = result._error;
+         if (result._error.message && result._error.stack) {
+            errorTitle = result._error.message;
+            errorMessage = result._error.stack;
+         }
+         pushNotification(errorTitle, errorMessage, "error");
       }
 
       // Remove from clipboard
@@ -449,7 +520,13 @@ async function removeFile(path: string) {
       busyState.files = true;
       let result = await bundler.clearAssets();
       if (result?._error) {
-         pushNotification(result._error, "error");
+         let errorTitle = "Error";
+         let errorMessage = result._error;
+         if (result._error.message && result._error.stack) {
+            errorTitle = result._error.message;
+            errorMessage = result._error.stack;
+         }
+         pushNotification(errorTitle, errorMessage, "error");
       }
       busyState.bundler = false;
       busyState.files = false;
@@ -459,9 +536,25 @@ async function removeFile(path: string) {
 }
 
 async function renameFile(fromPath: string, toPath: string) {
+   let validation = validateFile(toPath);
+   if (validation?.message) {
+      pushNotification(
+         validation.title,
+         validation.message,
+         validation.severity
+      );
+      console[validation.severity](validation.message);
+      return;
+   }
+
+   if (!monaco.value) {
+      console.error("Error: Monaco editor instance is undefined.");
+      return;
+   }
+
    // Get an array of paths of itself and its children
    let renamedPaths: string[] = [];
-   for (let model of editor.getModels()) {
+   for (let model of monaco.value?.getValidModels()) {
       let modelPath = model.uri.path;
       if (modelPath.startsWith(fromPath)) {
          renamedPaths.push(modelPath);
@@ -475,7 +568,13 @@ async function renameFile(fromPath: string, toPath: string) {
       // Rename in bundler
       let result = await bundler.renameAsset(oldPath, targetPath);
       if (result?._error) {
-         pushNotification(result._error, "error");
+         let errorTitle = "Error";
+         let errorMessage = result._error;
+         if (result._error.message && result._error.stack) {
+            errorTitle = result._error.message;
+            errorMessage = result._error.stack;
+         }
+         pushNotification(errorTitle, errorMessage, "error");
       }
 
       // Rename in models
@@ -505,25 +604,11 @@ async function clearProject() {
 }
 
 async function createNewProject(template?: Template) {
-   // Check if the current project is saved or not
-   let projects = storage.getProjects();
-   let project = projects.find((p) => p.id === state.currentProjectId);
-   let isSaved = !!project;
-   let currentProjectIsEmpty =
-      !state.packages.length && !editor.getModels().length;
-   // If not saved...
-   if (!isSaved && !currentProjectIsEmpty) {
-      let discardChanges = confirm(
-         "The current project is not saved. Do you want to discard changes and create a new project?"
-      );
-      if (!discardChanges) {
-         return;
-      }
-   }
    if (template) {
       await loadTemplate(template);
    } else {
       await clearProject();
+      await createFile("index.js");
    }
 
    saveProject();
@@ -569,10 +654,17 @@ async function openProject(projectId: string) {
 
 function saveProject(projectId?: string) {
    let files: Array<bundler.SimpleAsset> = [];
-   for (let model of editor.getModels()) {
-      if (model.uri.path.startsWith("/node_modules/")) {
+   if (!monaco.value) {
+      console.error("Error: Monaco editor instance is undefined.");
+      return;
+   }
+
+   for (let model of monaco.value?.getValidModels()) {
+      let isInvalid = !!validateFile(model.uri.path);
+      if (isInvalid) {
          continue;
       }
+
       files.push({
          source: model.uri.path,
          content: model.getValue(),
@@ -619,11 +711,15 @@ function setModel(path: string, content = "") {
 
 async function runProject(isHardRun = false) {
    if (busyState.bundler) return;
+   if (!monaco.value) {
+      console.error("Error: Monaco editor instance is undefined.");
+      return;
+   }
 
    // Sync assets
    busyState.bundler = true;
    let status = await bundler.addBulkAssets(
-      editor.getModels().map((m) => ({
+      monaco.value?.getValidModels().map((m) => ({
          source: m.uri.path,
          content: m.getValue(),
       }))
@@ -637,7 +733,13 @@ async function runProject(isHardRun = false) {
    let result = await bundler.bundle(isHardRun);
 
    if (result?._error) {
-      pushNotification(result?._error, "error");
+      let errorTitle = "Error";
+      let errorMessage = result._error;
+      if (result._error.message && result._error.stack) {
+         errorTitle = result._error.message;
+         errorMessage = result._error.stack;
+      }
+      pushNotification(errorTitle, errorMessage, "error");
    } else {
       if (iframe.value && result) {
          iframe.value.src = result.contentDocURL;
@@ -674,7 +776,7 @@ addEventListener("keydown", (event) => {
          let project = projects.find((f) => f.id === state.currentProjectId);
          let isSaved = !!project;
          if (isSaved) {
-            pushNotification("Psst! Every project autosaves!", "info");
+            pushNotification("Psst!", "Every project autosaves!", "info");
          } else {
             if (navbar.value) {
                navbar.value.state.showSaveProjectDialog = true;
@@ -722,9 +824,10 @@ onMounted(async () => {
 
       state.currentProjectId = parsedTemp.id;
    }
-   
-   pushNotification("Running project...", "info");
-   await runProject();
+
+   if (monaco.value && monaco.value.getValidModels().length > 0) {
+      await runProject();
+   }
 
    (window as any).getPathURI = getPathURI;
 });
@@ -733,7 +836,7 @@ onMounted(async () => {
 <style lang="scss" scoped>
 @import "@app/styles/variables.scss";
 .explorer-pane {
-   background: $slate-800;
+   background: var(--surface-section);
 }
 
 #createFileDialog {

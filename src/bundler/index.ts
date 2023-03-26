@@ -11,24 +11,32 @@ export interface SimpleAsset {
 
 export async function installPackage(name: string, version: string) {
    console.log("installPackage started");
-   
-   let result = await worker.send("installPackage", {
-      name,
-      version,
-   });
+
+   let result = await worker.send(
+      "installPackage",
+      {
+         name,
+         version,
+      },
+      true
+   );
 
    console.log("installPackage finished");
-   
+
    return result;
 }
 
 export async function addAsset(source: string, content = "") {
    console.log("addAsset started");
-   
-   let result = await worker.send("addAsset", {
-      source,
-      content
-   });
+
+   let result = await worker.send(
+      "addAsset",
+      {
+         source,
+         content,
+      },
+      true
+   );
 
    console.log("addAsset finished");
 
@@ -37,10 +45,14 @@ export async function addAsset(source: string, content = "") {
 
 export async function removeAsset(source: string) {
    console.log("removeAsset started");
-   
-   let result = await worker.send("removeAsset", {
-      source,
-   });
+
+   let result = await worker.send(
+      "removeAsset",
+      {
+         source,
+      },
+      true
+   );
 
    console.log("removeAsset finished");
 
@@ -49,8 +61,8 @@ export async function removeAsset(source: string) {
 
 export async function clearAssets() {
    console.log("clearAssets started");
-   
-   let result = await worker.send("clearAssets", {});
+
+   let result = await worker.send("clearAssets", {}, true);
 
    console.log("clearAssets finished");
 
@@ -59,11 +71,15 @@ export async function clearAssets() {
 
 export async function renameAsset(source: string, newSource: string) {
    console.log("renameAsset started");
-   
-   let result = await worker.send("renameAsset", {
-      source,
-      newSource,
-   });
+
+   let result = await worker.send(
+      "renameAsset",
+      {
+         source,
+         newSource,
+      },
+      true
+   );
 
    console.log("renameAsset finished");
 
@@ -72,11 +88,15 @@ export async function renameAsset(source: string, newSource: string) {
 
 export async function bundle(isHardBundle = false) {
    console.log("bundle started");
-   
+
    try {
-      let result = await worker.send("bundle", {
-         isHardBundle,
-      });
+      let result = await worker.send(
+         "bundle",
+         {
+            isHardBundle,
+         },
+         true
+      );
 
       console.log("bundle finished");
       return result;
@@ -88,9 +108,13 @@ export async function bundle(isHardBundle = false) {
 export async function addBulkAssets(assets: SimpleAsset[]) {
    console.log("addBulkAssets started");
 
-   let result = await worker.send("addBulkAssets", {
-      assets,
-   });
+   let result = await worker.send(
+      "addBulkAssets",
+      {
+         assets,
+      },
+      true
+   );
 
    console.log("addBulkAssets finished");
 

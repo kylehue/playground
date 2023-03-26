@@ -1,7 +1,7 @@
 <template>
-   <div class="explorer-space w-100 h-100 d-flex flex-column p-2">
+   <div class="explorer-space w-100 h-100 d-flex flex-column">
       <div
-         class="header d-flex flex-row flex-shrink-0 align-items-center justify-content-between ms-2 me-2 mb-2"
+         class="header d-flex flex-row flex-shrink-0 align-items-center justify-content-between p-3"
       >
          <div class="d-flex align-items-center">
             <i :class='{
@@ -16,7 +16,7 @@
             v-tooltip="addTooltip"
          ></IconButton>
       </div>
-      <div class="body d-flex flex-column"><slot></slot></div>
+      <div class="body d-flex flex-column p-2"><slot></slot></div>
    </div>
 </template>
 
@@ -34,8 +34,7 @@ const props = defineProps({
 @import "@app/styles/variables.scss";
 .explorer-space {
    .header {
-      height: 40px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.025);
+      height: 50px;
       color: $light-900;
    }
 

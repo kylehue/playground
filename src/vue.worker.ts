@@ -36,12 +36,7 @@ self.onmessage = (event) => {
             module: ts as any,
             compilerOptions,
          },
-         dtsHost: volarWorker.createDtsHost(
-            "https://esm.sh/",
-            (filename, text) => {
-               console.log(filename, text);
-            }
-         ),
+         dtsHost: volarWorker.createDtsHost("https://esm.sh/"),
       });
 
       /* let c: any = (service as any).context();

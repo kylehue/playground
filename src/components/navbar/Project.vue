@@ -61,27 +61,23 @@ function contextMenu(event) {
    height: 100px;
 
    .main-button {
-      background-color: $slate-400;
+      background-color: var(--surface-card);
       border-radius: 5px;
-      border: 1px solid $slate-300;
+      border: 1px solid var(--surface-border);
 
       &:disabled {
-         background-color: $slate-500;
          opacity: 0.75;
          pointer-events: none;
       }
 
       &:not(:disabled):hover {
-         background-color: $slate-300;
+         background-color: var(--surface-hover);
 
          .sub-buttons {
             visibility: visible;
          }
       }
-
-      &:not(:disabled):active {
-         background-color: $slate-200;
-      }
+      
       .sub-buttons {
          visibility: hidden;
       }
@@ -99,10 +95,10 @@ function contextMenu(event) {
          border-radius: calc($sub-button-size / 2);
          background: none;
          border: none;
-         color: $slate-100;
+         color: var(--surface-100);
 
          &:hover {
-            color: $light-900;
+            color: var(--surface-300);
          }
       }
    }

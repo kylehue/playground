@@ -31,7 +31,8 @@
 <script lang="ts" setup>
 import IconButton from "@app/components/basic/IconButton.vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
-
+import { useConfirm } from "primevue/useconfirm";
+const confirm = useConfirm();
 const props = defineProps<{
    content: Array<{
       name: string;
@@ -42,13 +43,14 @@ const props = defineProps<{
 
 const emit = defineEmits(["openNewPackageDialog", "removePackage"]);
 function removePackage(name: string) {
-   const doRemove = confirm(
-      `Are you sure you want to remove the "${name}" package?`
-   );
-
-   if (doRemove) {
-      emit("removePackage", name);
-   }
+   confirm.require({
+      message: `Are you sure you want to remove the "${name}" package?`,
+      header: `Remove package`,
+      icon: "pi pi-exclamation-triangle",
+      accept() {
+         emit("removePackage", name);
+      },
+   });
 }
 </script>
 
@@ -57,7 +59,7 @@ function removePackage(name: string) {
 .package {
    height: 40px;
    width: calc(100% - 1rem);
-   background: $slate-700;
+   background: var(--surface-card);
 
    .text-version {
       font-size: 0.8em;

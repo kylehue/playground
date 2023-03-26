@@ -18,18 +18,18 @@ const props = defineProps({
 button {
    background: none;
    border: none;
-   color: rgba(255, 255, 255, 0.2);
+   color: var(--surface-300);
    padding: 0;
    margin: 0;
    width: 24px;
    height: 24px;
 
    &:hover {
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--surface-400);
    }
 
    &:active {
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--surface-500);
       transition-duration: 50ms;
    }
 

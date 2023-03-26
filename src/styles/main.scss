@@ -1,7 +1,7 @@
-@import url("https://fonts.googleapis.com/css2?family=Catamaran:wght@400;500;700&display=swap");
+// @import url("https://fonts.googleapis.com/css2?family=Catamaran:wght@400;500;700&display=swap");
 // @import url("https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css");
 @import "bootstrap/dist/css/bootstrap.min.css";
-@import "primevue/resources/themes/bootstrap4-dark-purple/theme.css";
+@import "primevue/resources/themes/md-dark-indigo/theme.css";
 @import "primevue/resources/primevue.min.css";
 @import "primeicons/primeicons.css";
 @import "./variables.scss";
@@ -16,8 +16,8 @@ body,
 }
 
 body {
-   background-color: $slate-700;
-   font-family: "Catamaran", sans-serif;
+   background-color: var(--surface-ground);
+   // font-family: "Catamaran", sans-serif;
    color: $light-600;
 }
 
@@ -65,4 +65,9 @@ body {
 .p-menuitem-text,
 .p-menuitem-icon {
    padding-bottom: 3px;
+}
+
+img[alt='logo'] {
+   pointer-events: none;
+   user-select: none;
 }

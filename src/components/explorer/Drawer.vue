@@ -17,11 +17,15 @@ import Drawer from "@kylehue/drawer";
 import { ref, reactive, onMounted, watch } from "vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
 import ContextMenu from "primevue/contextmenu";
-import { resolve, extname, dirname, basename } from "path-browserify";
+import { useConfirm } from "primevue/useconfirm";
+import { resolve, extname, dirname, relative } from "path-browserify";
+import validateFile from "@app/utils/validateFile";
 const props = defineProps({
    clipboardHasItem: Boolean,
    isBusy: Boolean,
 });
+
+const confirm = useConfirm();
 
 const drawer = new Drawer({
    directoryButton: {
@@ -29,8 +33,10 @@ const drawer = new Drawer({
       rename: false,
       addDirectory: false,
       copy: false,
+      paste: false,
    },
    fileButton: {
+      copy: false,
       cut: false,
       rename: false,
    },
@@ -96,6 +102,13 @@ watch(
 function createFile(path: string) {
    let isFile = !!extname(path);
 
+   let validation = validateFile(path);
+   if (validation?.message) {
+      emit("pushNotification", validation.message, validation.severity);
+      console[validation.severity](validation.message);
+      return;
+   }
+
    if (isFile) {
       if (drawer.getFileFromPath(path)) return null;
 
@@ -140,18 +153,21 @@ const emit = defineEmits([
    "changeEditorModel",
    "openNewFileDialog",
    "renameAsset",
+   "pushNotification",
 ]);
 
 function removeClick(item) {
    const path = resolve(item.parent.path, item.title);
-   const doRemove = confirm(
-      `Are you sure you want to delete the ${item.type} "${path}"${
+   confirm.require({
+      message: `Are you sure you want to delete the ${item.type} "${path}"${
          item.type == "directory" ? " and its contents" : ""
-      }?`
-   );
-   if (doRemove) {
-      emit("removeButtonClick", path);
-   }
+      }?`,
+      header: `Delete ${item.type}`,
+      icon: "pi pi-exclamation-triangle",
+      accept() {
+         emit("removeButtonClick", path);
+      },
+   });
 }
 
 function addFileClick(item) {
@@ -170,11 +186,11 @@ function addFileClick(item) {
 
 function copyClick(item) {
    const path = resolve(item.parent.path, item.title);
+
    emit("copyButtonClick", {
       type: item.type,
       fullPath: path,
       parentPath: item.parent.path,
-      headPath: path.replace(item.parent.path, ""),
    });
 }
 
@@ -208,11 +224,11 @@ onMounted(() => {
       const path = resolve(item.parent.path, item.title);
 
       // Make sure it exists
-      let itemExists = !!drawer.getFileFromPath(path);
+      if (!drawer.getFileFromPath(path)) return;
 
-      // Only focus editor when item is not getting renamed
-      let isEditable = event.target.tagName == "INPUT";
-      if (item.type == "file" && !isEditable && itemExists) {
+      // Only focus editor when body is clicked
+      let isBodyClicked = event.target === item.element.getMain();
+      if (item.type == "file" && isBodyClicked) {
          emit("changeEditorModel", path);
       }
    });
@@ -221,13 +237,21 @@ onMounted(() => {
       showMenu(event, item);
    });
 
-   drawer.on("move", (item, fromPath, toPath) => {
-      emit("renameAsset", fromPath, toPath, item.type);
-   });
+   function handleRenameOrMove(item, fromPath, toPath) {
+      let validation = validateFile(toPath);
+      if (validation?.message) {
+         emit("pushNotification", validation.message, validation.severity);
+         console[validation.severity](validation.message);
+         item.moveToPath(dirname(relative(toPath, fromPath)));
+         return;
+      }
 
-   drawer.on("rename", (item, fromPath, toPath) => {
       emit("renameAsset", fromPath, toPath, item.type);
-   });
+   }
+
+   drawer.on("move", handleRenameOrMove);
+
+   drawer.on("rename", handleRenameOrMove);
 
    drawer.on("addFileClick", addFileClick);
 

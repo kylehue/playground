@@ -111,20 +111,19 @@ function showMenu(event, projectId: string) {
    button {
       background: none;
       border-radius: 5px;
-      border: 1px dashed $slate-100;
-      color: $slate-100;
+      border: 1px dashed var(--surface-300);
+      color: var(--surface-300);
 
       &:hover {
-         background: $slate-500;
-         border: 1px dashed $light-900;
-         color: $light-400;
+         border: 1px dashed var(--surface-400);
+         color: var(--surface-400);
       }
 
       &:active {
-         background: $slate-400;
+         border: 1px dashed var(--surface-500);
       }
 
-      transition: background 150ms;
+      transition: border 150ms;
    }
 }
 </style>

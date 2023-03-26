@@ -1,6 +1,8 @@
 import { createApp } from "vue";
 import "./styles/main.scss";
 import PrimeVue from "primevue/config";
+import ConfirmationService from "primevue/confirmationservice";
+import ToastService from "primevue/toastservice";
 import Tooltip from "primevue/tooltip";
 import router from "./router";
 import Main from "./Main.vue";
@@ -9,7 +11,12 @@ import Main from "./Main.vue";
 const app = createApp(Main);
 
 // Plugins
-app.use(PrimeVue);
+app.use(PrimeVue, {
+   inputStyle: "filled",
+});
+
+app.use(ConfirmationService);
+app.use(ToastService);
 app.use(router);
 
 // Directives
@@ -25,18 +32,36 @@ app.directive("focus", {
       }
    },
 });
-app.directive("fill-content", {
+
+app.directive("fill-remaining-height", {
    mounted(el: HTMLElement) {
-      let navbar: HTMLElement | null = document.querySelector(".navbar-wrapper");
+      let remainingHeight = el.parentElement?.offsetHeight || 0;
 
-      if (navbar) {
-         let navbarHeight = navbar.offsetHeight;
+      let siblings = Array.from(el.parentElement?.children || []);
 
-         el.style.height = `calc(100vh - ${navbarHeight}px)`;
+      for (let sibling of siblings) {
+         if (sibling === el) continue;
+         remainingHeight -= (sibling as HTMLElement).offsetHeight;
       }
-   }
+
+      el.style.height = remainingHeight + "px";
+   },
+});
+
+app.directive("fill-remaining-width", {
+   mounted(el: HTMLElement) {
+      let remainingWidth = el.parentElement?.offsetWidth || 0;
+
+      let siblings = Array.from(el.parentElement?.children || []);
+
+      for (let sibling of siblings) {
+         if (sibling === el) continue;
+         remainingWidth -= (sibling as HTMLElement).offsetWidth;
+      }
+
+      el.style.width = remainingWidth + "px";
+   },
 });
 
 // Mount
 app.mount("#root");
-
