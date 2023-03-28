@@ -1,5 +1,5 @@
 // @import url("https://fonts.googleapis.com/css2?family=Catamaran:wght@400;500;700&display=swap");
-// @import url("https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css");
+@import url("https://cdn.jsdelivr.net/npm/@mdi/font@7.2.x/css/materialdesignicons.min.css");
 @import "bootstrap/dist/css/bootstrap.min.css";
 @import "primevue/resources/themes/md-dark-indigo/theme.css";
 @import "primevue/resources/primevue.min.css";
@@ -22,37 +22,44 @@ body {
 }
 
 ::-webkit-scrollbar {
-   width: 8px;
-   height: 8px;
-   border-radius: 6px;
+   width: 10px;
+   height: 10px;
 }
 
 ::-webkit-scrollbar-track,
 ::-webkit-scrollbar-corner {
-   background: rgba(0, 0, 0, 0);
+   background: none;
 }
 
 ::-webkit-scrollbar-thumb {
-   background: rgba(180, 202, 255, 0.15);
+   background: var(--surface-50);
+   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-   background: rgba(180, 202, 255, 0.2);
+   background: var(--surface-hover);
 }
 
-::-webkit-scrollbar-thumb:active {
-   background: rgba(180, 202, 255, 0.25);
-}
+.drawer-file {
+   border-radius: 4px;
+   cursor: pointer;
 
-.drawer-file.drawer-highlight {
-   background: $slate-500;
-   border-radius: 5px;
+   &.drawer-highlight {
+      background-color: var(--surface-50) !important;
+   }
+
+   &:not(.drawer-highlight):hover {
+      background-color: var(--surface-hover) !important;
+   }
+
+   transition-property: height, opacity, background-color !important;
+   transition-duration: 100ms !important;
 }
 
 .p-tooltip-text,
 .p-menuitem-text,
 .p-button-label {
-   font-size: 0.8em;
+   font-size: 0.9em;
 }
 
 .p-menuitem-text {
@@ -62,12 +69,24 @@ body {
    text-overflow: ellipsis;
 }
 
-.p-menuitem-text,
-.p-menuitem-icon {
-   padding-bottom: 3px;
-}
-
-img[alt='logo'] {
+img[alt="logo"] {
    pointer-events: none;
    user-select: none;
+}
+
+.mdi {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 24px;
+   height: 24px;
+   font-size: 1.2rem;
+   line-height: 0;
+}
+
+.p-toast-message-text {
+   width: calc(100% - 100px) !important;
+   white-space: break-spaces !important;
+   text-overflow: ellipsis !important;
+   overflow: hidden !important;
 }

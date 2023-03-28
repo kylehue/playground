@@ -99,7 +99,7 @@ thread.listen("bundle", async (data) => {
 
 thread.listen("addBulkAssets", async (data) => {
    try {
-      for (let asset of data.assets) {
+      for (let asset of JSON.parse(data.assets)) {
          await bundler.addAsset(asset.source, asset.content);
       }
    } catch (error) {

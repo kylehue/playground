@@ -1,6 +1,6 @@
 <template>
    <Toast />
-   <ConfirmDialog />
+   <ConfirmDialog :draggable="false" />
    <!-- New file dialog -->
    <Dialog
       v-model:visible="state.showNewFileDialog"
@@ -10,7 +10,10 @@
       class="col-10 col-md-5"
    >
       <template #header>
-         <h6>Create new file</h6>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-plus me-2"></i>
+            <b>Create new file</b>
+         </div>
       </template>
       <InputText
          type="text"
@@ -20,14 +23,12 @@
          placeholder="Enter the path"
          spellcheck="false"
          autocomplete="off"
-         autofill="off"
          class="w-100"
-         filled
       />
       <template #footer>
          <Button
             label="Create"
-            class="w-100"
+            :disabled="!state.newFileDialogPath"
             @click="createFile(state.newFileDialogPath)"
          />
       </template>
@@ -41,7 +42,10 @@
       class="col-10 col-md-5"
    >
       <template #header>
-         <h6>Add Packages</h6>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-plus me-2"></i>
+            <b>Add Packages</b>
+         </div>
       </template>
       <div class="d-flex flex-row">
          <Dropdown
@@ -62,7 +66,7 @@
             v-model="state.selectedPackageVersion"
             :options="state.selectedPackageVersionResults"
             :editable="true"
-            :disabled="!state.selectedPackage"
+            :disabled="!state.selectedPackageVersionResults.length"
             optionLabel="name"
             optionValue="value"
             placeholder="Version"
@@ -73,13 +77,16 @@
       </div>
       <template #footer>
          <Button
-            :disabled="!state.selectedPackageVersion"
+            :disabled="
+               !state.selectedPackageVersion ||
+               !state.selectedPackage ||
+               busyState.packageSearch ||
+               busyState.packageSearchVersion
+            "
             label="Add"
-            class="w-100"
             @click="
                addPackage(state.selectedPackage, state.selectedPackageVersion)
             "
-            :loading="busyState.packageSearch"
          />
       </template>
    </Dialog>
@@ -113,7 +120,7 @@
             </Pane>
             <Pane size="40" min-size="10">
                <Packages
-                  :content="state.packages"
+                  :content="state.installedPackages"
                   @openNewPackageDialog="state.showNewPackageDialog = true"
                   @removePackage="removePackage"
                   :is-busy="busyState.packageList"
@@ -126,6 +133,8 @@
             ref="monaco"
             @onDidChangeModel="highlightDrawerFile"
             @onDidChangeModelContent="onDidChangeModelContent"
+            :editor-options="editorOptions"
+            :typescript-options="typescriptOptions"
          ></MonacoEditor>
       </Pane>
       <Pane
@@ -158,18 +167,24 @@ import ProgressBar from "primevue/progressbar";
 import { MessageProps } from "primevue/message";
 import ConfirmDialog from "primevue/confirmdialog";
 import Toast from "primevue/toast";
-import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import * as storage from "@app/utils/storage";
 import validateFile from "@app/utils/validateFile";
-import { searchPackagesByName, searchPackage } from "@app/utils/npmSearch";
+import {
+   searchPackagesByName,
+   searchPackage,
+   PackageResult,
+} from "@app/utils/npmSearch";
 import templates, { Template } from "@app/templates";
 import { basename, join, extname } from "path-browserify";
 import * as bundler from "@app/bundler";
 import { Uri } from "monaco-editor";
+import _editorOptions from "@app/options/editor";
+import _typescriptOptions from "@app/options/typescript";
 
+const editorOptions = reactive(_editorOptions);
+const typescriptOptions = reactive(_typescriptOptions);
 const toast = useToast();
-const confirm = useConfirm();
 const monaco = ref<InstanceType<typeof MonacoEditor>>();
 const drawer = ref<InstanceType<typeof Drawer>>();
 const iframe = ref<InstanceType<typeof HTMLIFrameElement>>();
@@ -182,9 +197,10 @@ const state = reactive({
    showNewPackageDialog: false,
    selectedPackage: "",
    selectedPackageVersion: "",
-   packageResults: [],
+   packageResults: [] as PackageResult[],
    selectedPackageVersionResults: [] as object[],
-   packages: [] as Array<{ name: string; version: string }>,
+   installedPackages: [] as Array<{ name: string; version: string }>,
+   requiredPackages: [] as Array<{ name: string; version: string }>,
 });
 
 const busyState = reactive({
@@ -196,6 +212,8 @@ const busyState = reactive({
 });
 
 function highlightDrawerFile(source: string) {
+   if (!source) return;
+
    drawer.value?.highlightFile(source);
 }
 
@@ -215,10 +233,22 @@ function pushNotification(
 }
 
 function removePackage(packageName: string) {
-   for (let i = 0; i < state.packages.length; i++) {
-      const pkg = state.packages[i];
+   if (!packageName) return;
+
+   // Remove in UI
+   for (let i = 0; i < state.installedPackages.length; i++) {
+      const pkg = state.installedPackages[i];
       if (pkg.name === packageName) {
-         state.packages.splice(i, 1);
+         state.installedPackages.splice(i, 1);
+         break;
+      }
+   }
+
+   // Remove in required packages
+   for (let i = 0; i < state.requiredPackages.length; i++) {
+      const pkg = state.requiredPackages[i];
+      if (pkg.name === packageName) {
+         state.requiredPackages.splice(i, 1);
          break;
       }
    }
@@ -226,49 +256,62 @@ function removePackage(packageName: string) {
    saveProject();
 }
 
-async function fetchPackage(searchText: string) {
+function fetchPackage(searchText: string) {
+   if (!searchText) return;
+
    busyState.packageSearch = true;
    state.selectedPackageVersion = "";
    state.selectedPackageVersionResults = [];
 
    try {
-      let searchResult = await searchPackagesByName(searchText, {
+      searchPackagesByName(searchText, {
          size: 10,
+      }).then((result) => {
+         state.packageResults = result;
+         busyState.packageSearch = false;
       });
-
-      state.packageResults = searchResult;
    } catch (error: any) {
+      console.error(error);
+      busyState.packageSearch = false;
       pushNotification("Fetch Error", error, "error");
    }
-
-   busyState.packageSearch = false;
 }
 
-async function fetchSelectPackageVersions(packageName: string) {
+function fetchSelectPackageVersions(packageName: string) {
+   if (!packageName) return;
+
+   if (!state.packageResults.find((p) => p.name == packageName)) {
+      return;
+   }
+
    busyState.packageSearchVersion = true;
 
    try {
       state.selectedPackageVersion = "";
       state.selectedPackageVersionResults = [];
-      let result = await searchPackage(packageName);
-      let distTags = result["dist-tags"];
+      searchPackage(packageName).then((result) => {
+         if (result) {
+            let distTags = result["dist-tags"];
 
-      state.selectedPackageVersionResults = Object.values(result.versions)
-         .reverse()
-         .map((el: any) => ({
-            name:
-               distTags.latest == el.version
-                  ? el.version + " (latest)"
-                  : el.version,
-            value: el.version,
-         }));
+            state.selectedPackageVersionResults = Object.values(result.versions)
+               .reverse()
+               .map((el: any) => ({
+                  name:
+                     distTags.latest == el.version
+                        ? el.version + " (latest)"
+                        : el.version,
+                  value: el.version,
+               }));
 
-      state.selectedPackageVersion = distTags.latest;
+            state.selectedPackageVersion = distTags.latest;
+         }
+         busyState.packageSearchVersion = false;
+      });
    } catch (error: any) {
+      console.error(error);
+      busyState.packageSearchVersion = false;
       pushNotification("Fetch Error", error, "error");
    }
-
-   busyState.packageSearchVersion = false;
 }
 
 function closeNewPackageDialog() {
@@ -280,7 +323,13 @@ function closeNewPackageDialog() {
 }
 
 async function addPackage(name: string, version: string) {
-   if (state.packages.find((p) => p.name == name && p.version == version)) {
+   if (!name || !version) return;
+
+   if (
+      state.installedPackages.find(
+         (p) => p.name == name && p.version == version
+      )
+   ) {
       pushNotification(
          "Install Package",
          "Package is already installed!",
@@ -299,10 +348,8 @@ async function addPackage(name: string, version: string) {
    if (status?._error) {
       pushNotification("Install Package", status._error, "error");
    } else {
-      state.packages.push({
-         name,
-         version,
-      });
+      let pkg = { name, version };
+      state.installedPackages.push(pkg);
 
       pushNotification(
          "Install Package",
@@ -321,10 +368,14 @@ async function addPackage(name: string, version: string) {
 }
 
 function setCopiedFilePath(copiedFileDescriptor) {
+   if (!copiedFileDescriptor) return;
+
    state.copiedFileDescriptor = copiedFileDescriptor;
 }
 
 async function pasteCopiedFilePath(targetDirectory: string) {
+   if (!targetDirectory) return;
+
    targetDirectory = join("/", targetDirectory);
 
    if (!state.copiedFileDescriptor) return;
@@ -376,6 +427,8 @@ function closeNewFileDialog() {
 }
 
 async function createFile(source: string, content = "") {
+   if (!source) return;
+
    source = join("/", source);
 
    let validation = validateFile(source);
@@ -419,6 +472,8 @@ async function createFile(source: string, content = "") {
 }
 
 async function createBulkFiles(files: bundler.SimpleAsset[]) {
+   if (!files || !files.length) return;
+
    closeNewFileDialog();
 
    for (let file of files) {
@@ -469,6 +524,8 @@ async function createBulkFiles(files: bundler.SimpleAsset[]) {
 }
 
 async function removeFile(path: string) {
+   if (!path) return;
+
    if (!monaco.value) {
       console.error("Error: Monaco editor instance is undefined.");
       return;
@@ -536,6 +593,8 @@ async function removeFile(path: string) {
 }
 
 async function renameFile(fromPath: string, toPath: string) {
+   if (!fromPath || !toPath) return;
+
    let validation = validateFile(toPath);
    if (validation?.message) {
       pushNotification(
@@ -595,7 +654,8 @@ async function clearProject() {
    busyState.bundler = true;
    busyState.files = true;
    await removeFile("/");
-   state.packages = [];
+   state.installedPackages = [];
+   state.requiredPackages = [];
    drawer.value?.self.clear();
    if (iframe.value) iframe.value.src = "";
    state.currentProjectId = "";
@@ -615,6 +675,8 @@ async function createNewProject(template?: Template) {
 }
 
 async function loadTemplate(template: Pick<Template, "files" | "packages">) {
+   if (!template) return;
+
    await clearProject();
    if (template.files) {
       await createBulkFiles(template.files);
@@ -629,13 +691,15 @@ async function loadTemplate(template: Pick<Template, "files" | "packages">) {
    }
 
    if (template.packages) {
-      for (let pkg of template.packages) {
+      state.requiredPackages = template.packages;
+      for (let pkg of state.requiredPackages) {
          await addPackage(pkg.name, pkg.version);
       }
    }
 }
 
 async function openProject(projectId: string) {
+   if (!projectId) return;
    saveProject();
 
    if (busyState.bundler || busyState.files || busyState.packageList) return;
@@ -678,7 +742,7 @@ function saveProject(projectId?: string) {
    // Save in projects
    storage.updateProject(state.currentProjectId, {
       files: files,
-      packages: state.packages,
+      packages: state.requiredPackages,
    });
 
    // Save in temp
@@ -687,7 +751,7 @@ function saveProject(projectId?: string) {
       JSON.stringify({
          id: state.currentProjectId,
          files: files,
-         packages: state.packages,
+         packages: state.requiredPackages,
       })
    );
 }
@@ -699,10 +763,6 @@ function openCreateFileDialog(path = "") {
    }
 
    state.showNewFileDialog = true;
-}
-
-function getPathURI(path: string) {
-   return Uri.parse(join("/", path));
 }
 
 function setModel(path: string, content = "") {
@@ -828,8 +888,6 @@ onMounted(async () => {
    if (monaco.value && monaco.value.getValidModels().length > 0) {
       await runProject();
    }
-
-   (window as any).getPathURI = getPathURI;
 });
 </script>
 

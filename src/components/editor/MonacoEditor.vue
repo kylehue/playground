@@ -11,14 +11,12 @@ import * as theme from "./theme";
 import { join } from "path-browserify";
 import getLang from "@app/utils/getLang";
 import validateFile from "@app/utils/validateFile";
-import editorOptions from "@app/options/editor";
-import typescriptOptions from "@app/options/typescript";
 
 // Definitions
-/* const props = defineProps<{
+const props = defineProps<{
    typescriptOptions: languages.typescript.CompilerOptions;
    editorOptions: editor.IStandaloneEditorConstructionOptions;
-}>(); */
+}>();
 
 const emit = defineEmits(["onDidChangeModelContent", "onDidChangeModel"]);
 
@@ -45,7 +43,7 @@ editorParentElement.classList.add("w-100", "h-100");
 let editorInstance: editor.IStandaloneCodeEditor = editor.create(
    editorParentElement,
    {
-      .../* props. */editorOptions,
+      ...props.editorOptions,
       automaticLayout: true,
       model: editor.createModel("", "text/html", Uri.parse("/$dummy_file.txt")),
    }
@@ -53,15 +51,15 @@ let editorInstance: editor.IStandaloneCodeEditor = editor.create(
 
 loadGrammars(editorInstance);
 
-if (/* props. */typescriptOptions) {
+if (props.typescriptOptions) {
    languages.typescript.typescriptDefaults.setCompilerOptions(
-      /* props. */typescriptOptions
+      props.typescriptOptions
    );
 }
 
 // Watch stuff
 watch(
-   () => /* props. */typescriptOptions,
+   () => props.typescriptOptions,
    (options) => {
       if (options) {
          languages.typescript.typescriptDefaults.setCompilerOptions(options);
@@ -70,7 +68,7 @@ watch(
 );
 
 watch(
-   () => /* props. */editorOptions,
+   () => props.editorOptions,
    (options) => {
       if (options) {
          editorInstance.updateOptions(options);

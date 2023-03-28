@@ -5,7 +5,7 @@
       title="Files"
       addTooltip="New file"
       :isBusy="isBusy"
-      icon="pi pi-copy"
+      icon="mdi mdi-file-multiple-outline"
    >
       <div id="drawer" class="w-100 h-100 d-flex flex-column"></div>
    </ExplorerSpace>
@@ -49,21 +49,21 @@ const contextMenuFocusedItem = ref();
 const contextMenuModel = reactive([
    {
       label: "New file",
-      icon: "pi pi-plus",
+      icon: "mdi mdi-plus",
       command: () => {
          addFileClick(contextMenuFocusedItem.value);
       },
    },
    {
       label: "Copy",
-      icon: "pi pi-copy",
+      icon: "mdi mdi-content-copy",
       command: () => {
          copyClick(contextMenuFocusedItem.value);
       },
    },
    {
       label: "Paste",
-      icon: "pi pi-calendar",
+      icon: "mdi mdi-content-paste",
       disabled: !props.clipboardHasItem,
       command: () => {
          pasteClick(contextMenuFocusedItem.value);
@@ -71,7 +71,7 @@ const contextMenuModel = reactive([
    },
    {
       label: "Rename",
-      icon: "pi pi-pencil",
+      icon: "mdi mdi-rename",
       disabled: true,
       command: () => {
          contextMenuFocusedItem.value?.element.makeEditable();
@@ -79,7 +79,7 @@ const contextMenuModel = reactive([
    },
    {
       label: "Delete",
-      icon: "pi pi-trash",
+      icon: "mdi mdi-delete",
       command: () => {
          removeClick(contextMenuFocusedItem.value);
       },
@@ -100,6 +100,8 @@ watch(
 );
 
 function createFile(path: string) {
+   if (!path) return;
+
    let isFile = !!extname(path);
 
    let validation = validateFile(path);
@@ -121,6 +123,7 @@ function createFile(path: string) {
 }
 
 function removeFile(path: string) {
+   if (!path) return;
    let isFile = !!extname(path);
 
    if (isFile) {
@@ -131,6 +134,7 @@ function removeFile(path: string) {
 }
 
 function highlightFile(path: string) {
+   if (!path) return;
    let file = drawer.getFileFromPath(path);
 
    if (file) {
@@ -157,13 +161,15 @@ const emit = defineEmits([
 ]);
 
 function removeClick(item) {
+   if (!item) return;
    const path = resolve(item.parent.path, item.title);
    confirm.require({
       message: `Are you sure you want to delete the ${item.type} "${path}"${
          item.type == "directory" ? " and its contents" : ""
       }?`,
       header: `Delete ${item.type}`,
-      icon: "pi pi-exclamation-triangle",
+      icon: "mdi mdi-alert",
+      acceptClass: "p-button-danger",
       accept() {
          emit("removeButtonClick", path);
       },
@@ -171,6 +177,7 @@ function removeClick(item) {
 }
 
 function addFileClick(item) {
+   if (!item) return;
    let path = "";
 
    if (item?.parent) {
@@ -185,6 +192,7 @@ function addFileClick(item) {
 }
 
 function copyClick(item) {
+   if (!item) return;
    const path = resolve(item.parent.path, item.title);
 
    emit("copyButtonClick", {
@@ -195,6 +203,7 @@ function copyClick(item) {
 }
 
 function pasteClick(item) {
+   if (!item) return;
    let path = "";
 
    if (item?.parent) {
@@ -209,6 +218,7 @@ function pasteClick(item) {
 }
 
 function showMenu(event, item) {
+   if (!event || !item) return;
    contextMenu.value?.show(event);
    contextMenuFocusedItem.value = item;
 }

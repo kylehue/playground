@@ -13,7 +13,7 @@
          <template #end>
             <SplitButton
                label="Run"
-               :icon="!isBusy ? 'pi pi-play' : 'pi pi-spin pi-spinner'"
+               :icon="!isBusy ? 'mdi mdi-play' : 'pi pi-spinner pi-spin'"
                :model="runButtonMenuItems"
                :disabled="isBusy"
                @click="emit('runProject')"
@@ -30,7 +30,10 @@
       contentClass="h-100"
    >
       <template #header>
-         <h6>Projects</h6>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-folder-open me-2"></i>
+            <b>Projects</b>
+         </div>
       </template>
       <template #default>
          <Projects
@@ -51,7 +54,10 @@
       class="col-10 col-md-5"
    >
       <template #header>
-         <h6>Create new project</h6>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-plus me-2"></i>
+            <b>Create new project</b>
+         </div>
       </template>
       <template #default>
          <InputText
@@ -61,7 +67,6 @@
             placeholder="Project Name"
             spellcheck="false"
             autocomplete="off"
-            autofill="off"
             class="w-100"
             @keypress.enter="createProject(state.newProjectName)"
          ></InputText>
@@ -70,7 +75,6 @@
          <Button
             :disabled="!state.newProjectName"
             label="Create"
-            class="w-100"
             @click="createProject(state.newProjectName)"
          ></Button>
       </template>
@@ -82,7 +86,10 @@
       class="col-10 col-md-5"
    >
       <template #header>
-         <h6>Save as...</h6>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-content-save me-2"></i>
+            <b>Save as...</b>
+         </div>
       </template>
       <template #default>
          <InputText
@@ -92,15 +99,14 @@
             placeholder="Project Name"
             spellcheck="false"
             autocomplete="off"
-            autofill="off"
             class="w-100"
             @keypress.enter="saveProject(state.saveProjectName)"
          ></InputText>
       </template>
       <template #footer>
          <Button
+            :disabled="!state.saveProjectName"
             label="Save"
-            class="w-100"
             @click="saveProject(state.saveProjectName)"
          ></Button>
       </template>
@@ -112,7 +118,10 @@
       class="col-10 col-md-5"
    >
       <template #header>
-         <h6>Rename {{ state.renameProjectOldName }}</h6>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-rename me-2"></i>
+            <b>Rename {{ state.renameProjectOldName }}</b>
+         </div>
       </template>
       <template #default>
          <InputText
@@ -122,7 +131,6 @@
             placeholder="New Project Name"
             spellcheck="false"
             autocomplete="off"
-            autofill="off"
             class="w-100"
             @keypress.enter="
                renameProject(state.renameProjectId, state.renameProjectNewName)
@@ -131,8 +139,8 @@
       </template>
       <template #footer>
          <Button
-            label="Save"
-            class="w-100"
+            :disabled="!state.renameProjectNewName"
+            label="Rename"
             @click="
                renameProject(state.renameProjectId, state.renameProjectNewName)
             "
@@ -193,7 +201,7 @@ const menuBar = ref<InstanceType<typeof Menubar>>();
 const runButtonMenuItems = [
    {
       label: "Hard run",
-      icon: "pi pi-play",
+      icon: "mdi mdi-play",
       command: () => {
          emit("runProject", true);
       },
@@ -204,11 +212,11 @@ const unsavedProjectTitle = "Unsaved Project";
 const navbarItems = reactive([
    {
       label: unsavedProjectTitle,
-      icon: "pi pi-fw pi-file",
+      icon: "mdi mdi-file",
       items: [
          {
             label: "New",
-            icon: "pi pi-plus",
+            icon: "mdi mdi-plus",
             command: () => {
                // Check if the current project is saved or not
                let projects = storage.getProjects();
@@ -219,7 +227,8 @@ const navbarItems = reactive([
                // Check if empty
                let temp = localStorage.getItem("temp");
                let parsedTemp = JSON.parse(temp || "{}");
-               let currentProjectIsEmpty = !parsedTemp?.files?.length && !parsedTemp?.packages?.length;
+               let currentProjectIsEmpty =
+                  !parsedTemp?.files?.length && !parsedTemp?.packages?.length;
 
                // If not saved...
                if (!isSaved && !currentProjectIsEmpty) {
@@ -227,7 +236,8 @@ const navbarItems = reactive([
                      message:
                         "The current project is not saved. Do you want to discard changes and create a new project?",
                      header: `New project`,
-                     icon: "pi pi-exclamation-triangle",
+                     icon: "mdi mdi-alert",
+                     acceptClass: "p-button-danger",
                      accept() {
                         emit("newProject");
                      },
@@ -239,32 +249,32 @@ const navbarItems = reactive([
          },
          {
             label: "Open...",
-            icon: "pi pi-folder-open",
+            icon: "mdi mdi-folder-open",
             command: () => {
                state.showProjectsDialog = true;
             },
          },
          {
             label: "Save As...",
-            icon: "pi pi-save",
+            icon: "mdi mdi-content-save",
             command: () => {
                state.showSaveProjectDialog = true;
             },
          },
          {
             label: "Download",
-            icon: "pi pi-download",
+            icon: "mdi mdi-download",
             command: () => {},
          },
       ],
    },
    {
       label: "Editor",
-      icon: "pi pi-fw pi-pencil",
+      icon: "mdi mdi-pencil",
       items: [
          {
             label: "Options",
-            icon: "pi pi-cog",
+            icon: "mdi mdi-cog",
          },
       ],
    },
@@ -285,6 +295,8 @@ watch(
 );
 
 function saveProject(projectName: string) {
+   if (!projectName) return;
+
    let project = storage.addProject({
       name: projectName,
    });
@@ -299,6 +311,8 @@ function saveProject(projectName: string) {
 }
 
 function deleteProject(projectId: string) {
+   if (!projectId) return;
+
    let projects = storage.getProjects();
    let project = projects.find((p) => p.id === projectId);
 
@@ -306,7 +320,8 @@ function deleteProject(projectId: string) {
       confirm.require({
          message: `Are you sure you want to delete the project "${project.name}"?`,
          header: `Delete project`,
-         icon: "pi pi-exclamation-triangle",
+         icon: "mdi mdi-alert",
+         acceptClass: "p-button-danger",
          accept() {
             storage.removeProjectById(projectId);
             state.projects = storage.getProjects();
@@ -316,6 +331,8 @@ function deleteProject(projectId: string) {
 }
 
 function showRenameProjectDialog(projectId: string) {
+   if (!projectId) return;
+
    let projects = storage.getProjects();
    let project = projects.find((p) => p.id === projectId);
 
@@ -328,6 +345,8 @@ function showRenameProjectDialog(projectId: string) {
 }
 
 function renameProject(projectId: string, newProjectName: string) {
+   if (!projectId || !newProjectName) return;
+
    let projects = storage.getProjects();
    let project = projects.find((p) => p.id === projectId);
 
@@ -347,6 +366,8 @@ function renameProject(projectId: string, newProjectName: string) {
 }
 
 function useProjectAsTemplate(projectId: string) {
+   if (!projectId) return;
+
    let projects = storage.getProjects();
    let project = projects.find((p) => p.id === projectId);
 
@@ -370,6 +391,8 @@ function createProject(projectName: string) {
 }
 
 function openProject(projectId: string) {
+   if (!projectId) return;
+
    emit("openProject", projectId);
    state.showProjectsDialog = false;
 }

@@ -1,5 +1,5 @@
 <template>
-   <div class="project p-2 d-flex">
+   <div class="project p-2 d-flex col-12 col-sm-6 col-md-4">
       <button
          class="main-button d-flex flex-row align-items-center justify-content-between p-3 w-100 h-100"
          @contextmenu="contextMenu"
@@ -18,7 +18,7 @@
                style="font-size: 0.8em"
                v-if="!button"
             >
-               <i class="pi pi-clock me-2"></i>
+               <i class="mdi mdi-clock me-2"></i>
                {{ moment(lastEdited || Date.now()).calendar() }}
             </span>
          </div>
@@ -27,10 +27,10 @@
             v-if="!button"
          >
             <button class="sub" v-tooltip="'Delete'" @click="emit('delete')">
-               <i class="pi pi-trash"></i>
+               <i class="mdi mdi-delete"></i>
             </button>
             <button class="sub" v-tooltip="'Use as a template'" @click="emit('useAsTemplate')">
-               <i class="pi pi-clone"></i>
+               <i class="mdi mdi-content-copy"></i>
             </button>
          </div>
       </button>
@@ -57,11 +57,10 @@ function contextMenu(event) {
 <style lang="scss" scoped>
 @import "@app/styles/variables.scss";
 .project {
-   width: 33.33%;
    height: 100px;
 
    .main-button {
-      background-color: var(--surface-card);
+      background-color: var(--surface-50);
       border-radius: 5px;
       border: 1px solid var(--surface-border);
 
@@ -76,6 +75,10 @@ function contextMenu(event) {
          .sub-buttons {
             visibility: visible;
          }
+
+         .details h6 {
+            color: var(--text-color);
+         }
       }
       
       .sub-buttons {
@@ -87,6 +90,9 @@ function contextMenu(event) {
       $sub-button-size: 25px;
       .details {
          width: calc(100% - $sub-button-size);
+         h6 {
+            color: var(--text-color-secondary);
+         }
       }
 
       .sub {

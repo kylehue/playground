@@ -1,16 +1,21 @@
 <template>
-   <button class="d-flex align-items-center justify-content-center">
-      <i :class="'pi pi-' + props.icon" ></i>
+   <button
+      class="d-flex align-items-center justify-content-center"
+   >
+      <i :class="iconClass"></i>
    </button>
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 const props = defineProps({
    icon: {
       type: String,
       default: "emoticon-poop",
    },
 });
+
+let iconClass = computed(() => "mdi mdi-" + props.icon);
 </script>
 
 <style lang="scss" scoped>
@@ -23,16 +28,13 @@ button {
    margin: 0;
    width: 24px;
    height: 24px;
+   border-radius: 24px;
 
    &:hover {
-      color: var(--surface-400);
+      color: var(--surface-0);
+      background-color: var(--surface-300);
    }
 
-   &:active {
-      color: var(--surface-500);
-      transition-duration: 50ms;
-   }
-
-   transition: color 150ms;
+   transition: background-color, color 120ms;
 }
 </style>

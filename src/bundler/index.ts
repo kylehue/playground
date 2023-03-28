@@ -111,7 +111,7 @@ export async function addBulkAssets(assets: SimpleAsset[]) {
    let result = await worker.send(
       "addBulkAssets",
       {
-         assets,
+         assets: JSON.stringify(assets),
       },
       true
    );

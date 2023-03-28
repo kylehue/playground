@@ -4,11 +4,11 @@
       title="Packages"
       addTooltip="Add a package"
       :isBusy="isBusy"
-      icon="pi pi-box"
+      icon="mdi mdi-package-variant-closed"
    >
       <div class="d-flex flex-column align-items-center w-100 h-100">
          <div
-            class="package d-flex rounded m-2 mt-1 mb-1 p-2 flex-grow-1"
+            class="package d-flex m-2 mt-1 mb-1 p-2 flex-grow-1"
             v-for="pkg in props.content"
             :key="pkg.name"
          >
@@ -20,7 +20,7 @@
             </div>
             <IconButton
                class="delete-button"
-               icon="times"
+               icon="close"
                @click="removePackage(pkg.name)"
             ></IconButton>
          </div>
@@ -46,7 +46,8 @@ function removePackage(name: string) {
    confirm.require({
       message: `Are you sure you want to remove the "${name}" package?`,
       header: `Remove package`,
-      icon: "pi pi-exclamation-triangle",
+      icon: "mdi mdi-alert",
+      acceptClass: "p-button-danger",
       accept() {
          emit("removePackage", name);
       },
@@ -59,7 +60,9 @@ function removePackage(name: string) {
 .package {
    height: 40px;
    width: calc(100% - 1rem);
-   background: var(--surface-card);
+   background: rgba(122, 122, 122, 0.05);
+   border: 1px solid var(--surface-border);
+   border-radius: 4px;
 
    .text-version {
       font-size: 0.8em;

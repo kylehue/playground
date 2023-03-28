@@ -2,12 +2,12 @@
    <div
       class="projects d-flex flex-wrap align-items-start align-content-start justify-content-start w-100 h-100" :disabled="loading"
    >
-      <div class="new-project p-2 d-flex">
+      <div class="new-project p-2 d-flex col-12 col-sm-6 col-md-4">
          <button
             class="d-flex align-items-center w-100 h-100 p-3 fw-bold"
             @click="showNewProjectDialog"
          >
-            <i class="pi pi-plus me-2"></i>
+            <i class="mdi mdi-plus me-2"></i>
             <span>Create project</span>
          </button>
       </div>
@@ -50,28 +50,28 @@ const menu = ref<InstanceType<typeof ContextMenu>>();
 const menuModel = [
    {
       label: "Open",
-      icon: "pi pi-arrow-up-right",
+      icon: "mdi mdi-open-in-new",
       command: () => {
          emit("openProject", state.clickedProjectId);
       },
    },
    {
       label: "Use as template",
-      icon: "pi pi-clone",
+      icon: "mdi mdi-content-copy",
       command: () => {
          emit("useProjectAsTemplate", state.clickedProjectId);
       },
    },
    {
       label: "Rename",
-      icon: "pi pi-pencil",
+      icon: "mdi mdi-rename",
       command: () => {
          emit("renameProject", state.clickedProjectId);
       },
    },
    {
       label: "Delete",
-      icon: "pi pi-trash",
+      icon: "mdi mdi-delete",
       command: () => {
          emit("deleteProject", state.clickedProjectId);
       },
@@ -92,6 +92,8 @@ function showNewProjectDialog() {
 }
 
 function showMenu(event, projectId: string) {
+   if (!event || !projectId) return;
+
    menu.value?.show(event);
    state.clickedProjectId = projectId;
 }
@@ -105,7 +107,6 @@ function showMenu(event, projectId: string) {
 }
 
 .new-project {
-   width: 33.33%;
    height: 100px;
 
    button {
