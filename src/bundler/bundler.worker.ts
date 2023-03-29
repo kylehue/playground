@@ -2,7 +2,10 @@ import Toypack from "toypack";
 import { WorkerThread } from "@app/WorkerManager";
 import NodePolyfillPlugin from "toypack/lib/NodePolyfillPlugin";
 import DefinePlugin from "toypack/lib/DefinePlugin";
+import type _BabelLoader from "toypack/lib/loaders/BabelLoader";
+import BabelLoader from "toypack/lib/BabelLoader";
 import { join } from "path-browserify";
+import type defaultGeneralOptions from "@app/options/general";
 
 const bundler = new Toypack({
    bundleOptions: {
@@ -17,11 +20,13 @@ const bundler = new Toypack({
    },
 });
 
+const babelLoader: _BabelLoader = new BabelLoader();
+bundler.loaders.push(babelLoader as any);
 bundler.use(new NodePolyfillPlugin());
 bundler.use(
    new DefinePlugin({
       __VUE_OPTIONS_API__: true,
-      __VUE_PROD_DEVTOOLS__: false
+      __VUE_PROD_DEVTOOLS__: false,
    })
 );
 
@@ -63,7 +68,6 @@ thread.listen("clearAssets", (data) => {
    } catch (error) {
       throw error;
    }
-   
 
    return data;
 });
@@ -78,7 +82,7 @@ thread.listen("renameAsset", async (data) => {
    } catch (error) {
       throw error;
    }
-   
+
    return data;
 });
 
@@ -87,7 +91,7 @@ thread.listen("bundle", async (data) => {
       let bundleResult = await bundler.bundle(
          undefined,
          data.isHardBundle ? "hard" : "soft"
-      )
+      );
 
       console.log(bundler);
 
@@ -108,6 +112,81 @@ thread.listen("addBulkAssets", async (data) => {
 
    return data;
 });
+
+thread.listen("setOptions", (data) => {
+   let options: typeof defaultGeneralOptions = data.options;
+
+   if (options.infiniteLoopProtection) {
+      addInfiniteLoopProtection({});
+   } else {
+      removeInfiniteLoopProtection({});
+   }
+});
+
+function removeInfiniteLoopProtection(data) {
+   try {
+      if (babelLoader) {
+         let plugins = babelLoader.options?.transformOptions
+            ?.plugins;
+         if (plugins) {
+            for (let i = 0; i < plugins.length; i++) {
+               const plugin = plugins[i];
+               if (plugin == infiniteLoopPluginId) {
+                  plugins.splice(i, 1);
+                  break;
+               }
+            }
+         }
+      }
+   } catch (error) {
+      throw error;
+   }
+
+   return data;
+}
+
+thread.listen("removeInfiniteLoopProtection", removeInfiniteLoopProtection);
+
+let infiniteLoopProtectionRegistered = false;
+const infiniteLoopPluginId = "loopProtect";
+
+async function addInfiniteLoopProtection(data) {
+   try {
+      if (!infiniteLoopProtectionRegistered) {
+         let slowLoopTimeLimitMS = 200;
+         let loopProtectPluginModule = await import(
+            "@freecodecamp/loop-protect"
+         );
+         let loopProtectPlugin = loopProtectPluginModule.default(
+            slowLoopTimeLimitMS,
+            () => {
+               console.warn(
+                  "Loop Protection Warning: A slow loop has been terminated."
+               );
+            },
+            10000
+         );
+         infiniteLoopProtectionRegistered = true;
+         babelLoader.registerPlugin(
+            infiniteLoopPluginId,
+            loopProtectPlugin
+         );
+      }
+
+      if (babelLoader) {
+         let plugins = babelLoader.options?.transformOptions?.plugins;
+         if (!plugins?.find((p) => p == infiniteLoopPluginId)) {
+            plugins?.push(infiniteLoopPluginId);
+         }
+      }
+   } catch (error) {
+      throw error;
+   }
+
+   return data;
+}
+
+thread.listen("addInfiniteLoopProtection", addInfiniteLoopProtection);
 
 const typesSourceURL = "https://esm.sh/";
 const dtsCache = new Map();
@@ -183,30 +262,6 @@ declare module "${source}" {
 });
 
 bundler.hooks.failedLoader(async (descriptor) => {
-   let BabelPattern = /\.(t|j)sx?$/; // .js, .ts, .jsx, .tsx
-   if (BabelPattern.test(descriptor.asset.source)) {
-      let BabelLoader = await import("toypack/lib/BabelLoader.js");
-      let loopProtectPlugin = await import("@freecodecamp/loop-protect");
-      let slowLoopTimeLimitMS = 200;
-
-      let loader = new BabelLoader.default({
-         registerPlugins: [
-            ["loopProtect", loopProtectPlugin.default(slowLoopTimeLimitMS, () => {
-               console.warn("Loop Protection Warning: A slow loop has been terminated.");
-            }, 10000)],
-         ]
-      });
-
-      // Why is this breaking vue?
-      let plugins = loader.options?.transformOptions?.plugins;
-
-      if (plugins) {
-         plugins.push("loopProtect");
-      }
-
-      bundler.loaders.push(loader as any);
-   }
-
    let VuePattern = /\.vue$/; // .vue
    if (VuePattern.test(descriptor.asset.source)) {
       let VueLoader = await import("toypack/lib/VueLoader.js");

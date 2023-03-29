@@ -1,24 +1,28 @@
 import { editor } from "monaco-editor";
 
 const options: editor.IStandaloneEditorConstructionOptions = {
-lineNumbers: "on",
-   roundedSelection: true,
+   autoIndent: "advanced",
+   autoClosingBrackets: "languageDefined",
+   autoClosingDelete: "auto",
+   autoClosingQuotes: "languageDefined",
+   autoSurround: "languageDefined",   
+   codeLens: true,
+   detectIndentation: false,
+   formatOnPaste: false,
+   formatOnType: false,
+   insertSpaces: true,
+   lineNumbers: "on",
+   matchBrackets: "always",
+   mouseWheelScrollSensitivity: 1,
+   mouseWheelZoom: true,
    scrollBeyondLastLine: true,
-   readOnly: false,
-   theme: "theme-dark",
+   renderWhitespace: "selection",
+   showDeprecated: true,
+   smoothScrolling: false,
+   tabCompletion: "on",
+   tabSize: 4,
    wordWrap: "on",
    wrappingIndent: "indent",
-   insertSpaces: true,
-   tabSize: 3,
-   useShadowDOM: true,
-   automaticLayout: true,
-   contextmenu: true,
-   scrollbar: {
-      vertical: "auto",
-      horizontal: "auto",
-   },
-   mouseWheelZoom: true,
-   autoClosingBrackets: "always",
-}
+};
 
 export default options;

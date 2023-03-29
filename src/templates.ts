@@ -21,13 +21,13 @@ const templates: Template[] = [
          {
             source: "index.html",
             content: `<html>
-   <head>
-      <script src="./src/main.js"></script>
-   </head>
-   <body>
-      <h1>Default Template</h1>
-      <button id="countButton">Count is: <span>0</span></button>
-   </body>
+\t<head>
+\t\t<script src="./src/main.js"></script>
+\t</head>
+\t<body>
+\t\t<h1>Default Template</h1>
+\t\t<button id="countButton">Count is: <span>0</span></button>
+\t</body>
 </html>`,
          },
          {
@@ -39,7 +39,7 @@ countButton.addEventListener("click", () => {
    let span = countButton.querySelector("span");
    let currentCount = parseInt(span.textContent);
    
-   span.textContent = (currentCount + 1).toString();;
+   span.textContent = (currentCount + 1).toString();
 });`,
          },
          {

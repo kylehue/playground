@@ -99,6 +99,9 @@
       @saveProject="saveProject"
       @notify="pushNotification"
       :currentProjectId="state.currentProjectId"
+      :generalOptions="generalOptions"
+      :editorOptions="editorOptions"
+      :typescriptOptions="typescriptOptions"
    ></Navbar>
    <Splitpanes v-fill-remaining-height>
       <Pane size="20" min-size="5" class="explorer-pane">
@@ -153,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, reactive } from "vue";
+import { onMounted, ref, reactive, watch } from "vue";
 import { Splitpanes, Pane } from "splitpanes";
 import Drawer from "@app/components/explorer/Drawer.vue";
 import Packages from "@app/components/explorer/Packages.vue";
@@ -178,12 +181,13 @@ import {
 import templates, { Template } from "@app/templates";
 import { basename, join, extname } from "path-browserify";
 import * as bundler from "@app/bundler";
-import { Uri } from "monaco-editor";
-import _editorOptions from "@app/options/editor";
-import _typescriptOptions from "@app/options/typescript";
+import defaultEditorOptions from "@app/options/editor";
+import defaultTypescriptOptions from "@app/options/typescript";
+import defaultGeneralOptions from "@app/options/general";
 
-const editorOptions = reactive(_editorOptions);
-const typescriptOptions = reactive(_typescriptOptions);
+const generalOptions = reactive(defaultGeneralOptions);
+const editorOptions = reactive(defaultEditorOptions);
+const typescriptOptions = reactive(defaultTypescriptOptions);
 const toast = useToast();
 const monaco = ref<InstanceType<typeof MonacoEditor>>();
 const drawer = ref<InstanceType<typeof Drawer>>();
@@ -209,6 +213,19 @@ const busyState = reactive({
    packageList: false,
    packageSearch: false,
    packageSearchVersion: false,
+});
+
+async function updateGeneralOptions(options: typeof defaultGeneralOptions) {
+   // Update infinite loop option
+   if (options.infiniteLoopProtection) {
+      await bundler.addInfiniteLoopProtection();
+   } else {
+      await bundler.removeInfiniteLoopProtection();
+   }
+}
+
+watch(generalOptions, newGeneralOptions => {
+   updateGeneralOptions(newGeneralOptions);
 });
 
 function highlightDrawerFile(source: string) {
@@ -864,6 +881,8 @@ addEventListener("keydown", (event) => {
 });
 
 onMounted(async () => {
+   await updateGeneralOptions(defaultGeneralOptions);
+
    let autosaveTempProject = localStorage.getItem("temp");
 
    if (!autosaveTempProject) {

@@ -120,3 +120,23 @@ export async function addBulkAssets(assets: SimpleAsset[]) {
 
    return result;
 }
+
+export async function removeInfiniteLoopProtection() {
+   console.log("removeInfiniteLoopProtection started");
+
+   let result = await worker.send("removeInfiniteLoopProtection", {}, true);
+
+   console.log("removeInfiniteLoopProtection finished");
+
+   return result;
+}
+
+export async function addInfiniteLoopProtection() {
+   console.log("addInfiniteLoopProtection started");
+
+   let result = await worker.send("addInfiniteLoopProtection", {}, true);
+
+   console.log("addInfiniteLoopProtection finished");
+
+   return result;
+}

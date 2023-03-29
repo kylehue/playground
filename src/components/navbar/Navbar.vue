@@ -35,17 +35,34 @@
             <b>Projects</b>
          </div>
       </template>
-      <template #default>
-         <Projects
-            v-model="state.projects"
-            @openProject="openProject"
-            @showNewProjectDialog="state.showNewProjectDialog = true"
-            @deleteProject="deleteProject"
-            @renameProject="showRenameProjectDialog"
-            @useProjectAsTemplate="useProjectAsTemplate"
-            :loading="isBusy"
-         ></Projects>
+      <Projects
+         v-model="state.projects"
+         @openProject="openProject"
+         @showNewProjectDialog="state.showNewProjectDialog = true"
+         @deleteProject="deleteProject"
+         @renameProject="showRenameProjectDialog"
+         @useProjectAsTemplate="useProjectAsTemplate"
+         :loading="isBusy"
+      ></Projects>
+   </Dialog>
+   <Dialog
+      v-model:visible="state.showOptionsDialog"
+      dismissableMask
+      modal
+      class="w-75 h-75"
+      contentClass="h-100"
+   >
+      <template #header>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-cog me-2"></i>
+            <b>Options</b>
+         </div>
       </template>
+      <Options
+         :generalOptions="generalOptions"
+         :editorOptions="editorOptions"
+         :typescriptOptions="typescriptOptions"
+      ></Options>
    </Dialog>
    <Dialog
       v-model:visible="state.showNewProjectDialog"
@@ -151,6 +168,7 @@
 
 <script setup lang="ts">
 import Projects from "@app/components/navbar/Projects.vue";
+import Options from "@app/components/options/Options.vue";
 import Menubar from "primevue/menubar";
 import SplitButton from "primevue/splitbutton";
 import Button from "primevue/button";
@@ -158,16 +176,22 @@ import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import { useConfirm } from "primevue/useconfirm";
 import logo from "@app/assets/logo_240x240.png";
-import { ref, reactive, watch, getCurrentInstance } from "vue";
+import { ref, reactive, watch } from "vue";
 import * as storage from "@app/utils/storage";
-const props = defineProps({
-   isBusy: Boolean,
-   currentProjectId: String,
-});
+import { editor, languages } from "monaco-editor";
+import type generalOptions from "@app/options/general";
+const props = defineProps<{
+   isBusy: boolean;
+   currentProjectId: string;
+   typescriptOptions: languages.typescript.CompilerOptions;
+   editorOptions: editor.IStandaloneEditorConstructionOptions;
+   generalOptions: typeof generalOptions;
+}>();
 
 const state = reactive({
    showProjectsDialog: false,
    showNewProjectDialog: false,
+   showOptionsDialog: false,
    saveProjectName: "",
    showSaveProjectDialog: false,
    newProjectName: "",
@@ -208,6 +232,24 @@ const runButtonMenuItems = [
    },
 ];
 
+function currentProjectIsSaved() {
+   // Check if the current project is saved or not
+   let projects = storage.getProjects();
+   let project = projects.find((p) => p.id === props.currentProjectId);
+   let isSaved = !!project;
+   // Check if empty
+   return isSaved;
+}
+
+function currentProjectIsEmpty() {
+   // Check if empty
+   let temp = localStorage.getItem("temp");
+   let parsedTemp = JSON.parse(temp || "{}");
+   let currentProjectIsEmpty =
+      !parsedTemp?.files?.length && !parsedTemp?.packages?.length;
+   return currentProjectIsEmpty;
+}
+
 const unsavedProjectTitle = "Unsaved Project";
 const navbarItems = reactive([
    {
@@ -218,23 +260,11 @@ const navbarItems = reactive([
             label: "New",
             icon: "mdi mdi-plus",
             command: () => {
-               // Check if the current project is saved or not
-               let projects = storage.getProjects();
-               let project = projects.find(
-                  (p) => p.id === props.currentProjectId
-               );
-               let isSaved = !!project;
-               // Check if empty
-               let temp = localStorage.getItem("temp");
-               let parsedTemp = JSON.parse(temp || "{}");
-               let currentProjectIsEmpty =
-                  !parsedTemp?.files?.length && !parsedTemp?.packages?.length;
-
                // If not saved...
-               if (!isSaved && !currentProjectIsEmpty) {
+               if (!currentProjectIsSaved() && !currentProjectIsEmpty()) {
                   confirm.require({
                      message:
-                        "The current project is not saved. Do you want to discard changes and create a new project?",
+                        "The current project is not yet saved. Do you want to discard changes and create a new project?",
                      header: `New project`,
                      icon: "mdi mdi-alert",
                      acceptClass: "p-button-danger",
@@ -266,15 +296,12 @@ const navbarItems = reactive([
             icon: "mdi mdi-download",
             command: () => {},
          },
-      ],
-   },
-   {
-      label: "Editor",
-      icon: "mdi mdi-pencil",
-      items: [
          {
             label: "Options",
             icon: "mdi mdi-cog",
+            command: () => {
+               state.showOptionsDialog = true;
+            },
          },
       ],
    },
@@ -307,7 +334,7 @@ function saveProject(projectName: string) {
    state.saveProjectName = "";
 
    emit("saveProject", project.id);
-   emit("notify", "Project has been saved.", "success");
+   emit("notify", "Project has been saved!", "", "success");
 }
 
 function deleteProject(projectId: string) {
@@ -382,6 +409,12 @@ function createProject(projectName: string) {
 
    storage.addProject({
       name: projectName,
+      files: [
+         {
+            source: "index.js",
+            content: "",
+         },
+      ],
    });
 
    // Update state
@@ -393,8 +426,22 @@ function createProject(projectName: string) {
 function openProject(projectId: string) {
    if (!projectId) return;
 
-   emit("openProject", projectId);
-   state.showProjectsDialog = false;
+   if (!currentProjectIsSaved() && !currentProjectIsEmpty()) {
+      confirm.require({
+         message:
+            "The current project is not yet saved. Do you want to discard changes?",
+         header: `Open project`,
+         icon: "mdi mdi-alert",
+         acceptClass: "p-button-danger",
+         accept() {
+            emit("openProject", projectId);
+            state.showProjectsDialog = false;
+         },
+      });
+   } else {
+      emit("openProject", projectId);
+      state.showProjectsDialog = false;
+   }
 }
 </script>
 

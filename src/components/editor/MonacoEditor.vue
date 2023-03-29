@@ -11,6 +11,8 @@ import * as theme from "./theme";
 import { join } from "path-browserify";
 import getLang from "@app/utils/getLang";
 import validateFile from "@app/utils/validateFile";
+import { setupMonacoEnv, loadOnigasm } from "@app/monacoSetup";
+import ProgressSpinner from "primevue/progressspinner";
 
 // Definitions
 const props = defineProps<{
@@ -44,6 +46,11 @@ let editorInstance: editor.IStandaloneCodeEditor = editor.create(
    editorParentElement,
    {
       ...props.editorOptions,
+      roundedSelection: true,
+      readOnly: false,
+      theme: "theme-dark",
+      useShadowDOM: true,
+      contextmenu: true,
       automaticLayout: true,
       model: editor.createModel("", "text/html", Uri.parse("/$dummy_file.txt")),
    }
@@ -52,14 +59,14 @@ let editorInstance: editor.IStandaloneCodeEditor = editor.create(
 loadGrammars(editorInstance);
 
 if (props.typescriptOptions) {
-   languages.typescript.typescriptDefaults.setCompilerOptions(
-      props.typescriptOptions
-   );
+   languages.typescript.typescriptDefaults.setCompilerOptions({
+      ...props.typescriptOptions,
+   });
 }
 
 // Watch stuff
 watch(
-   () => props.typescriptOptions,
+   props.typescriptOptions,
    (options) => {
       if (options) {
          languages.typescript.typescriptDefaults.setCompilerOptions(options);
@@ -68,7 +75,7 @@ watch(
 );
 
 watch(
-   () => props.editorOptions,
+   props.editorOptions,
    (options) => {
       if (options) {
          editorInstance.updateOptions(options);
@@ -82,10 +89,13 @@ function removeModel(source: string) {
    modelMap.delete(uri.path);
 
    // Create dummy model if no models are left
-   if (editor.getModels().length == 0) {
+   let models = editor.getModels();
+   if (models.length == 0) {
       editorInstance.setModel(
          editor.createModel("", "text/html", Uri.parse("/$dummy_file.txt"))
       );
+   } else if (!editorInstance.getModel()) {
+      editorInstance.setModel(models[models.length - 1]);
    }
 }
 
@@ -100,6 +110,9 @@ function renameModel(source: string, newSource: string) {
       let lang = oldModel.getLanguageId();
       let newUri = Uri.parse(join("/", newSource));
       let newModel = editor.createModel(value, lang, newUri);
+
+      // Change language
+      editor.setModelLanguage(newModel, getLang(newUri.path));
 
       // Focus new model if the old model is focused
       if (editorInstance.getModel()?.uri.path == oldModel.uri.path) {
@@ -122,7 +135,7 @@ function setModel(path: string, content = "") {
    let model = editor.getModel(uri);
    // Create model if it doesn't exist
    if (!model) {
-      model = editor.createModel(content, getLang(path as any), uri);
+      model = editor.createModel(content, getLang(path), uri);
       if (!modelMap.get(path)) {
          modelMap.set(path, {});
       }
@@ -155,10 +168,10 @@ defineExpose({
    renameModel,
    addDts,
    setModel,
-   getValidModels
+   getValidModels,
 });
 
-onMounted(() => {
+onMounted(async () => {
    editorElement.value?.append(editorParentElement);
 
    // Dispose the starter model
@@ -223,3 +236,9 @@ onMounted(() => {
    (window as any).languagestest = languagestest;
 });
 </script>
+
+<style lang="scss" scoped>
+.splash-screen {
+   background-color: var(--surface-card);
+}
+</style>

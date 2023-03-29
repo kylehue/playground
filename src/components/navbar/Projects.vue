@@ -1,6 +1,6 @@
 <template>
    <div
-      class="projects d-flex flex-wrap align-items-start align-content-start justify-content-start w-100 h-100" :disabled="loading"
+      class="projects d-flex flex-wrap align-items-start align-content-start justify-content-start w-100 h-100"
    >
       <div class="new-project p-2 d-flex col-12 col-sm-6 col-md-4">
          <button

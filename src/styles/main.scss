@@ -32,12 +32,13 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-   background: var(--surface-50);
+   background-color: rgba(122, 122, 122, 0.2);
    border-radius: 4px;
+   transition: background-color 150ms;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-   background: var(--surface-hover);
+   background-color: rgba(122, 122, 122, 0.3);
 }
 
 .drawer-file {
@@ -89,4 +90,22 @@ img[alt="logo"] {
    white-space: break-spaces !important;
    text-overflow: ellipsis !important;
    overflow: hidden !important;
+}
+
+.p-panelmenu {
+   .p-menuitem-link {
+      padding: 0.5rem 2rem !important;
+   }
+   
+   .p-menuitem-text {
+      margin-right: 3rem !important;
+   }
+
+   .p-panelmenu-header-action {
+      padding: 0.75rem 1.5rem !important;
+   }
+}
+
+.p-dropdown-items-wrapper {
+   min-width: 200px;
 }

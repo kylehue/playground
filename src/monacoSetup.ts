@@ -80,9 +80,22 @@ export async function setupMonacoEnv() {
             event.preventDefault();
          }
       });
-      
-      languages.typescript.typescriptDefaults.setEagerModelSync(true);
-      languages.typescript.typescriptDefaults.setMaximumWorkerIdleTime(-1);
+
+      const languageId = [
+         "html",
+         "css",
+         "javascript",
+         "typescript",
+         "javascriptreact",
+         "typescriptreact",
+         "json",
+         "vue",
+      ];
+
+      const getSyncUris = () => {
+         let models = editor.getModels().map((model) => model.uri);
+         return models;
+      };
 
       (self as any).MonacoEnvironment = {
          getWorker(_: any, label: string) {
@@ -103,56 +116,30 @@ export async function setupMonacoEnv() {
             }
          },
       };
-
-      const worker = editor.createWebWorker<LanguageService>({
+      
+      const vueEditorWorker = editor.createWebWorker<LanguageService>({
          moduleId: "vs/language/vue/vueWorker",
          label: "vue",
          createData: {},
       });
 
-      // let uri = Uri.parse("src/hello/index.ts");
-      // editor.createModel(
-      //    `export interface Hello {
-      //       hi: string;
-      //       goodmorning: number;
-      //    }`,
-      //    "typescript",
-      //    uri
-      // );
-
-      (window as any).gets = await (await worker.getProxy()).callHierarchy
-
-      const languageId = [
-         "html",
-         "css",
-         "javascript",
-         "typescript",
-         "javascriptreact",
-         "typescriptreact",
-         "json",
-         "vue",
-      ];
-
-      const getSyncUris = () => {
-         let models = editor.getModels().map((model) => model.uri);
-         return models;
-      };
-
       volar.editor.activateMarkers(
-         worker,
+         vueEditorWorker,
          languageId,
          "vue",
          getSyncUris,
          editor
       );
+
       volar.editor.activateAutoInsertion(
-         worker,
+         vueEditorWorker,
          languageId,
          getSyncUris,
          editor
       );
-      await volar.languages.registerProvides(
-         worker,
+
+      volar.languages.registerProvides(
+         vueEditorWorker,
          languageId,
          getSyncUris,
          languages

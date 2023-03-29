@@ -1,4 +1,18 @@
 /*!
+   * The buffer module from node.js, for the browser.
+   *
+   * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+   * @license  MIT
+   */
+
+/*!
+   * The buffer module from node.js, for the browser.
+   *
+   * @author   Feross Aboukhadijeh <https://feross.org>
+   * @license  MIT
+   */
+
+/*!
  * The buffer module from node.js, for the browser.
  *
  * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
@@ -1336,6 +1350,8 @@
 
 /*! @babel/parser */
 
+/*! @babel/standalone */
+
 /*! @babel/template */
 
 /*! @babel/traverse */
@@ -1351,6 +1367,8 @@
 /*! @jridgewell/sourcemap-codec */
 
 /*! @jridgewell/trace-mapping */
+
+/*! @toypack/core/SourceMap */
 
 /*! @toypack/core/Toypack */
 
@@ -1383,6 +1401,8 @@
 /*! babel-helper-to-multiple-sequence-expressions */
 
 /*! babel-minify */
+
+/*! babel-plugin-add-module-exports */
 
 /*! babel-plugin-minify-builtins */
 
@@ -1718,6 +1738,10 @@
 
 /*!************************************!*\
   !*** ./src/loaders/AssetLoader.ts ***!
+  \************************************/
+
+/*!************************************!*\
+  !*** ./src/loaders/BabelLoader.ts ***!
   \************************************/
 
 /*!************************************!*\
@@ -2565,6 +2589,10 @@
   \*********************************************/
 
 /*!**********************************************!*\
+  !*** ./node_modules/@babel/standalone/ sync ***!
+  \**********************************************/
+
+/*!**********************************************!*\
   !*** ./node_modules/browserslist/browser.js ***!
   \**********************************************/
 
@@ -2970,6 +2998,10 @@
 
 /*!*************************************************!*\
   !*** ./node_modules/@babel/parser/lib/index.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/@babel/standalone/babel.js ***!
   \*************************************************/
 
 /*!*************************************************!*\
@@ -4030,6 +4062,10 @@
 
 /*!*******************************************************************!*\
   !*** ./node_modules/@babel/types/lib/validators/isBlockScoped.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/babel-plugin-add-module-exports/lib/index.js ***!
   \*******************************************************************/
 
 /*!********************************************************************!*\

@@ -9,6 +9,11 @@ declare module "*.png" {
    export default value;
 }
 
+declare module "*.css" {
+   const value: any;
+   export default value;
+}
+
 declare module "monaco-vue";
 declare module "*.wasm";
 
