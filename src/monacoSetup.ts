@@ -56,15 +56,6 @@ export async function setupMonacoEnv() {
 
    languages.register({ id: "vue", extensions: [".vue"] });
    languages.setLanguageConfiguration("vue", languageConfig);
-   languages.onLanguage("html", setup);
-   languages.onLanguage("css", setup);
-   languages.onLanguage("scss", setup);
-   languages.onLanguage("sass", setup);
-   languages.onLanguage("javascript", setup);
-   languages.onLanguage("typescript", setup);
-   languages.onLanguage("javascriptreact", setup);
-   languages.onLanguage("typescriptreact", setup);
-   languages.onLanguage("json", setup);
    languages.onLanguage("vue", setup);
 
    async function setup() {
@@ -97,26 +88,27 @@ export async function setupMonacoEnv() {
          return models;
       };
 
-      (self as any).MonacoEnvironment = {
-         getWorker(_: any, label: string) {
-            console.log(label);
-
-            if (["html"].includes(label)) {
-               return htmlWorker;
-            } else if (["css", "scss", "sass"].includes(label)) {
-               return cssWorker;
-            } else if (["typescript", "javascript"].includes(label)) {
-               return tsWorker;
-            } else if (["json"].includes(label)) {
-               return jsonWorker;
-            } else if (["vue"].includes(label)) {
-               return vueWorker;
-            } else {
-               return editorWorker;
-            }
-         },
-      };
+      (self as any).MonacoEnvironment ??= {};
+      (self as any).MonacoEnvironment.getWorker ??= () => editorWorker;
+      const getWorker = (self as any).MonacoEnvironment.getWorker;
       
+      (self as any).MonacoEnvironment.getWorker = (_: any, label: string) => {
+         console.log(label);
+         if (["html"].includes(label)) {
+            return htmlWorker;
+         } else if (["css", "scss", "sass"].includes(label)) {
+            return cssWorker;
+         } else if (["typescript", "javascript"].includes(label)) {
+            return tsWorker;
+         } else if (["json"].includes(label)) {
+            return jsonWorker;
+         } else if (["vue"].includes(label)) {
+            return vueWorker;
+         } else {
+            return getWorker();
+         }
+      };
+
       const vueEditorWorker = editor.createWebWorker<LanguageService>({
          moduleId: "vs/language/vue/vueWorker",
          label: "vue",

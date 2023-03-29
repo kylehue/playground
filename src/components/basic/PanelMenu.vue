@@ -132,9 +132,9 @@ function search(searchValue: string) {
    for (let searchTargetElement of searchTargetElements.value) {
       let elementTextContent: string =
          searchTargetElement.element.textContent || "";
-      if (searchRegex.test(elementTextContent) || !searchValue) {
+      if (searchRegex.test(elementTextContent)) {
          searchElement.value.append(searchTargetElement.element);
-      } else if (!searchRegex.test(elementTextContent)) {
+      } else {
          searchTargetElement.originalParent?.append(
             searchTargetElement.element
          );

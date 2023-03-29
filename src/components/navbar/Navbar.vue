@@ -61,6 +61,7 @@
       <Options
          :generalOptions="generalOptions"
          :editorOptions="editorOptions"
+         :bundlerOptions="bundlerOptions"
          :typescriptOptions="typescriptOptions"
       ></Options>
    </Dialog>
@@ -180,12 +181,14 @@ import { ref, reactive, watch } from "vue";
 import * as storage from "@app/utils/storage";
 import { editor, languages } from "monaco-editor";
 import type generalOptions from "@app/options/general";
+import type bundlerOptions from "@app/options/bundler";
 const props = defineProps<{
    isBusy: boolean;
    currentProjectId: string;
-   typescriptOptions: languages.typescript.CompilerOptions;
-   editorOptions: editor.IStandaloneEditorConstructionOptions;
    generalOptions: typeof generalOptions;
+   bundlerOptions: typeof bundlerOptions;
+   editorOptions: editor.IStandaloneEditorConstructionOptions;
+   typescriptOptions: languages.typescript.CompilerOptions;
 }>();
 
 const state = reactive({
@@ -254,7 +257,7 @@ const unsavedProjectTitle = "Unsaved Project";
 const navbarItems = reactive([
    {
       label: unsavedProjectTitle,
-      icon: "mdi mdi-file",
+      icon: "mdi mdi-folder-open",
       items: [
          {
             label: "New",

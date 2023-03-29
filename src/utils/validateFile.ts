@@ -25,9 +25,8 @@ export default function validateFile(source: string) {
 
    let extension = extname(source);
    let name = basename(source);
-   let isDirectory = !extension;
 
-   if (isDirectory && source.startsWith("/node_modules")) {
+   if (source.startsWith("/node_modules")) {
       return createInvalidation(
          "Invalid directory",
          "node_modules is a reserved directory name.",
@@ -50,6 +49,14 @@ export default function validateFile(source: string) {
          "warn"
       );
    }
+
+   /* if (!supportedExtensions.includes(extension)) {
+      return createInvalidation(
+         "Invalid file",
+         `${extension} files are currently not supported.`,
+         "warn"
+      );
+   } */
 
    return null;
 }

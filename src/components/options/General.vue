@@ -2,19 +2,6 @@
    <div class="d-flex flex-column gap-3 w-100 h-100">
       <Card>
          <template #title>
-            <span class="text-truncate">
-               Infinite Loop Protection
-            </span>
-         </template>
-         <template #content>
-            <p class="text-wrap text-muted">
-               This option safeguards against situations where a user's code contains an endless loop created by a while, for, or do loop. It also prevents the creation of infinite loops that can occur when a React component references itself.
-            </p>
-            <InputSwitch v-model="options.infiniteLoopProtection" />
-         </template>
-      </Card>
-      <Card>
-         <template #title>
             <span class="text-truncate"> Clear Storage </span>
          </template>
          <template #content>
@@ -32,7 +19,6 @@
 </template>
 
 <script lang="ts" setup>
-import InputSwitch from "primevue/inputswitch";
 import Button from "primevue/button";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";

@@ -5,8 +5,15 @@ import { setupMonacoEnv, loadOnigasm } from "@app/monacoSetup";
 
 const App = defineAsyncComponent({
    loader: async () => {
-      await setupMonacoEnv();
       await loadOnigasm();
+      await setupMonacoEnv();
+
+      await new Promise((resolve) => {
+         setTimeout(() => {
+            resolve(1);
+         }, 5000);
+      });
+
       return await import("./App.vue");
    },
    delay: 0,

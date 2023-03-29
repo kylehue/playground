@@ -24,13 +24,15 @@ app.directive("tooltip", Tooltip);
 app.directive("focus", {
    mounted(el) {
       let input = el.querySelector("input");
-
-      if (input) {
-         input.focus();
-      } else {
-         el.focus();
-      }
+      setTimeout(() => {
+         if (input) {
+            input.focus();
+         } else {
+            el.focus();
+         }
+      }, 10);
    },
+
 });
 
 app.directive("fill-remaining-height", {

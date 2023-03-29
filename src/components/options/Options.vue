@@ -10,7 +10,7 @@
             <Editor :options="editorOptions"></Editor>
          </template>
          <template #bundler>
-            <Bundler></Bundler>
+            <Bundler :options="bundlerOptions"></Bundler>
          </template>
          <template #babel>
             <Babel></Babel>
@@ -32,10 +32,12 @@ import Babel from "./Babel.vue";
 import TypeScript from "./TypeScript.vue";
 import { editor, languages } from "monaco-editor";
 import type generalOptions from "@app/options/general";
+import type bundlerOptions from "@app/options/bundler";
 
 const props = defineProps<{
    generalOptions: typeof generalOptions;
    editorOptions: editor.IStandaloneEditorConstructionOptions;
+   bundlerOptions: typeof bundlerOptions;
    typescriptOptions: languages.typescript.CompilerOptions;
 }>();
 

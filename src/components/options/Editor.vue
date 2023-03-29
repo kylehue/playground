@@ -99,7 +99,7 @@
             <span class="text-truncate"> Insert Spaces </span>
          </template>
          <template #content>
-            <p class="text-wrap text-muted">Insert spaces when pressing Tab.</p>
+            <p class="text-wrap text-muted">Insert spaces when pressing <kbd>Tab</kbd>.</p>
             <InputSwitch v-model="options.insertSpaces" />
          </template>
       </Card>
@@ -140,7 +140,7 @@
             <span class="text-truncate"> Scroll Sensitivity </span>
          </template>
          <template #content>
-            <p class="text-wrap text-muted">A multiplier to be used on the deltaX and deltaY of mouse wheel scroll events.</p>
+            <p class="text-wrap text-muted">A multiplier to be used on the <code>deltaX</code> and <code>deltaY</code> of mouse wheel scroll events.</p>
             <Slider
                v-model="options.mouseWheelScrollSensitivity"
                :min="0.1"
@@ -156,7 +156,7 @@
          <template #content>
             <p class="text-wrap text-muted">
                Zoom the font in the editor when using the mouse wheel in
-               combination with holding Ctrl.
+               combination with holding <kbd>Ctrl</kbd>.
             </p>
             <InputSwitch v-model="options.mouseWheelZoom" />
          </template>
@@ -240,10 +240,9 @@
          </template>
          <template #content>
             <p class="text-wrap text-muted">
-               Control the wrapping of the editor. When set to "off", the lines
-               will never wrap. When set to "on", the lines will wrap at the
-               viewport width. When set to "bounded", the lines will wrap at
-               min(viewport width, wordWrapColumn).
+               Control the wrapping of the editor. When set to <code>off</code>, the lines
+               will never wrap. When set to <code>on</code>, the lines will wrap at the
+               viewport width. When set to <code>bounded</code>, the lines will wrap at min(viewport_width, wordWrapColumn).
             </p>
             <Dropdown
                v-model="options.wordWrap"

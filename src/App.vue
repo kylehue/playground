@@ -48,29 +48,30 @@
          </div>
       </template>
       <div class="d-flex flex-row">
-         <Dropdown
+         <AutoComplete
             v-model="state.selectedPackage"
-            :options="state.packageResults"
-            :editable="true"
-            @input="(e) => fetchPackage(e.target.value)"
-            @change="(e) => fetchSelectPackageVersions(e.value)"
+            :suggestions="state.packageResults"
+            @complete="fetchPackage"
+            @item-select="fetchSelectPackageVersions"
             optionLabel="name"
-            optionValue="name"
             placeholder="Search packages"
-            class="col-7 me-2"
+            class="col-7 me-2 flex-grow-1"
             v-focus
             :loading="busyState.packageSearch"
+            forceSelection
+            dropdown
+            dropdownMode="current"
          >
-         </Dropdown>
+         </AutoComplete>
          <Dropdown
             v-model="state.selectedPackageVersion"
             :options="state.selectedPackageVersionResults"
             :editable="true"
+            :show-clear="true"
             :disabled="!state.selectedPackageVersionResults.length"
-            optionLabel="name"
-            optionValue="value"
+            :optionLabel="(d: FetchedVersion) => d.isLatest ? d.value + ' (latest)' : d.value"
             placeholder="Version"
-            class="col-5"
+            class="col-5 flex-shrink-1"
             :loading="busyState.packageSearchVersion"
          >
          </Dropdown>
@@ -81,11 +82,17 @@
                !state.selectedPackageVersion ||
                !state.selectedPackage ||
                busyState.packageSearch ||
-               busyState.packageSearchVersion
+               busyState.packageSearchVersion ||
+               !state.selectedPackageVersionResults.find(
+                  (v) => v.value == state.selectedPackageVersion?.value
+               )
             "
             label="Add"
             @click="
-               addPackage(state.selectedPackage, state.selectedPackageVersion)
+               addPackage(
+                  state.selectedPackage?.name!,
+                  state.selectedPackageVersion?.value!
+               )
             "
          />
       </template>
@@ -101,6 +108,7 @@
       :currentProjectId="state.currentProjectId"
       :generalOptions="generalOptions"
       :editorOptions="editorOptions"
+      :bundlerOptions="bundlerOptions"
       :typescriptOptions="typescriptOptions"
    ></Navbar>
    <Splitpanes v-fill-remaining-height>
@@ -165,6 +173,7 @@ import MonacoEditor from "@app/components/editor/MonacoEditor.vue";
 import InputText from "primevue/inputtext";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
+import AutoComplete from "primevue/autocomplete";
 import Dropdown from "primevue/dropdown";
 import ProgressBar from "primevue/progressbar";
 import { MessageProps } from "primevue/message";
@@ -177,32 +186,36 @@ import {
    searchPackagesByName,
    searchPackage,
    PackageResult,
+   FetchedVersion,
 } from "@app/utils/npmSearch";
 import templates, { Template } from "@app/templates";
 import { basename, join, extname } from "path-browserify";
 import * as bundler from "@app/bundler";
-import defaultEditorOptions from "@app/options/editor";
-import defaultTypescriptOptions from "@app/options/typescript";
 import defaultGeneralOptions from "@app/options/general";
+import defaultEditorOptions from "@app/options/editor";
+import defaultBundlerOptions from "@app/options/bundler";
+import defaultTypescriptOptions from "@app/options/typescript";
 
 const generalOptions = reactive(defaultGeneralOptions);
 const editorOptions = reactive(defaultEditorOptions);
+const bundlerOptions = reactive(defaultBundlerOptions);
 const typescriptOptions = reactive(defaultTypescriptOptions);
 const toast = useToast();
 const monaco = ref<InstanceType<typeof MonacoEditor>>();
 const drawer = ref<InstanceType<typeof Drawer>>();
 const iframe = ref<InstanceType<typeof HTMLIFrameElement>>();
 const navbar = ref<InstanceType<typeof Navbar>>();
+
 const state = reactive({
    currentProjectId: "",
    newFileDialogPath: "",
    showNewFileDialog: false,
    copiedFileDescriptor: null as any,
    showNewPackageDialog: false,
-   selectedPackage: "",
-   selectedPackageVersion: "",
+   selectedPackage: null as PackageResult | null,
+   selectedPackageVersion: null as FetchedVersion | null,
    packageResults: [] as PackageResult[],
-   selectedPackageVersionResults: [] as object[],
+   selectedPackageVersionResults: [] as FetchedVersion[],
    installedPackages: [] as Array<{ name: string; version: string }>,
    requiredPackages: [] as Array<{ name: string; version: string }>,
 });
@@ -215,17 +228,11 @@ const busyState = reactive({
    packageSearchVersion: false,
 });
 
-async function updateGeneralOptions(options: typeof defaultGeneralOptions) {
-   // Update infinite loop option
-   if (options.infiniteLoopProtection) {
-      await bundler.addInfiniteLoopProtection();
-   } else {
-      await bundler.removeInfiniteLoopProtection();
-   }
-}
-
-watch(generalOptions, newGeneralOptions => {
-   updateGeneralOptions(newGeneralOptions);
+let hardRunRequired = false;
+watch(bundlerOptions, (newBundlerOptions) => {
+   let options: typeof newBundlerOptions = JSON.parse(JSON.stringify(newBundlerOptions));
+   bundler.updateOptions(options);
+   hardRunRequired = true;
 });
 
 function highlightDrawerFile(source: string) {
@@ -247,6 +254,10 @@ function pushNotification(
       detail:
          message.length > 200 ? message.substring(0, 200) + "..." : message,
    });
+
+   if (severity == "error") {
+      busyState.bundler = false;
+   }
 }
 
 function removePackage(packageName: string) {
@@ -273,11 +284,13 @@ function removePackage(packageName: string) {
    saveProject();
 }
 
-function fetchPackage(searchText: string) {
+function fetchPackage(event) {
+   let searchText = event.query;
+
    if (!searchText) return;
 
    busyState.packageSearch = true;
-   state.selectedPackageVersion = "";
+   state.selectedPackageVersion = null;
    state.selectedPackageVersionResults = [];
 
    try {
@@ -294,7 +307,9 @@ function fetchPackage(searchText: string) {
    }
 }
 
-function fetchSelectPackageVersions(packageName: string) {
+function fetchSelectPackageVersions(e) {
+   let packageName = state.selectedPackage?.name;
+
    if (!packageName) return;
 
    if (!state.packageResults.find((p) => p.name == packageName)) {
@@ -303,25 +318,21 @@ function fetchSelectPackageVersions(packageName: string) {
 
    busyState.packageSearchVersion = true;
 
+   console.log(packageName, e, state);
+
    try {
-      state.selectedPackageVersion = "";
+      state.selectedPackageVersion = null;
       state.selectedPackageVersionResults = [];
-      searchPackage(packageName).then((result) => {
-         if (result) {
-            let distTags = result["dist-tags"];
+      searchPackage(packageName).then((results) => {
+         state.selectedPackageVersionResults = results;
 
-            state.selectedPackageVersionResults = Object.values(result.versions)
-               .reverse()
-               .map((el: any) => ({
-                  name:
-                     distTags.latest == el.version
-                        ? el.version + " (latest)"
-                        : el.version,
-                  value: el.version,
-               }));
-
-            state.selectedPackageVersion = distTags.latest;
+         for (let result of results) {
+            if (result.isLatest) {
+               state.selectedPackageVersion = result;
+               break;
+            }
          }
+
          busyState.packageSearchVersion = false;
       });
    } catch (error: any) {
@@ -333,9 +344,9 @@ function fetchSelectPackageVersions(packageName: string) {
 
 function closeNewPackageDialog() {
    state.showNewPackageDialog = false;
-   state.selectedPackage = "";
+   state.selectedPackage = null;
    state.packageResults = [];
-   state.selectedPackageVersion = "";
+   state.selectedPackageVersion = null;
    state.selectedPackageVersionResults = [];
 }
 
@@ -807,7 +818,7 @@ async function runProject(isHardRun = false) {
    }
 
    // Bundle
-   let result = await bundler.bundle(isHardRun);
+   let result = await bundler.bundle(isHardRun || hardRunRequired);
 
    if (result?._error) {
       let errorTitle = "Error";
@@ -825,11 +836,11 @@ async function runProject(isHardRun = false) {
 
    saveProject();
    busyState.bundler = false;
+   hardRunRequired = false;
 }
 
 function onDidChangeModelContent() {
    saveProject();
-   busyState.bundler = false;
 }
 
 bundler.worker.worker.addEventListener("message", (event) => {
@@ -881,7 +892,7 @@ addEventListener("keydown", (event) => {
 });
 
 onMounted(async () => {
-   await updateGeneralOptions(defaultGeneralOptions);
+   bundler.updateOptions(defaultBundlerOptions);
 
    let autosaveTempProject = localStorage.getItem("temp");
 

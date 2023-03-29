@@ -6,7 +6,10 @@
          @click.self="emit('click', $event)"
          :disabled="disabled"
       >
-         <i :class="icon + ' me-3 fs-5 text-muted'" v-if="typeof icon == 'string'"></i>
+         <i
+            :class="icon + ' me-3 fs-5 text-muted'"
+            v-if="typeof icon == 'string'"
+         ></i>
          <div class="details d-flex flex-column pe-none">
             <h6
                class="user-select-none text-start text-nowrap text-truncate w-100 m-0"
@@ -22,14 +25,15 @@
                {{ moment(lastEdited || Date.now()).calendar() }}
             </span>
          </div>
-         <div
-            class="sub-buttons d-flex flex-column"
-            v-if="!button"
-         >
+         <div class="sub-buttons d-flex flex-column" v-if="!button">
             <button class="sub" v-tooltip="'Delete'" @click="emit('delete')">
                <i class="mdi mdi-delete"></i>
             </button>
-            <button class="sub" v-tooltip="'Use as a template'" @click="emit('useAsTemplate')">
+            <button
+               class="sub"
+               v-tooltip="'Use as a template'"
+               @click="emit('useAsTemplate')"
+            >
                <i class="mdi mdi-content-copy"></i>
             </button>
          </div>
@@ -75,12 +79,8 @@ function contextMenu(event) {
          .sub-buttons {
             visibility: visible;
          }
-
-         .details h6 {
-            color: var(--text-color);
-         }
       }
-      
+
       .sub-buttons {
          visibility: hidden;
       }
@@ -90,8 +90,9 @@ function contextMenu(event) {
       $sub-button-size: 25px;
       .details {
          width: calc(100% - $sub-button-size);
+
          h6 {
-            color: var(--text-color-secondary);
+            color: var(--text-color);
          }
       }
 

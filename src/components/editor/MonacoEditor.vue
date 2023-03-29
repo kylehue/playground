@@ -59,9 +59,7 @@ let editorInstance: editor.IStandaloneCodeEditor = editor.create(
 loadGrammars(editorInstance);
 
 if (props.typescriptOptions) {
-   languages.typescript.typescriptDefaults.setCompilerOptions({
-      ...props.typescriptOptions,
-   });
+   languages.typescript.typescriptDefaults.setCompilerOptions(JSON.parse(JSON.stringify(props.typescriptOptions)));
 }
 
 // Watch stuff
@@ -69,7 +67,7 @@ watch(
    props.typescriptOptions,
    (options) => {
       if (options) {
-         languages.typescript.typescriptDefaults.setCompilerOptions(options);
+         languages.typescript.typescriptDefaults.setCompilerOptions(JSON.parse(JSON.stringify(options)));
       }
    }
 );
@@ -78,7 +76,7 @@ watch(
    props.editorOptions,
    (options) => {
       if (options) {
-         editorInstance.updateOptions(options);
+         editorInstance.updateOptions(JSON.parse(JSON.stringify(options)));
       }
    }
 );
@@ -172,6 +170,9 @@ defineExpose({
 });
 
 onMounted(async () => {
+   /* await loadOnigasm();
+   await setupMonacoEnv(); */
+
    editorElement.value?.append(editorParentElement);
 
    // Dispose the starter model
