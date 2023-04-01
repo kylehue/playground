@@ -32,38 +32,55 @@ app.directive("focus", {
          }
       }, 10);
    },
-
 });
 
+let fillRemainingHeightElements: HTMLElement[] = [];
 app.directive("fill-remaining-height", {
    mounted(el: HTMLElement) {
-      let remainingHeight = el.parentElement?.offsetHeight || 0;
+      if (fillRemainingHeightElements.includes(el)) return;
+      var fillRemainingHeight = () => {
+         let remainingHeight = el.parentElement?.offsetHeight || 0;
 
-      let siblings = Array.from(el.parentElement?.children || []);
+         let siblings = Array.from(el.parentElement?.children || []);
 
-      for (let sibling of siblings) {
-         if (sibling === el) continue;
-         remainingHeight -= (sibling as HTMLElement).offsetHeight;
-      }
+         for (let sibling of siblings) {
+            if (sibling === el) continue;
+            remainingHeight -= (sibling as HTMLElement).offsetHeight;
+         }
 
-      el.style.height = remainingHeight + "px";
+         el.style.height = remainingHeight + "px";
+      };
+
+      fillRemainingHeight();
+      addEventListener("resize", fillRemainingHeight);
+      fillRemainingHeightElements.push(el);
    },
 });
 
+let fillRemainingWidthElements: HTMLElement[] = [];
 app.directive("fill-remaining-width", {
    mounted(el: HTMLElement) {
-      let remainingWidth = el.parentElement?.offsetWidth || 0;
+      if (fillRemainingWidthElements.includes(el)) return;
+      var fillRemainingWidth = () => {
+         let remainingWidth = el.parentElement?.offsetWidth || 0;
 
-      let siblings = Array.from(el.parentElement?.children || []);
+         let siblings = Array.from(el.parentElement?.children || []);
 
-      for (let sibling of siblings) {
-         if (sibling === el) continue;
-         remainingWidth -= (sibling as HTMLElement).offsetWidth;
-      }
+         for (let sibling of siblings) {
+            if (sibling === el) continue;
+            remainingWidth -= (sibling as HTMLElement).offsetWidth;
+         }
 
-      el.style.width = remainingWidth + "px";
+         el.style.width = remainingWidth + "px";
+      };
+
+      fillRemainingWidth();
+      addEventListener("resize", fillRemainingWidth);
+      fillRemainingWidthElements.push(el);
    },
 });
+
+app.config.globalProperties.$log = console.log;
 
 // Mount
 app.mount("#root");

@@ -63,7 +63,7 @@
          </template>
          <template #content>
             <p class="text-wrap text-muted">
-               Create aliases to import or require certain modules more easily.
+               Create aliases to import or require certain modules more easily. (This option is currently not supported in TypeScript)
             </p>
             <RecordPair v-model="options.resolve.alias"></RecordPair>
          </template>

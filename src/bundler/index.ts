@@ -124,11 +124,37 @@ export async function addBulkAssets(assets: SimpleAsset[]) {
 export function updateOptions(options) {
    console.log("updateOptions started");
 
-   let result = worker.send("updateOptions", {
-      options
-   }, true);
+   let result = worker.send(
+      "updateOptions",
+      {
+         options,
+      },
+      true
+   );
 
    console.log("updateOptions finished");
+
+   return result;
+}
+
+export interface BabelLoaderOptions {
+   transformPlugins: string[],
+   transformPresets: string[],
+   parsePlugins: string[]
+}
+
+export function updateBabelOptions(options: BabelLoaderOptions) {
+   console.log("updateBabelOptions started");
+
+   let result = worker.send(
+      "updateBabelOptions",
+      {
+         options,
+      },
+      true
+   );
+
+   console.log("updateBabelOptions finished");
 
    return result;
 }

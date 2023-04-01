@@ -141,3 +141,16 @@ img[alt="logo"] {
 .p-dialog-footer {
    padding: 1rem 1.5rem !important;
 }
+
+.p-multiselect-label {
+   white-space: normal !important;
+}
+
+.p-multiselect-token, .p-chips-token {
+   margin-top: 0.125rem;
+   margin-bottom: 0.125rem;
+}
+
+.p-checkbox-icon::before {
+   box-sizing: unset !important;
+}

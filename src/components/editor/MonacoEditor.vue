@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, reactive, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { editor, KeyMod, KeyCode, Uri, languages } from "monaco-editor";
 import { languages as languagestest } from "monaco-editor-core";
 import { loadGrammars } from "monaco-volar";
@@ -11,8 +11,6 @@ import * as theme from "./theme";
 import { join } from "path-browserify";
 import getLang from "@app/utils/getLang";
 import validateFile from "@app/utils/validateFile";
-import { setupMonacoEnv, loadOnigasm } from "@app/monacoSetup";
-import ProgressSpinner from "primevue/progressspinner";
 
 // Definitions
 const props = defineProps<{
@@ -59,15 +57,29 @@ let editorInstance: editor.IStandaloneCodeEditor = editor.create(
 loadGrammars(editorInstance);
 
 if (props.typescriptOptions) {
-   languages.typescript.typescriptDefaults.setCompilerOptions(JSON.parse(JSON.stringify(props.typescriptOptions)));
+   let config = JSON.parse(JSON.stringify(props.typescriptOptions));
+   languages.typescript.typescriptDefaults.setCompilerOptions({
+      ...config,
+      moduleResolution: languages.typescript.ModuleResolutionKind.NodeJs,
+      noEmit: true,
+   });
 }
 
 // Watch stuff
 watch(
    props.typescriptOptions,
-   (options) => {
-      if (options) {
-         languages.typescript.typescriptDefaults.setCompilerOptions(JSON.parse(JSON.stringify(options)));
+   (_options) => {
+      if (_options) {
+         let options: typeof _options = JSON.parse(JSON.stringify(_options));
+
+         // Unset options with null values by setting them to undefined
+         for (let opt in options) {
+            if (options[opt] === null) {
+               options[opt] = undefined;
+            }
+         }
+
+         languages.typescript.typescriptDefaults.setCompilerOptions(options);
       }
    }
 );

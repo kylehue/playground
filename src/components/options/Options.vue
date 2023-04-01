@@ -13,10 +13,10 @@
             <Bundler :options="bundlerOptions"></Bundler>
          </template>
          <template #babel>
-            <Babel></Babel>
+            <Babel :options="babelOptions"></Babel>
          </template>
          <template #typescript>
-            <TypeScript></TypeScript>
+            <TypeScript :options="typescriptOptions"></TypeScript>
          </template>
       </PanelMenu>
    </div>
@@ -33,11 +33,13 @@ import TypeScript from "./TypeScript.vue";
 import { editor, languages } from "monaco-editor";
 import type generalOptions from "@app/options/general";
 import type bundlerOptions from "@app/options/bundler";
+import type babelOptions from "@app/options/babel";
 
 const props = defineProps<{
    generalOptions: typeof generalOptions;
    editorOptions: editor.IStandaloneEditorConstructionOptions;
    bundlerOptions: typeof bundlerOptions;
+   babelOptions: typeof babelOptions;
    typescriptOptions: languages.typescript.CompilerOptions;
 }>();
 

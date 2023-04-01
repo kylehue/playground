@@ -1,7 +1,7 @@
 <template>
    <div class="d-flex align-items-center justify-content-center w-100 h-100">
       <div class="d-flex flex-column align-items-center justify-content-center">
-         <img :src="logo" class="gelatine" alt="logo" width="140" height="140">
+         <img :src="logo" alt="logo" width="140" height="140">
          <div class="d-flex align-items-center mt-3">
             <ProgressSpinner class="me-2"></ProgressSpinner>
             <h6 class="m-0">Loading...</h6>

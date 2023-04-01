@@ -2,10 +2,12 @@ import Toypack from "toypack";
 import { WorkerThread } from "@app/WorkerManager";
 import NodePolyfillPlugin from "toypack/lib/NodePolyfillPlugin";
 import DefinePlugin from "toypack/lib/DefinePlugin";
-import type _BabelLoader from "toypack/lib/loaders/BabelLoader";
+import type IBabelLoader from "toypack/lib/loaders/BabelLoader";
 import BabelLoader from "toypack/lib/BabelLoader";
 import { join } from "path-browserify";
 import type defaultBundlerOptions from "@app/options/bundler";
+import type defaultBabelOptions from "@app/options/babel";
+import { BabelLoaderOptions } from "./index";
 
 const bundler = new Toypack({
    bundleOptions: {
@@ -25,12 +27,16 @@ const bundler = new Toypack({
    },
 });
 
-const babelLoader: _BabelLoader = new BabelLoader();
-const definePlugin = new DefinePlugin({});
+const babelLoader: IBabelLoader = new BabelLoader();
+console.log(BabelLoader.getAvailablePlugins());
+console.log(BabelLoader.getAvailablePresets());
 
+const definePlugin = new DefinePlugin({});
 bundler.loaders.push(babelLoader as any);
 bundler.use(new NodePolyfillPlugin());
 bundler.use(definePlugin);
+
+const infiniteLoopPluginId = "loop-protect";
 
 const thread = new WorkerThread();
 
@@ -145,11 +151,11 @@ thread.listen("updateOptions", (data) => {
 
    bundleOptions.resolve ??= {};
 
-   if (typeof options.resolve.alias == "object") {
+   if (typeof options.resolve?.alias == "object") {
       bundleOptions.resolve.alias = options.resolve.alias;
    }
 
-   if (typeof options.resolve.fallback == "object") {
+   if (typeof options.resolve?.fallback == "object") {
       let fallback = {};
       for (let fb of Object.entries(options.resolve.fallback)) {
          fallback[fb[0]] = !!fb[1] ? fb[1] : false;
@@ -158,7 +164,7 @@ thread.listen("updateOptions", (data) => {
       bundleOptions.resolve.fallback = fallback;
    }
 
-   if (typeof options.resolve.extensions == "object") {
+   if (typeof options.resolve?.extensions == "object") {
       let extensions: string[] = [];
       for (let ext of options.resolve.extensions) {
          extensions.push("." + ext);
@@ -172,9 +178,9 @@ thread.listen("updateOptions", (data) => {
          bundler.defineOptions({
             bundleOptions: {
                output: {
-                  sourceMap: "inline-cheap-sources"
-               }
-            }
+                  sourceMap: "inline-cheap-sources",
+               },
+            },
          });
       } else if (options.sourceMap == "full") {
          bundler.defineOptions({
@@ -193,6 +199,32 @@ thread.listen("updateOptions", (data) => {
             },
          });
       }
+   }
+});
+
+thread.listen("updateBabelOptions", (data) => {
+   let options: BabelLoaderOptions = data.options;
+   const transformOptions = babelLoader.options?.transformOptions!;
+   const parseOptions = babelLoader.options?.parseOptions!;
+
+   if (options.transformPlugins?.length) {
+      // Preserve defaults
+      let defaultTransformPlugins = ["add-module-exports"];
+      if (defaultTransformPlugins.find((p) => p == infiniteLoopPluginId)) {
+         defaultTransformPlugins.push(infiniteLoopPluginId);
+      }
+
+      transformOptions.plugins = defaultTransformPlugins.concat(
+         options.transformPlugins
+      );
+   }
+
+   if (options.transformPresets?.length) {
+      transformOptions.presets = options.transformPresets;
+   }
+
+   if (options.parsePlugins?.length) {
+      parseOptions.plugins = options.parsePlugins as any;
    }
 });
 
@@ -216,7 +248,6 @@ function removeInfiniteLoopProtection() {
 }
 
 let infiniteLoopProtectionRegistered = false;
-const infiniteLoopPluginId = "loopProtect";
 async function addInfiniteLoopProtection() {
    try {
       if (!infiniteLoopProtectionRegistered) {
@@ -234,7 +265,7 @@ async function addInfiniteLoopProtection() {
             10000
          );
          infiniteLoopProtectionRegistered = true;
-         babelLoader.registerPlugin(infiniteLoopPluginId, loopProtectPlugin);
+         BabelLoader.registerPlugin(infiniteLoopPluginId, loopProtectPlugin);
       }
 
       if (babelLoader) {

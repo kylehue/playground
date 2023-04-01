@@ -66,13 +66,15 @@
          <Dropdown
             v-model="state.selectedPackageVersion"
             :options="state.selectedPackageVersionResults"
-            :editable="true"
-            :show-clear="true"
+            :filter="true"
             :disabled="!state.selectedPackageVersionResults.length"
             :optionLabel="(d: FetchedVersion) => d.isLatest ? d.value + ' (latest)' : d.value"
             placeholder="Version"
             class="col-5 flex-shrink-1"
             :loading="busyState.packageSearchVersion"
+            :virtual-scroller-options="{
+               itemSize: 50,
+            }"
          >
          </Dropdown>
       </div>
@@ -106,10 +108,11 @@
       @saveProject="saveProject"
       @notify="pushNotification"
       :currentProjectId="state.currentProjectId"
-      :generalOptions="generalOptions"
-      :editorOptions="editorOptions"
-      :bundlerOptions="bundlerOptions"
-      :typescriptOptions="typescriptOptions"
+      :generalOptions="state.generalOptions"
+      :editorOptions="state.editorOptions"
+      :bundlerOptions="state.bundlerOptions"
+      :babelOptions="state.babelOptions"
+      :typescriptOptions="state.typescriptOptions"
    ></Navbar>
    <Splitpanes v-fill-remaining-height>
       <Pane size="20" min-size="5" class="explorer-pane">
@@ -144,8 +147,8 @@
             ref="monaco"
             @onDidChangeModel="highlightDrawerFile"
             @onDidChangeModelContent="onDidChangeModelContent"
-            :editor-options="editorOptions"
-            :typescript-options="typescriptOptions"
+            :editor-options="state.editorOptions"
+            :typescript-options="state.typescriptOptions"
          ></MonacoEditor>
       </Pane>
       <Pane
@@ -191,15 +194,10 @@ import {
 import templates, { Template } from "@app/templates";
 import { basename, join, extname } from "path-browserify";
 import * as bundler from "@app/bundler";
-import defaultGeneralOptions from "@app/options/general";
-import defaultEditorOptions from "@app/options/editor";
 import defaultBundlerOptions from "@app/options/bundler";
+import defaultBabelOptions from "@app/options/babel";
 import defaultTypescriptOptions from "@app/options/typescript";
 
-const generalOptions = reactive(defaultGeneralOptions);
-const editorOptions = reactive(defaultEditorOptions);
-const bundlerOptions = reactive(defaultBundlerOptions);
-const typescriptOptions = reactive(defaultTypescriptOptions);
 const toast = useToast();
 const monaco = ref<InstanceType<typeof MonacoEditor>>();
 const drawer = ref<InstanceType<typeof Drawer>>();
@@ -218,6 +216,11 @@ const state = reactive({
    selectedPackageVersionResults: [] as FetchedVersion[],
    installedPackages: [] as Array<{ name: string; version: string }>,
    requiredPackages: [] as Array<{ name: string; version: string }>,
+   generalOptions: storage.getGeneralOptions(),
+   editorOptions: storage.getEditorOptions(),
+   bundlerOptions: defaultBundlerOptions,
+   babelOptions: defaultBabelOptions,
+   typescriptOptions: defaultTypescriptOptions,
 });
 
 const busyState = reactive({
@@ -229,10 +232,49 @@ const busyState = reactive({
 });
 
 let hardRunRequired = false;
-watch(bundlerOptions, (newBundlerOptions) => {
-   let options: typeof newBundlerOptions = JSON.parse(JSON.stringify(newBundlerOptions));
+
+watch(state.generalOptions, () => {
+   storage.saveGeneralOptions(state.generalOptions);
+});
+
+watch(state.editorOptions, () => {
+   storage.saveEditorOptions(state.editorOptions);
+});
+
+watch(state.bundlerOptions, (newBundlerOptions) => {
+   let options: typeof newBundlerOptions = JSON.parse(
+      JSON.stringify(newBundlerOptions)
+   );
    bundler.updateOptions(options);
    hardRunRequired = true;
+   saveProject();
+});
+
+watch(state.babelOptions, (newBabelOptions) => {
+   let options: typeof newBabelOptions = JSON.parse(
+      JSON.stringify(newBabelOptions)
+   );
+
+   bundler.updateBabelOptions({
+      transformPlugins: options.transformPlugins,
+      transformPresets: options.transformPresets,
+      parsePlugins: options.parsePlugins,
+   });
+
+   hardRunRequired = true;
+   saveProject();
+});
+
+watch(state.typescriptOptions, () => {
+   saveProject();
+});
+
+// Initial set
+bundler.updateOptions(defaultBundlerOptions);
+bundler.updateBabelOptions({
+   transformPlugins: defaultBabelOptions.transformPlugins,
+   transformPresets: defaultBabelOptions.transformPresets,
+   parsePlugins: defaultBabelOptions.parsePlugins,
 });
 
 function highlightDrawerFile(source: string) {
@@ -318,8 +360,6 @@ function fetchSelectPackageVersions(e) {
 
    busyState.packageSearchVersion = true;
 
-   console.log(packageName, e, state);
-
    try {
       state.selectedPackageVersion = null;
       state.selectedPackageVersionResults = [];
@@ -377,7 +417,16 @@ async function addPackage(name: string, version: string) {
       pushNotification("Install Package", status._error, "error");
    } else {
       let pkg = { name, version };
+
+      state.installedPackages = state.installedPackages.filter(
+         (p) => p.name !== name
+      );
+      state.requiredPackages = state.requiredPackages.filter(
+         (p) => p.name !== name
+      );
+
       state.installedPackages.push(pkg);
+      state.requiredPackages.push(pkg);
 
       pushNotification(
          "Install Package",
@@ -684,6 +733,9 @@ async function clearProject() {
    await removeFile("/");
    state.installedPackages = [];
    state.requiredPackages = [];
+   state.bundlerOptions = defaultBundlerOptions;
+   state.babelOptions = defaultBabelOptions;
+   state.typescriptOptions = defaultTypescriptOptions;
    drawer.value?.self.clear();
    if (iframe.value) iframe.value.src = "";
    state.currentProjectId = "";
@@ -702,8 +754,24 @@ async function createNewProject(template?: Template) {
    saveProject();
 }
 
-async function loadTemplate(template: Pick<Template, "files" | "packages">) {
+async function loadTemplate(template: Partial<Template>) {
    if (!template) return;
+
+   if (template.options?.bundlerOptions) {
+      for (let opt in template.options.bundlerOptions) {
+         state.bundlerOptions[opt] = template.options.bundlerOptions[opt];
+      }
+   }
+
+   if (template.options?.babelOptions) {
+      for (let opt in template.options.babelOptions) {
+         state.babelOptions[opt] = template.options.babelOptions[opt];
+      }
+   }
+
+   if (template.options?.typescriptOptions) {
+      state.typescriptOptions = template.options.typescriptOptions;
+   }
 
    await clearProject();
    if (template.files) {
@@ -768,18 +836,24 @@ function saveProject(projectId?: string) {
    }
 
    // Save in projects
-   storage.updateProject(state.currentProjectId, {
+   let savestate: Partial<Template> = {
       files: files,
       packages: state.requiredPackages,
-   });
+      options: {
+         babelOptions: state.babelOptions,
+         bundlerOptions: state.bundlerOptions,
+         typescriptOptions: state.typescriptOptions,
+      },
+   };
+
+   storage.updateProject(state.currentProjectId, savestate);
 
    // Save in temp
    localStorage.setItem(
       "temp",
       JSON.stringify({
          id: state.currentProjectId,
-         files: files,
-         packages: state.requiredPackages,
+         ...savestate,
       })
    );
 }
@@ -787,7 +861,7 @@ function saveProject(projectId?: string) {
 function openCreateFileDialog(path = "") {
    if (path) {
       path = join("/", path);
-      state.newFileDialogPath = path + "/";
+      state.newFileDialogPath = path == "/" ? "" : path + "/";
    }
 
    state.showNewFileDialog = true;
@@ -839,8 +913,27 @@ async function runProject(isHardRun = false) {
    hardRunRequired = false;
 }
 
+const runQueue: NodeJS.Timeout[] = [];
 function onDidChangeModelContent() {
    saveProject();
+
+   // Auto run
+   if (state.generalOptions.autorun) {
+      let autoRunDelay = state.generalOptions.autorunDelay;
+      for (let runq of runQueue) {
+         clearTimeout(runq);
+         runQueue.splice(runQueue.indexOf(runq), 1);
+      }
+
+      let handleAutoRun = () => {
+         runProject();
+         runQueue.splice(runQueue.indexOf(timeout), 1);
+      };
+
+      let timeout = setTimeout(handleAutoRun, autoRunDelay);
+
+      runQueue.push(timeout);
+   }
 }
 
 bundler.worker.worker.addEventListener("message", (event) => {
@@ -892,8 +985,6 @@ addEventListener("keydown", (event) => {
 });
 
 onMounted(async () => {
-   bundler.updateOptions(defaultBundlerOptions);
-
    let autosaveTempProject = localStorage.getItem("temp");
 
    if (!autosaveTempProject) {
@@ -907,10 +998,7 @@ onMounted(async () => {
    // Load auto saved project
    if (autosaveTempProject) {
       let parsedTemp = JSON.parse(autosaveTempProject);
-      await loadTemplate({
-         files: parsedTemp.files,
-         packages: parsedTemp.packages,
-      });
+      await loadTemplate(parsedTemp);
 
       state.currentProjectId = parsedTemp.id;
    }

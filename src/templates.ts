@@ -1,15 +1,39 @@
+import bundlerOptions from "@app/options/bundler";
+import babelOptions from "@app/options/babel";
+import typescriptOptions from "@app/options/typescript";
+import { merge, cloneDeep } from "lodash-es";
+import { languages } from "monaco-editor";
+
 export interface Template {
    id: string;
-   name?: string;
-   lastEdited?: number;
-   files?: {
+   name: string;
+   lastEdited: number;
+   files: {
       source: string;
       content: string;
    }[];
-   packages?: {
+   packages: {
       name: string;
       version: string;
    }[];
+   options?: {
+      bundlerOptions?: Partial<typeof bundlerOptions>;
+      babelOptions?: Partial<typeof babelOptions>;
+      typescriptOptions?: typeof typescriptOptions;
+   };
+}
+
+function mergeWithDefaultOptions(opts: Template["options"]) {
+   const result: Template["options"] = merge(
+      {
+         bundlerOptions: cloneDeep(bundlerOptions),
+         typescriptOptions: cloneDeep(typescriptOptions),
+         babelOptions: cloneDeep(babelOptions),
+      },
+      opts
+   );
+
+   return result;
 }
 
 const templates: Template[] = [
@@ -21,13 +45,13 @@ const templates: Template[] = [
          {
             source: "index.html",
             content: `<html>
-\t<head>
-\t\t<script src="./src/main.js"></script>
-\t</head>
-\t<body>
-\t\t<h1>Default Template</h1>
-\t\t<button id="countButton">Count is: <span>0</span></button>
-\t</body>
+    <head>
+        <script src="./src/main.js"></script>
+    </head>
+    <body>
+        <h1>Default Template</h1>
+        <button id="countButton">Count is: <span>0</span></button>
+    </body>
 </html>`,
          },
          {
@@ -36,22 +60,29 @@ const templates: Template[] = [
 let countButton = document.querySelector("#countButton");
 
 countButton.addEventListener("click", () => {
-   let span = countButton.querySelector("span");
-   let currentCount = parseInt(span.textContent);
-   
-   span.textContent = (currentCount + 1).toString();
+    let span = countButton.querySelector("span");
+    let currentCount = parseInt(span.textContent);
+    
+    span.textContent = (currentCount + 1).toString();
 });`,
          },
          {
             source: "styles/style.css",
             content: `button {
-   font-family: consolas;
-   padding: 10px 20px;
-   cursor: pointer;
+    font-family: consolas;
+    padding: 10px 20px;
+    cursor: pointer;
 }`,
          },
       ],
       packages: [],
+      options: mergeWithDefaultOptions({
+         babelOptions: {
+            transformPresets: ["env"],
+            transformPlugins: [],
+            parsePlugins: [],
+         },
+      }),
    },
    {
       id: "typescript",
@@ -61,13 +92,13 @@ countButton.addEventListener("click", () => {
          {
             source: "index.html",
             content: `<html>
-   <head>
-      <script src="./src/main"></script>
-   </head>
-   <body>
-      <h1>TypeScript Template</h1>
-      <button id="countButton">Count is: <span>0</span></button>
-   </body>
+    <head>
+        <script src="./src/main"></script>
+    </head>
+    <body>
+        <h1>TypeScript Template</h1>
+        <button id="countButton">Count is: <span>0</span></button>
+    </body>
 </html>`,
          },
          {
@@ -75,23 +106,37 @@ countButton.addEventListener("click", () => {
             content: `import "../styles/style.css";
 let countButton = document.querySelector<HTMLButtonElement>("#countButton");
 
-countButton.addEventListener("click", () => {
-   let span = countButton.querySelector<HTMLSpanElement>("span");
-   let currentCount = parseInt(span.textContent);
-   
-   span.textContent = (currentCount + 1).toString();
-});`,
+if (countButton) {
+    countButton.addEventListener("click", () => {
+        let span = countButton?.querySelector<HTMLSpanElement>("span");
+
+        if (span) {
+            let currentCount = parseInt(span.textContent || "0");
+            span.textContent = (currentCount + 1).toString();
+        }
+    });
+}`,
          },
          {
             source: "styles/style.css",
             content: `button {
-   font-family: consolas;
-   padding: 10px 20px;
-   cursor: pointer;
+    font-family: consolas;
+    padding: 10px 20px;
+    cursor: pointer;
 }`,
          },
       ],
       packages: [],
+      options: mergeWithDefaultOptions({
+         babelOptions: {
+            transformPresets: ["typescript", "env"],
+            transformPlugins: ["transform-typescript"],
+            parsePlugins: ["typescript"],
+         },
+         typescriptOptions: {
+            noImplicitAny: false,
+         },
+      }),
    },
    {
       id: "react",
@@ -101,43 +146,44 @@ countButton.addEventListener("click", () => {
          {
             source: "index.html",
             content: `<html>
-   <head>
-      <script src="./src/main"></script>
-   </head>
-   <body>
-      <div id="root"></div>
-   </body>
+    <head>
+        <script src="./src/main"></script>
+    </head>
+    <body>
+        <div id="root"></div>
+    </body>
 </html>`,
          },
          {
-            source: "src/main.tsx",
+            source: "src/main.jsx",
             content: `import ReactDOM from "react-dom/client";
 import App from "./App";
 
-ReactDOM.createRoot( 
-   document.querySelector("#root")
+const rootElement = document.querySelector("#root");
+ReactDOM.createRoot(
+    rootElement
 ).render(<App />);`,
          },
          {
-            source: "src/App.tsx",
-            content: ` import { useState } from "react";
+            source: "src/App.jsx",
+            content: `import { useState } from "react";
 
 export default function App(props) {
-   let [count, setCount] = useState(0);
-   return (
-      <>
-         <h1>React Template</h1>
-         <button style={ style.button } onClick={ () => setCount(count + 1) }>Count is: { count }</button>
-      </>
-   );
+    let [count, setCount] = useState(0);
+    return (
+        <>
+            <h1>React Template</h1>
+            <button style={ style.button } onClick={ () => setCount(count + 1) }>Count is: { count }</button>
+        </>
+    );
 }
 
 const style = {
-   button: {
-      fontFamily: "consolas",
-      padding: "10px 20px",
-      cursor: "pointer"
-   }
+    button: {
+        fontFamily: "consolas",
+        padding: "10px 20px",
+        cursor: "pointer"
+    }
 };`,
          },
       ],
@@ -151,6 +197,17 @@ const style = {
             version: "^18.2.0",
          },
       ],
+      options: mergeWithDefaultOptions({
+         babelOptions: {
+            transformPresets: ["react", "env"],
+            transformPlugins: [],
+            parsePlugins: ["jsx"],
+         },
+         typescriptOptions: {
+            noImplicitAny: false,
+            jsx: languages.typescript.JsxEmit.Preserve,
+         },
+      }),
    },
    {
       id: "vue",
@@ -160,16 +217,16 @@ const style = {
          {
             source: "index.html",
             content: `<html>
-   <head>
-      <script src="./src/main"></script>
-   </head>
-   <body>
-      <div id="app"></div>
-   </body>
+    <head>
+        <script src="./src/main"></script>
+    </head>
+    <body>
+        <div id="app"></div>
+    </body>
 </html>`,
          },
          {
-            source: "src/main.ts",
+            source: "src/main.js",
             content: `import { createApp } from "vue";
 import App from "./App.vue";
 
@@ -179,13 +236,13 @@ app.mount("#app");`,
          {
             source: "src/App.vue",
             content: `<template>
-   <h1>Vue Template</h1>
-   <Button @click="count++">
-      Count is: {{ count }}
-   </Button>
+    <h1>Vue Template</h1>
+    <Button @click="count++">
+        Count is: {{ count }}
+    </Button>
 </template>
 
-<script lang="ts" setup>
+<script setup>
 import { ref } from "vue";
 import Button from "./components/Button.vue";
 
@@ -195,30 +252,22 @@ const count = ref(0);
          {
             source: "src/components/Button.vue",
             content: `<template>
-   <button>
-      <slot></slot>
-   </button>
+    <button>
+        <slot></slot>
+    </button>
 </template>
 
-<script lang="ts" setup>
+<script setup>
 
 </script>
 
 <style scoped>
 button {
-   font-family: consolas;
-   padding: 10px 20px;
-   cursor: pointer;
+    font-family: consolas;
+    padding: 10px 20px;
+    cursor: pointer;
 }
 </style>`,
-         },
-         {
-            source: "global.d.ts",
-            content: `declare module "*.vue" {
-   import type { DefineComponent } from "vue";
-   const component: DefineComponent<{}, {}, any>;
-   export default component;
-}`,
          },
       ],
       packages: [
@@ -227,6 +276,22 @@ button {
             version: "^3.2.45",
          },
       ],
+      options: mergeWithDefaultOptions({
+         bundlerOptions: {
+            replace: {
+               __VUE_OPTIONS_API__: "true",
+               __VUE_PROD_DEVTOOLS__: "false",
+            },
+         },
+         babelOptions: {
+            transformPresets: ["env"],
+            transformPlugins: [],
+            parsePlugins: [],
+         },
+         typescriptOptions: {
+            noImplicitAny: false,
+         },
+      }),
    },
    {
       id: "matter-js",
@@ -234,7 +299,7 @@ button {
       lastEdited: Date.now(),
       files: [
          {
-            source: "index.ts",
+            source: "index.js",
             content: `import "./styles/style.css";
 import MatterWrap from "matter-wrap";
 import Matter, { Engine, Render, Runner, Bodies, Composite, Composites, Mouse, MouseConstraint, Common } from "matter-js";
@@ -244,17 +309,17 @@ Matter.use(MatterWrap);
 
 // create an engine
 let engine = Engine.create(),
-   world = engine.world;
+    world = engine.world;
 
 // create a renderer
 let render = Render.create({
-   element: document.body,
-   engine: engine,
-   options: {
-      width: innerWidth,
-      height: innerHeight,
-      showAngleIndicator: true
-   }
+    element: document.body,
+    engine: engine,
+    options: {
+        width: innerWidth,
+        height: innerHeight,
+        showAngleIndicator: true
+    }
 });
 
 Render.run(render);
@@ -264,28 +329,28 @@ Runner.run(runner, engine);
 
 // add bodies
 let stack = Composites.stack(20, 20, 20, 5, 0, 0, function (x, y) {
-   return Bodies.circle(x, y, Common.random(10, 20), { friction: 0.00001, restitution: 0.5, density: 0.001 });
+    return Bodies.circle(x, y, Common.random(10, 20), { friction: 0.00001, restitution: 0.5, density: 0.001 });
 });
 
 Composite.add(world, stack);
 
 Composite.add(world, [
-   Bodies.rectangle(200, 150, 700, 20, { isStatic: true, angle: Math.PI * 0.06, render: { fillStyle: '#060a19' } }),
-   Bodies.rectangle(500, 350, 700, 20, { isStatic: true, angle: -Math.PI * 0.06, render: { fillStyle: '#060a19' } }),
-   Bodies.rectangle(340, 580, 700, 20, { isStatic: true, angle: Math.PI * 0.04, render: { fillStyle: '#060a19' } })
+    Bodies.rectangle(200, 150, 700, 20, { isStatic: true, angle: Math.PI * 0.06, render: { fillStyle: '#060a19' } }),
+    Bodies.rectangle(500, 350, 700, 20, { isStatic: true, angle: -Math.PI * 0.06, render: { fillStyle: '#060a19' } }),
+    Bodies.rectangle(340, 580, 700, 20, { isStatic: true, angle: Math.PI * 0.04, render: { fillStyle: '#060a19' } })
 ]);
 
 // add mouse control
 let mouse = Mouse.create(render.canvas),
-   mouseConstraint = MouseConstraint.create(engine, {
-      mouse: mouse,
-      constraint: {
-         stiffness: 0.2,
-         render: {
-            visible: false
-         }
-      }
-   });
+    mouseConstraint = MouseConstraint.create(engine, {
+        mouse: mouse,
+        constraint: {
+            stiffness: 0.2,
+            render: {
+                visible: false
+            }
+        }
+    });
 
 Composite.add(world, mouseConstraint);
 
@@ -297,18 +362,18 @@ Render.lookAt(render, Composite.allBodies(world));
 
 // wrapping using matter-wrap plugin
 for (let i = 0; i < stack.bodies.length; i += 1) {
-   stack.bodies[i].plugin.wrap = {
-      min: { x: render.bounds.min.x, y: render.bounds.min.y },
-      max: { x: render.bounds.max.x, y: render.bounds.max.y }
-   };
+    stack.bodies[i].plugin.wrap = {
+        min: { x: render.bounds.min.x, y: render.bounds.min.y },
+        max: { x: render.bounds.max.x, y: render.bounds.max.y }
+    };
 }`,
          },
          {
             source: "styles/style.css",
             content: `body {
-   margin: 0;
-   padding: 0;
-   overflow: hidden;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
 }`,
          },
       ],
@@ -322,6 +387,14 @@ for (let i = 0; i < stack.bodies.length; i += 1) {
             version: "^0.2.0",
          },
       ],
+      options: mergeWithDefaultOptions({
+         babelOptions: {
+            ...babelOptions,
+            transformPresets: ["env"],
+            transformPlugins: [],
+            parsePlugins: [],
+         },
+      }),
    },
 ];
 export default templates;

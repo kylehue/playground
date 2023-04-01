@@ -7,13 +7,6 @@ const App = defineAsyncComponent({
    loader: async () => {
       await loadOnigasm();
       await setupMonacoEnv();
-
-      await new Promise((resolve) => {
-         setTimeout(() => {
-            resolve(1);
-         }, 5000);
-      });
-
       return await import("./App.vue");
    },
    delay: 0,

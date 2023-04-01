@@ -51,6 +51,7 @@
       modal
       class="w-75 h-75"
       contentClass="h-100"
+      :keep-in-view-port="false"
    >
       <template #header>
          <div class="d-flex align-items-center">
@@ -62,6 +63,7 @@
          :generalOptions="generalOptions"
          :editorOptions="editorOptions"
          :bundlerOptions="bundlerOptions"
+         :babelOptions="babelOptions"
          :typescriptOptions="typescriptOptions"
       ></Options>
    </Dialog>
@@ -182,11 +184,13 @@ import * as storage from "@app/utils/storage";
 import { editor, languages } from "monaco-editor";
 import type generalOptions from "@app/options/general";
 import type bundlerOptions from "@app/options/bundler";
+import type babelOptions from "@app/options/babel";
 const props = defineProps<{
    isBusy: boolean;
    currentProjectId: string;
    generalOptions: typeof generalOptions;
    bundlerOptions: typeof bundlerOptions;
+   babelOptions: typeof babelOptions;
    editorOptions: editor.IStandaloneEditorConstructionOptions;
    typescriptOptions: languages.typescript.CompilerOptions;
 }>();

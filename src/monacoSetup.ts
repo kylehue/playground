@@ -58,6 +58,13 @@ export async function setupMonacoEnv() {
    languages.setLanguageConfiguration("vue", languageConfig);
    languages.onLanguage("vue", setup);
 
+   addEventListener("unhandledrejection", function (event) {
+      if (event.reason && event.reason.name === "Canceled") {
+         // monaco editor promise cancelation
+         event.preventDefault();
+      }
+   });
+
    async function setup() {
       if (initialized) {
          return;
@@ -65,33 +72,10 @@ export async function setupMonacoEnv() {
 
       initialized = true;
 
-      addEventListener("unhandledrejection", function (event) {
-         if (event.reason && event.reason.name === "Canceled") {
-            // monaco editor promise cancelation
-            event.preventDefault();
-         }
-      });
-
-      const languageId = [
-         "html",
-         "css",
-         "javascript",
-         "typescript",
-         "javascriptreact",
-         "typescriptreact",
-         "json",
-         "vue",
-      ];
-
-      const getSyncUris = () => {
-         let models = editor.getModels().map((model) => model.uri);
-         return models;
-      };
-
       (self as any).MonacoEnvironment ??= {};
       (self as any).MonacoEnvironment.getWorker ??= () => editorWorker;
       const getWorker = (self as any).MonacoEnvironment.getWorker;
-      
+
       (self as any).MonacoEnvironment.getWorker = (_: any, label: string) => {
          console.log(label);
          if (["html"].includes(label)) {
@@ -114,6 +98,13 @@ export async function setupMonacoEnv() {
          label: "vue",
          createData: {},
       });
+
+      const languageId = ["vue"];
+
+      const getSyncUris = () => {
+         let models = editor.getModels().map((model) => model.uri);
+         return models;
+      };
 
       volar.editor.activateMarkers(
          vueEditorWorker,

@@ -1,13 +1,13 @@
 <template>
    <ExplorerSpace
       @addClick="emit('openNewFileDialog')"
-      @contextmenu="showMenu($event, null)"
+      @contextmenu="showMenu($event, drawer)"
       title="Files"
       addTooltip="New file"
       :isBusy="isBusy"
       icon="mdi mdi-file-multiple-outline"
    >
-      <div id="drawer" class="w-100 h-100 d-flex flex-column"></div>
+      <div ref="drawerElement" class="w-100 h-100 d-flex flex-column"></div>
    </ExplorerSpace>
    <ContextMenu :model="contextMenuModel" ref="contextMenu"></ContextMenu>
 </template>
@@ -26,6 +26,7 @@ const props = defineProps({
 });
 
 const confirm = useConfirm();
+const drawerElement = ref<HTMLDivElement>();
 
 const drawer = new Drawer({
    directoryButton: {
@@ -87,9 +88,9 @@ const contextMenuModel = reactive([
 ]);
 
 watch(contextMenuFocusedItem, (value) => {
-   contextMenuModel[1].disabled = !value;
-   contextMenuModel[3].disabled = !value;
-   contextMenuModel[4].disabled = !value;
+   contextMenuModel[1].disabled = !value || value?.path == drawer.path;
+   contextMenuModel[3].disabled = !value || value?.path == drawer.path;
+   contextMenuModel[4].disabled = !value || value?.path == drawer.path;
 });
 
 watch(
@@ -204,7 +205,7 @@ function copyClick(item) {
 
 function pasteClick(item) {
    if (!item) return;
-   let path = "";
+   let path = "/";
 
    if (item?.parent) {
       path = resolve(item.parent.path, item.title);
@@ -218,13 +219,19 @@ function pasteClick(item) {
 }
 
 function showMenu(event, item) {
-   if (!event || !item) return;
+   if (!event) return;
+   event.preventDefault();
    contextMenu.value?.show(event);
+
+   if (!item) {
+      item = drawer;
+   }
+
    contextMenuFocusedItem.value = item;
 }
 
 onMounted(() => {
-   drawer.appendTo("#drawer");
+   drawer.appendTo(drawerElement.value);
 
    /* for (let i = 0; i < 30; i++) {
       drawer.addFileFromPath(`${i}.html`);
