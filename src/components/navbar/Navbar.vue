@@ -297,11 +297,11 @@ const navbarItems = reactive([
                state.showSaveProjectDialog = true;
             },
          },
-         {
+         /* {
             label: "Download",
             icon: "mdi mdi-download",
             command: () => {},
-         },
+         }, */
          {
             label: "Options",
             icon: "mdi mdi-cog",
