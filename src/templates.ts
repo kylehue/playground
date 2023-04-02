@@ -10,7 +10,7 @@ export interface Template {
    lastEdited: number;
    files: {
       source: string;
-      content: string;
+      content: string | ArrayBuffer;
    }[];
    packages: {
       name: string;

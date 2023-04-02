@@ -4,18 +4,19 @@
 
 <script lang="ts" setup>
 import { onMounted, ref, watch } from "vue";
-import { editor, KeyMod, KeyCode, Uri, languages } from "monaco-editor";
-import { languages as languagestest } from "monaco-editor-core";
+import * as monaco from "monaco-editor";
 import { loadGrammars } from "monaco-volar";
+import { emmetHTML, emmetCSS, emmetJSX } from "emmet-monaco-es";
 import * as theme from "./theme";
 import { join } from "path-browserify";
 import getLang from "@app/utils/getLang";
 import validateFile from "@app/utils/validateFile";
+import { setupLanguageFormats } from "@app/monacoSetup";
 
 // Definitions
 const props = defineProps<{
-   typescriptOptions: languages.typescript.CompilerOptions;
-   editorOptions: editor.IStandaloneEditorConstructionOptions;
+   typescriptOptions: monaco.languages.typescript.CompilerOptions;
+   editorOptions: monaco.editor.IStandaloneEditorConstructionOptions;
 }>();
 
 const emit = defineEmits(["onDidChangeModelContent", "onDidChangeModel"]);
@@ -24,7 +25,7 @@ const emit = defineEmits(["onDidChangeModelContent", "onDidChangeModel"]);
 const modelMap: Map<string, any> = new Map();
 
 // Themes
-editor.defineTheme("theme-dark", {
+monaco.editor.defineTheme("theme-dark", {
    base: "vs-dark",
    inherit: true,
    colors: {
@@ -35,12 +36,12 @@ editor.defineTheme("theme-dark", {
    rules: theme.rules,
 });
 
-editor.setTheme("theme-dark");
+monaco.editor.setTheme("theme-dark");
 
 const editorElement = ref<InstanceType<typeof HTMLDivElement>>();
 const editorParentElement = document.createElement("div");
 editorParentElement.classList.add("w-100", "h-100");
-let editorInstance: editor.IStandaloneCodeEditor = editor.create(
+let editorInstance: monaco.editor.IStandaloneCodeEditor = monaco.editor.create(
    editorParentElement,
    {
       ...props.editorOptions,
@@ -50,7 +51,7 @@ let editorInstance: editor.IStandaloneCodeEditor = editor.create(
       useShadowDOM: true,
       contextmenu: true,
       automaticLayout: true,
-      model: editor.createModel("", "text/html", Uri.parse("/$dummy_file.txt")),
+      model: monaco.editor.createModel("", "text/html", monaco.Uri.parse("/$dummy_file.txt")),
    }
 );
 
@@ -58,9 +59,9 @@ loadGrammars(editorInstance);
 
 if (props.typescriptOptions) {
    let config = JSON.parse(JSON.stringify(props.typescriptOptions));
-   languages.typescript.typescriptDefaults.setCompilerOptions({
+   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
       ...config,
-      moduleResolution: languages.typescript.ModuleResolutionKind.NodeJs,
+      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
       noEmit: true,
    });
 }
@@ -79,7 +80,7 @@ watch(
             }
          }
 
-         languages.typescript.typescriptDefaults.setCompilerOptions(options);
+         monaco.languages.typescript.typescriptDefaults.setCompilerOptions(options);
       }
    }
 );
@@ -94,15 +95,15 @@ watch(
 );
 
 function removeModel(source: string) {
-   let uri = Uri.parse(join("/", source));
-   editor.getModel(uri)?.dispose();
+   let uri = monaco.Uri.parse(join("/", source));
+   monaco.editor.getModel(uri)?.dispose();
    modelMap.delete(uri.path);
 
    // Create dummy model if no models are left
-   let models = editor.getModels();
+   let models = monaco.editor.getModels();
    if (models.length == 0) {
       editorInstance.setModel(
-         editor.createModel("", "text/html", Uri.parse("/$dummy_file.txt"))
+         monaco.editor.createModel("", "text/html", monaco.Uri.parse("/$dummy_file.txt"))
       );
    } else if (!editorInstance.getModel()) {
       editorInstance.setModel(models[models.length - 1]);
@@ -114,15 +115,15 @@ function renameModel(source: string, newSource: string) {
    modelMap.set(newSource, modelMap.get(oldSource));
    modelMap.delete(oldSource);
 
-   let oldModel = editor.getModel(Uri.parse(join("/", oldSource)));
+   let oldModel = monaco.editor.getModel(monaco.Uri.parse(join("/", oldSource)));
    if (oldModel) {
       let value = oldModel.getValue();
       let lang = oldModel.getLanguageId();
-      let newUri = Uri.parse(join("/", newSource));
-      let newModel = editor.createModel(value, lang, newUri);
+      let newUri = monaco.Uri.parse(join("/", newSource));
+      let newModel = monaco.editor.createModel(value, lang, newUri);
 
       // Change language
-      editor.setModelLanguage(newModel, getLang(newUri.path));
+      monaco.editor.setModelLanguage(newModel, getLang(newUri.path));
 
       // Focus new model if the old model is focused
       if (editorInstance.getModel()?.uri.path == oldModel.uri.path) {
@@ -134,18 +135,18 @@ function renameModel(source: string, newSource: string) {
 }
 
 function addDts(pkgName: string, content: string) {
-   languages.typescript.typescriptDefaults.addExtraLib(
+   monaco.languages.typescript.typescriptDefaults.addExtraLib(
       content,
       join("/node_modules", "@types", pkgName, "index.d.ts")
    );
 }
 
 function setModel(path: string, content = "") {
-   let uri = Uri.parse(join("/", path));
-   let model = editor.getModel(uri);
+   let uri = monaco.Uri.parse(join("/", path));
+   let model = monaco.editor.getModel(uri);
    // Create model if it doesn't exist
    if (!model) {
-      model = editor.createModel(content, getLang(path), uri);
+      model = monaco.editor.createModel(content, getLang(path), uri);
       if (!modelMap.get(path)) {
          modelMap.set(path, {});
       }
@@ -158,8 +159,8 @@ function setModel(path: string, content = "") {
 }
 
 function getValidModels() {
-   let models: editor.ITextModel[] = [];
-   for (let model of editor.getModels()) {
+   let models: monaco.editor.ITextModel[] = [];
+   for (let model of monaco.editor.getModels()) {
       let isValid = !validateFile(model.uri.path);
 
       if (isValid) {
@@ -172,7 +173,7 @@ function getValidModels() {
 
 defineExpose({
    editorInstance,
-   editor,
+   editor: monaco.editor,
    modelMap,
    removeModel,
    renameModel,
@@ -184,6 +185,11 @@ defineExpose({
 onMounted(async () => {
    /* await loadOnigasm();
    await setupMonacoEnv(); */
+
+   emmetHTML(monaco, ["html", "vue"]);
+   emmetCSS(monaco, ["css", "scss"]);
+   emmetJSX(monaco, ["javascript", "typescript"]);
+   setupLanguageFormats(props.editorOptions);
 
    editorElement.value?.append(editorParentElement);
 
@@ -197,7 +203,7 @@ onMounted(async () => {
       let currentModelPath = currentModel?.uri.path;
 
       if (currentModelPath?.endsWith(".d.ts")) {
-         languages.typescript.typescriptDefaults.addExtraLib(
+         monaco.languages.typescript.typescriptDefaults.addExtraLib(
             currentModel?.getValue() || "",
             currentModelPath
          );
@@ -224,7 +230,7 @@ onMounted(async () => {
          editorInstance?.setPosition(modelMapModel.position);
          editorInstance?.revealPositionInCenter(
             modelMapModel.position,
-            editor.ScrollType.Immediate
+            monaco.editor.ScrollType.Immediate
          );
       }
 
@@ -235,7 +241,7 @@ onMounted(async () => {
    editorInstance.addAction({
       id: "blockComment",
       label: "Block Comment",
-      keybindings: [KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Slash],
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Slash],
       run() {
          if (editorInstance) {
             editorInstance.trigger(null, "editor.action.blockComment", null);
@@ -243,10 +249,7 @@ onMounted(async () => {
       },
    });
 
-   (window as any).editor = editorInstance;
-   (window as any).monacoEditor = editor;
-   (window as any).languages = languages;
-   (window as any).languagestest = languagestest;
+   (window as any).monaco = monaco;
 });
 </script>
 

@@ -250,10 +250,9 @@ function currentProjectIsSaved() {
 
 function currentProjectIsEmpty() {
    // Check if empty
-   let temp = localStorage.getItem("temp");
-   let parsedTemp = JSON.parse(temp || "{}");
+   let temp = storage.getTempProject();
    let currentProjectIsEmpty =
-      !parsedTemp?.files?.length && !parsedTemp?.packages?.length;
+      !temp?.files?.length && !temp?.packages?.length;
    return currentProjectIsEmpty;
 }
 

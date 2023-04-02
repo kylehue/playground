@@ -16,10 +16,18 @@
             <span class="text-truncate"> Auto Run Delay </span>
          </template>
          <template #content>
-            <p class="text-wrap text-muted">
-               The delay for autorun.
-            </p>
-            <InputNumber v-model="options.autorunDelay" :min="100" :step="100" suffix=" ms" :disabled="!options.autorun" showButtons :spellcheck="false" :useGrouping="false"></InputNumber>
+            <p class="text-wrap text-muted">The delay for Auto Run.</p>
+            <InputNumber
+               v-model="options.autorunDelay"
+               :min="100"
+               :step="100"
+               suffix=" ms"
+               :disabled="!options.autorun"
+               showButtons
+               :spellcheck="false"
+               :useGrouping="false"
+               :allowEmpty="false"
+            ></InputNumber>
          </template>
       </Card>
       <Card>
@@ -53,13 +61,12 @@ const confirm = useConfirm();
 const toast = useToast();
 
 const props = defineProps<{
-   options: typeof defaultGeneralOptions
+   options: typeof defaultGeneralOptions;
 }>();
 
 function clearStorage() {
    confirm.require({
-      message:
-         "Are you sure you want to clear the storage?",
+      message: "Are you sure you want to clear the storage?",
       header: `Clear storage`,
       icon: "mdi mdi-alert",
       acceptClass: "p-button-danger",
@@ -69,13 +76,11 @@ function clearStorage() {
          toast.add({
             severity: "success",
             summary: "Storage has been cleared.",
-            life: 3000
+            life: 3000,
          });
       },
    });
 }
 </script>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>

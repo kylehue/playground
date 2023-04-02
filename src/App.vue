@@ -108,11 +108,11 @@
       @saveProject="saveProject"
       @notify="pushNotification"
       :currentProjectId="state.currentProjectId"
-      :generalOptions="state.generalOptions"
-      :editorOptions="state.editorOptions"
-      :bundlerOptions="state.bundlerOptions"
-      :babelOptions="state.babelOptions"
-      :typescriptOptions="state.typescriptOptions"
+      :generalOptions="generalOptions"
+      :editorOptions="editorOptions"
+      :bundlerOptions="bundlerOptions"
+      :babelOptions="babelOptions"
+      :typescriptOptions="typescriptOptions"
    ></Navbar>
    <Splitpanes v-fill-remaining-height>
       <Pane size="20" min-size="5" class="explorer-pane">
@@ -147,8 +147,8 @@
             ref="monaco"
             @onDidChangeModel="highlightDrawerFile"
             @onDidChangeModelContent="onDidChangeModelContent"
-            :editor-options="state.editorOptions"
-            :typescript-options="state.typescriptOptions"
+            :editor-options="editorOptions"
+            :typescript-options="typescriptOptions"
          ></MonacoEditor>
       </Pane>
       <Pane
@@ -197,6 +197,7 @@ import * as bundler from "@app/bundler";
 import defaultBundlerOptions from "@app/options/bundler";
 import defaultBabelOptions from "@app/options/babel";
 import defaultTypescriptOptions from "@app/options/typescript";
+import { setupLanguageFormats } from "@app/monacoSetup";
 
 const toast = useToast();
 const monaco = ref<InstanceType<typeof MonacoEditor>>();
@@ -216,12 +217,13 @@ const state = reactive({
    selectedPackageVersionResults: [] as FetchedVersion[],
    installedPackages: [] as Array<{ name: string; version: string }>,
    requiredPackages: [] as Array<{ name: string; version: string }>,
-   generalOptions: storage.getGeneralOptions(),
-   editorOptions: storage.getEditorOptions(),
-   bundlerOptions: defaultBundlerOptions,
-   babelOptions: defaultBabelOptions,
-   typescriptOptions: defaultTypescriptOptions,
 });
+
+const generalOptions = reactive(storage.getGeneralOptions());
+const editorOptions = reactive(storage.getEditorOptions());
+const bundlerOptions = reactive(defaultBundlerOptions);
+const babelOptions = reactive(defaultBabelOptions);
+const typescriptOptions = reactive(defaultTypescriptOptions);
 
 const busyState = reactive({
    bundler: false,
@@ -233,15 +235,16 @@ const busyState = reactive({
 
 let hardRunRequired = false;
 
-watch(state.generalOptions, () => {
-   storage.saveGeneralOptions(state.generalOptions);
+watch(generalOptions, () => {
+   storage.saveGeneralOptions(generalOptions);
 });
 
-watch(state.editorOptions, () => {
-   storage.saveEditorOptions(state.editorOptions);
+watch(editorOptions, () => {
+   storage.saveEditorOptions(editorOptions);
+   setupLanguageFormats(editorOptions);
 });
 
-watch(state.bundlerOptions, (newBundlerOptions) => {
+watch(bundlerOptions, (newBundlerOptions) => {
    let options: typeof newBundlerOptions = JSON.parse(
       JSON.stringify(newBundlerOptions)
    );
@@ -250,7 +253,7 @@ watch(state.bundlerOptions, (newBundlerOptions) => {
    saveProject();
 });
 
-watch(state.babelOptions, (newBabelOptions) => {
+watch(babelOptions, (newBabelOptions) => {
    let options: typeof newBabelOptions = JSON.parse(
       JSON.stringify(newBabelOptions)
    );
@@ -265,7 +268,7 @@ watch(state.babelOptions, (newBabelOptions) => {
    saveProject();
 });
 
-watch(state.typescriptOptions, () => {
+watch(typescriptOptions, () => {
    saveProject();
 });
 
@@ -573,7 +576,7 @@ async function createBulkFiles(files: bundler.SimpleAsset[]) {
       let source = join("/", file.source);
       let newFile = drawer.value?.createFile(source);
 
-      if (newFile) {
+      if (newFile && typeof file.content == "string") {
          bulkQueue.push(file);
          setModel(file.source, file.content);
       }
@@ -733,9 +736,15 @@ async function clearProject() {
    await removeFile("/");
    state.installedPackages = [];
    state.requiredPackages = [];
-   state.bundlerOptions = defaultBundlerOptions;
-   state.babelOptions = defaultBabelOptions;
-   state.typescriptOptions = defaultTypescriptOptions;
+   for (let opt in defaultBundlerOptions) {
+      bundlerOptions[opt] = defaultBundlerOptions[opt];
+   }
+   for (let opt in defaultBabelOptions) {
+      babelOptions[opt] = defaultBabelOptions[opt];
+   }
+   for (let opt in defaultTypescriptOptions) {
+      typescriptOptions[opt] = defaultTypescriptOptions[opt];
+   }
    drawer.value?.self.clear();
    if (iframe.value) iframe.value.src = "";
    state.currentProjectId = "";
@@ -757,22 +766,6 @@ async function createNewProject(template?: Template) {
 async function loadTemplate(template: Partial<Template>) {
    if (!template) return;
 
-   if (template.options?.bundlerOptions) {
-      for (let opt in template.options.bundlerOptions) {
-         state.bundlerOptions[opt] = template.options.bundlerOptions[opt];
-      }
-   }
-
-   if (template.options?.babelOptions) {
-      for (let opt in template.options.babelOptions) {
-         state.babelOptions[opt] = template.options.babelOptions[opt];
-      }
-   }
-
-   if (template.options?.typescriptOptions) {
-      state.typescriptOptions = template.options.typescriptOptions;
-   }
-
    await clearProject();
    if (template.files) {
       await createBulkFiles(template.files);
@@ -783,6 +776,24 @@ async function loadTemplate(template: Partial<Template>) {
             setModel(file.source);
             break;
          }
+      }
+   }
+
+   if (template.options?.bundlerOptions) {
+      for (let opt in template.options.bundlerOptions) {
+         bundlerOptions[opt] = template.options.bundlerOptions[opt];
+      }
+   }
+
+   if (template.options?.babelOptions) {
+      for (let opt in template.options.babelOptions) {
+         babelOptions[opt] = template.options.babelOptions[opt];
+      }
+   }
+
+   if (template.options?.typescriptOptions) {
+      for (let opt in template.options.typescriptOptions) {
+         typescriptOptions[opt] = template.options.typescriptOptions[opt];
       }
    }
 
@@ -825,6 +836,12 @@ function saveProject(projectId?: string) {
          continue;
       }
 
+      // Make sure it's in drawer
+      let drawerItem = drawer.value?.self.getFileFromPath(model.uri.path);
+      if (!drawerItem) {
+         continue;
+      }
+
       files.push({
          source: model.uri.path,
          content: model.getValue(),
@@ -837,25 +854,20 @@ function saveProject(projectId?: string) {
 
    // Save in projects
    let savestate: Partial<Template> = {
+      id: state.currentProjectId,
       files: files,
       packages: state.requiredPackages,
       options: {
-         babelOptions: state.babelOptions,
-         bundlerOptions: state.bundlerOptions,
-         typescriptOptions: state.typescriptOptions,
+         babelOptions: babelOptions,
+         bundlerOptions: bundlerOptions,
+         typescriptOptions: typescriptOptions,
       },
    };
 
    storage.updateProject(state.currentProjectId, savestate);
 
    // Save in temp
-   localStorage.setItem(
-      "temp",
-      JSON.stringify({
-         id: state.currentProjectId,
-         ...savestate,
-      })
-   );
+   storage.saveTempProject(savestate);
 }
 
 function openCreateFileDialog(path = "") {
@@ -918,8 +930,8 @@ function onDidChangeModelContent() {
    saveProject();
 
    // Auto run
-   if (state.generalOptions.autorun) {
-      let autoRunDelay = state.generalOptions.autorunDelay;
+   if (generalOptions.autorun) {
+      let autoRunDelay = generalOptions.autorunDelay;
       for (let runq of runQueue) {
          clearTimeout(runq);
          runQueue.splice(runQueue.indexOf(runq), 1);
@@ -985,22 +997,22 @@ addEventListener("keydown", (event) => {
 });
 
 onMounted(async () => {
-   let autosaveTempProject = localStorage.getItem("temp");
+   let autosaveTempProject = storage.getTempProject();
 
    if (!autosaveTempProject) {
-      let defaultProject = templates.find((p) => p.id === "default");
+      let defaultProject = templates[0];
 
       if (defaultProject) {
-         autosaveTempProject = JSON.stringify(defaultProject);
+         await loadTemplate(defaultProject);
+
+         state.currentProjectId = defaultProject.id;
       }
-   }
+   } else {
+      await loadTemplate(autosaveTempProject);
 
-   // Load auto saved project
-   if (autosaveTempProject) {
-      let parsedTemp = JSON.parse(autosaveTempProject);
-      await loadTemplate(parsedTemp);
-
-      state.currentProjectId = parsedTemp.id;
+      if (autosaveTempProject.id) {
+         state.currentProjectId = autosaveTempProject.id;
+      }
    }
 
    if (monaco.value && monaco.value.getValidModels().length > 0) {

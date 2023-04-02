@@ -50,6 +50,14 @@ export default function validateFile(source: string) {
       );
    }
 
+   if (source == "/package.json") {
+      return createInvalidation(
+         "Invalid file",
+         "package.json is a reserved file name.",
+         "warn"
+      );
+   }
+
    /* if (!supportedExtensions.includes(extension)) {
       return createInvalidation(
          "Invalid file",

@@ -3,6 +3,8 @@ import { editor, languages, Uri } from "monaco-editor";
 import * as volar from "@volar/monaco";
 import * as onigasm from "onigasm";
 import onigasmWasm from "onigasm/lib/onigasm.wasm";
+import prettier from "prettier";
+import htmlParser from "prettier/parser-html";
 
 const editorWorker = new Worker(
    new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url)
@@ -51,9 +53,64 @@ export async function loadOnigasm() {
    return await onigasm.loadWASM(onigasmWasm);
 }
 
-export async function setupMonacoEnv() {
-   let initialized = false;
+export function setupLanguageFormats(
+   editorOptions: editor.IStandaloneEditorConstructionOptions
+) {
 
+   languages.html.htmlDefaults.setModeConfiguration({
+      ...languages.html.htmlDefaults.modeConfiguration,
+      documentFormattingEdits: false,
+      documentRangeFormattingEdits: false,
+   });
+
+   let prettierConfig: prettier.Options = {
+      htmlWhitespaceSensitivity: "ignore",
+      arrowParens: "always",
+      bracketSpacing: true,
+      endOfLine: "lf",
+      insertPragma: false,
+      singleAttributePerLine: false,
+      bracketSameLine: false,
+      printWidth: 80,
+      proseWrap: "preserve",
+      quoteProps: "as-needed",
+      requirePragma: false,
+      semi: true,
+      singleQuote: false,
+      tabWidth: editorOptions.tabSize,
+      trailingComma: "es5",
+      useTabs: !editorOptions.insertSpaces,
+      vueIndentScriptAndStyle: false,
+   };
+
+   let htmlPrettierProvider: languages.DocumentFormattingEditProvider = {
+      provideDocumentFormattingEdits(model, options, token) {
+         var formatted = prettier.format(model.getValue(), {
+            ...prettierConfig,
+            parser: "html",
+            plugins: [htmlParser],
+         });
+
+         return [
+            {
+               range: model.getFullModelRange(),
+               text: formatted,
+            },
+         ];
+      },
+   };
+
+   languages.registerDocumentFormattingEditProvider(
+      "html",
+      htmlPrettierProvider
+   );
+   languages.registerDocumentFormattingEditProvider(
+      "vue",
+      htmlPrettierProvider
+   );
+}
+
+export async function setupMonacoEnv() {
    languages.register({ id: "vue", extensions: [".vue"] });
    languages.setLanguageConfiguration("vue", languageConfig);
    languages.onLanguage("vue", setup);
@@ -65,6 +122,7 @@ export async function setupMonacoEnv() {
       }
    });
 
+   let initialized = false;
    async function setup() {
       if (initialized) {
          return;

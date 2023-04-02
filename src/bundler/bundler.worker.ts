@@ -7,7 +7,7 @@ import BabelLoader from "toypack/lib/BabelLoader";
 import { join } from "path-browserify";
 import type defaultBundlerOptions from "@app/options/bundler";
 import type defaultBabelOptions from "@app/options/babel";
-import { BabelLoaderOptions } from "./index";
+import { BabelLoaderOptions, SimpleAsset } from "./index";
 
 const bundler = new Toypack({
    bundleOptions: {
@@ -28,8 +28,6 @@ const bundler = new Toypack({
 });
 
 const babelLoader: IBabelLoader = new BabelLoader();
-console.log(BabelLoader.getAvailablePlugins());
-console.log(BabelLoader.getAvailablePresets());
 
 const definePlugin = new DefinePlugin({});
 bundler.loaders.push(babelLoader as any);
@@ -209,9 +207,13 @@ thread.listen("updateBabelOptions", (data) => {
 
    if (options.transformPlugins?.length) {
       // Preserve defaults
-      let defaultTransformPlugins = ["add-module-exports"];
+      let defaultTransformPlugins: string[] = [];
       if (defaultTransformPlugins.find((p) => p == infiniteLoopPluginId)) {
          defaultTransformPlugins.push(infiniteLoopPluginId);
+      }
+
+      if (!options.transformPlugins.find((p) => p == "add-module-exports")) {
+         defaultTransformPlugins.push("add-module-exports");
       }
 
       transformOptions.plugins = defaultTransformPlugins.concat(

@@ -21,7 +21,8 @@
          </template>
          <template #content>
             <p class="text-wrap text-muted">
-               Controls whether the editor should automatically close brackets after the user adds an opening bracket.
+               Controls whether the editor should automatically close brackets
+               after the user adds an opening bracket.
             </p>
             <Dropdown
                v-model="options.autoClosingBrackets"
@@ -48,7 +49,10 @@
             <span class="text-truncate"> Auto Close Quotes </span>
          </template>
          <template #content>
-            <p class="text-wrap text-muted">Controls whether the editor should automatically close quotes after the user adds an opening quote.</p>
+            <p class="text-wrap text-muted">
+               Controls whether the editor should automatically close quotes
+               after the user adds an opening quote.
+            </p>
             <Dropdown
                v-model="options.autoClosingQuotes"
                :options="optionsAutoClosingQuotes"
@@ -60,7 +64,10 @@
             <span class="text-truncate"> Auto Surround </span>
          </template>
          <template #content>
-            <p class="text-wrap text-muted">Controls whether the editor should automatically surround selections when typing quotes or brackets.</p>
+            <p class="text-wrap text-muted">
+               Controls whether the editor should automatically surround
+               selections when typing quotes or brackets.
+            </p>
             <Dropdown
                v-model="options.autoSurround"
                :options="optionsAutoSurround"
@@ -72,7 +79,9 @@
             <span class="text-truncate"> Code Lens </span>
          </template>
          <template #content>
-            <p class="text-wrap text-muted">Controls whether the editor shows CodeLens.</p>
+            <p class="text-wrap text-muted">
+               Controls whether the editor shows CodeLens.
+            </p>
             <InputSwitch v-model="options.codeLens" />
          </template>
       </Card>
@@ -99,7 +108,9 @@
             <span class="text-truncate"> Insert Spaces </span>
          </template>
          <template #content>
-            <p class="text-wrap text-muted">Insert spaces when pressing <kbd>Tab</kbd>.</p>
+            <p class="text-wrap text-muted">
+               Insert spaces when pressing <kbd>Tab</kbd>.
+            </p>
             <InputSwitch v-model="options.insertSpaces" />
          </template>
       </Card>
@@ -140,7 +151,10 @@
             <span class="text-truncate"> Scroll Sensitivity </span>
          </template>
          <template #content>
-            <p class="text-wrap text-muted">A multiplier to be used on the <code>deltaX</code> and <code>deltaY</code> of mouse wheel scroll events.</p>
+            <p class="text-wrap text-muted">
+               A multiplier to be used on the <code>deltaX</code> and
+               <code>deltaY</code> of mouse wheel scroll events.
+            </p>
             <Slider
                v-model="options.mouseWheelScrollSensitivity"
                :min="0.1"
@@ -231,6 +245,9 @@
                :allowEmpty="false"
                :min="0"
                :step="1"
+               showButtons
+               :spellcheck="false"
+               :useGrouping="false"
             ></InputNumber>
          </template>
       </Card>
@@ -240,9 +257,11 @@
          </template>
          <template #content>
             <p class="text-wrap text-muted">
-               Control the wrapping of the editor. When set to <code>off</code>, the lines
-               will never wrap. When set to <code>on</code>, the lines will wrap at the
-               viewport width. When set to <code>bounded</code>, the lines will wrap at min(viewport_width, wordWrapColumn).
+               Control the wrapping of the editor. When set to <code>off</code>,
+               the lines will never wrap. When set to <code>on</code>, the lines
+               will wrap at the viewport width. When set to
+               <code>bounded</code>, the lines will wrap at min(viewport_width,
+               wordWrapColumn).
             </p>
             <Dropdown
                v-model="options.wordWrap"
@@ -277,9 +296,8 @@ import type defaultEditorOptions from "@app/options/editor";
 import { editor } from "monaco-editor";
 
 const props = defineProps<{
-   options: typeof defaultEditorOptions
+   options: typeof defaultEditorOptions;
 }>();
-
 
 const optionsAutoIndent: Array<typeof props.options.autoIndent> = [
    "advanced",

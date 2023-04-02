@@ -271,9 +271,9 @@
          </template>
          <template #content>
             <p class="text-wrap text-muted">
-               When this options is turned off, <code>null</code> and <code>null</code> are effectively ignored by the language. This can lead to unexpected errors at runtime.
+               When this options is turned off, <code>null</code> and <code>undefined</code> are effectively ignored by the language. This can lead to unexpected errors at runtime.
 
-               When this option is turned on, <code>null</code> and <code>null</code> have their own distinct types and you'll get a type error if you try to use them where a concrete value is expected.
+               When this option is turned on, <code>null</code> and <code>undefined</code> have their own distinct types and you'll get a type error if you try to use them where a concrete value is expected.
             </p>
             <TriStateCheckbox v-model="options.strictNullChecks"></TriStateCheckbox>
          </template>

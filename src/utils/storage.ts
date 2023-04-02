@@ -6,14 +6,38 @@ import editorOptions from "@app/options/editor";
 const storageKeys = {
    projects: "projects",
    generalOptions: "options.general",
-   editorOptions: "options.editor"
+   editorOptions: "options.editor",
+   temp: "temp"
 };
 
+export function saveTempProject(project: Partial<Template>) {
+   try {
+      localStorage.setItem(storageKeys.temp, JSON.stringify(project));
+   } catch (error) {
+      if (error == "QUOTA_EXCEEDED_ERR") {
+         alert("Storage is full. Try deleting some projects.");
+      }
+   }
+}
+
+export function getTempProject() {
+   let result: Partial<Template> | null = null;
+   let raw = localStorage.getItem(storageKeys.temp);
+   if (raw) {
+      result = JSON.parse(raw);
+   }
+   
+   return result;
+}
+
 export function saveGeneralOptions(options: typeof generalOptions) {
-   localStorage.setItem(
-      storageKeys.generalOptions,
-      JSON.stringify(options)
-   );
+   try {
+      localStorage.setItem(storageKeys.generalOptions, JSON.stringify(options));
+   } catch (error) {
+      if (error == "QUOTA_EXCEEDED_ERR") {
+         alert("Storage is full. Try deleting some projects.");
+      }
+   }
 }
 
 export function getGeneralOptions() {
@@ -27,7 +51,13 @@ export function getGeneralOptions() {
 }
 
 export function saveEditorOptions(options: typeof editorOptions) {
-   localStorage.setItem(storageKeys.editorOptions, JSON.stringify(options));
+   try {
+      localStorage.setItem(storageKeys.editorOptions, JSON.stringify(options));
+   } catch (error) {
+      if (error == "QUOTA_EXCEEDED_ERR") {
+         alert("Storage is full. Try deleting some projects.");
+      }
+   }
 }
 
 export function getEditorOptions() {
@@ -51,7 +81,7 @@ export function getProjects() {
    return result;
 }
 
-export function addProject(project: Omit<Partial<Template>, "id" | "lastEdited">) {
+export function addProject(project: Partial<Template>) {
    let projects = getProjects();
 
    let newProject: Template = {
@@ -60,12 +90,18 @@ export function addProject(project: Omit<Partial<Template>, "id" | "lastEdited">
       lastEdited: Date.now(),
       files: project.files || [],
       packages: project.packages || [],
-      options: project.options
+      options: project.options,
    };
 
    projects.push(newProject);
 
-   localStorage.setItem(storageKeys.projects, JSON.stringify(projects));
+   try {
+      localStorage.setItem(storageKeys.projects, JSON.stringify(projects));
+   } catch (error) {
+      if (error == "QUOTA_EXCEEDED_ERR") {
+         alert("Storage is full. Try deleting some projects.");
+      }
+   }
 
    return newProject;
 }
@@ -77,7 +113,16 @@ export function removeProjectById(projectId: string) {
       let project = projects[i];
       if (project.id === projectId) {
          projects.splice(i, 1);
-         localStorage.setItem(storageKeys.projects, JSON.stringify(projects))
+         try {
+            localStorage.setItem(
+               storageKeys.projects,
+               JSON.stringify(projects)
+            );
+         } catch (error) {
+            if (error == "QUOTA_EXCEEDED_ERR") {
+               alert("Storage is full. Try deleting some projects.");
+            }
+         }
          return project;
       }
    }
@@ -87,7 +132,7 @@ export function removeProjectById(projectId: string) {
 
 export function updateProject(
    projectId: string,
-   newProject: Omit<Partial<Template>, "id" | "lastEdited">
+   newProject: Partial<Template>
 ) {
    let projects = getProjects();
 
@@ -97,7 +142,13 @@ export function updateProject(
          project = Object.assign(project, newProject);
          project.lastEdited = Date.now();
 
-         localStorage.setItem(storageKeys.projects, JSON.stringify(projects));
+         try {
+            localStorage.setItem(storageKeys.projects, JSON.stringify(projects));
+         } catch (error) {
+            if (error == "QUOTA_EXCEEDED_ERR") {
+               alert("Storage is full. Try deleting some projects.")
+            }
+         }
          return project;
       }
    }
