@@ -282,6 +282,7 @@ const navbarItems = reactive([
                   emit("newProject");
                }
             },
+            disabled: props.isBusy
          },
          {
             label: "Open...",
@@ -289,6 +290,7 @@ const navbarItems = reactive([
             command: () => {
                state.showProjectsDialog = true;
             },
+            disabled: props.isBusy
          },
          {
             label: "Save As...",
@@ -297,11 +299,11 @@ const navbarItems = reactive([
                state.showSaveProjectDialog = true;
             },
          },
-         /* {
+         {
             label: "Download",
             icon: "mdi mdi-download",
             command: () => {},
-         }, */
+         },
          {
             label: "Options",
             icon: "mdi mdi-cog",
@@ -326,6 +328,11 @@ watch(
       }
    }
 );
+
+watch(() => props.isBusy, (newValue) => {
+   navbarItems[0].items[0].disabled = newValue;
+   navbarItems[0].items[1].disabled = newValue;
+});
 
 function saveProject(projectName: string) {
    if (!projectName) return;

@@ -57,7 +57,6 @@
             placeholder="Search packages"
             class="col-7 me-2 flex-grow-1"
             v-focus
-            :loading="busyState.packageSearch"
             forceSelection
             dropdown
             dropdownMode="current"
@@ -753,6 +752,7 @@ async function clearProject() {
 }
 
 async function createNewProject(template?: Template) {
+   if (busyState.bundler) return;
    if (template) {
       await loadTemplate(template);
    } else {
@@ -806,6 +806,7 @@ async function loadTemplate(template: Partial<Template>) {
 }
 
 async function openProject(projectId: string) {
+   if (busyState.bundler) return;
    if (!projectId) return;
    saveProject();
 

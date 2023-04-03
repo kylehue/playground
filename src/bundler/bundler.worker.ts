@@ -7,7 +7,6 @@ import BabelLoader from "toypack/lib/BabelLoader";
 import { join } from "path-browserify";
 import type defaultBundlerOptions from "@app/options/bundler";
 import type defaultBabelOptions from "@app/options/babel";
-import { BabelLoaderOptions, SimpleAsset } from "./index";
 
 const bundler = new Toypack({
    bundleOptions: {
@@ -201,13 +200,13 @@ thread.listen("updateOptions", (data) => {
 });
 
 thread.listen("updateBabelOptions", (data) => {
-   let options: BabelLoaderOptions = data.options;
+   let options: typeof defaultBabelOptions = data.options;
    const transformOptions = babelLoader.options?.transformOptions!;
    const parseOptions = babelLoader.options?.parseOptions!;
 
    if (options.transformPlugins?.length) {
       // Preserve defaults
-      let defaultTransformPlugins: string[] = [];
+      let defaultTransformPlugins: any[] = [];
       if (defaultTransformPlugins.find((p) => p == infiniteLoopPluginId)) {
          defaultTransformPlugins.push(infiniteLoopPluginId);
       }

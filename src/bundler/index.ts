@@ -1,4 +1,5 @@
 import { WorkerClient } from "@app/WorkerManager";
+import defaultBabelOptions from "@app/options/babel";
 
 export const worker = new WorkerClient(
    new Worker(new URL("@app/bundler/bundler.worker", import.meta.url))
@@ -137,13 +138,7 @@ export function updateOptions(options) {
    return result;
 }
 
-export interface BabelLoaderOptions {
-   transformPlugins: string[],
-   transformPresets: string[],
-   parsePlugins: string[]
-}
-
-export function updateBabelOptions(options: BabelLoaderOptions) {
+export function updateBabelOptions(options: typeof defaultBabelOptions) {
    console.log("updateBabelOptions started");
 
    let result = worker.send(
