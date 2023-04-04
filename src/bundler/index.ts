@@ -1,5 +1,6 @@
 import { WorkerClient } from "@app/WorkerManager";
 import defaultBabelOptions from "@app/options/babel";
+import type { BundleOptions } from "toypack/lib/core/types";
 
 export const worker = new WorkerClient(
    new Worker(new URL("@app/bundler/bundler.worker", import.meta.url))
@@ -27,7 +28,7 @@ export async function installPackage(name: string, version: string) {
    return result;
 }
 
-export async function addAsset(source: string, content = "") {
+export async function addAsset(source: string, content: SimpleAsset["content"] = "") {
    console.log("addAsset started");
 
    let result = await worker.send(
@@ -40,6 +41,16 @@ export async function addAsset(source: string, content = "") {
    );
 
    console.log("addAsset finished");
+
+   return result;
+}
+
+export async function getAssets() {
+   console.log("getAssets started");
+
+   let result: SimpleAsset[] = await worker.send("getAssets", {}, true);
+
+   console.log("getAssets finished");
 
    return result;
 }
@@ -87,7 +98,7 @@ export async function renameAsset(source: string, newSource: string) {
    return result;
 }
 
-export async function bundle(isHardBundle = false) {
+export async function bundle(isHardBundle = false, options?: BundleOptions) {
    console.log("bundle started");
 
    try {
@@ -95,6 +106,7 @@ export async function bundle(isHardBundle = false) {
          "bundle",
          {
             isHardBundle,
+            options,
          },
          true
       );

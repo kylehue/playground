@@ -106,12 +106,15 @@
       @openProject="openProject"
       @saveProject="saveProject"
       @notify="pushNotification"
+      @downloadProject="downloadProject"
       :currentProjectId="state.currentProjectId"
       :generalOptions="generalOptions"
       :editorOptions="editorOptions"
       :bundlerOptions="bundlerOptions"
       :babelOptions="babelOptions"
       :typescriptOptions="typescriptOptions"
+      :downloadStatus="state.downloadStatus"
+      :isDownloading="state.isDownloading"
    ></Navbar>
    <Splitpanes v-fill-remaining-height>
       <Pane size="20" min-size="5" class="explorer-pane">
@@ -166,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, reactive, watch } from "vue";
+import { onMounted, ref, reactive, watch, computed } from "vue";
 import { Splitpanes, Pane } from "splitpanes";
 import Drawer from "@app/components/explorer/Drawer.vue";
 import Packages from "@app/components/explorer/Packages.vue";
@@ -190,13 +193,16 @@ import {
    PackageResult,
    FetchedVersion,
 } from "@app/utils/npmSearch";
-import templates, { Template } from "@app/templates";
+import templates, { Template, basicHTMLBundleContent } from "@app/templates";
 import { basename, join, extname } from "path-browserify";
 import * as bundler from "@app/bundler";
 import defaultBundlerOptions from "@app/options/bundler";
 import defaultBabelOptions from "@app/options/babel";
 import defaultTypescriptOptions from "@app/options/typescript";
 import { setupLanguageFormats } from "@app/monacoSetup";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import Dropzone from "dropzone";
 
 const toast = useToast();
 const monaco = ref<InstanceType<typeof MonacoEditor>>();
@@ -216,6 +222,8 @@ const state = reactive({
    selectedPackageVersionResults: [] as FetchedVersion[],
    installedPackages: [] as Array<{ name: string; version: string }>,
    requiredPackages: [] as Array<{ name: string; version: string }>,
+   downloadStatus: "",
+   isDownloading: false,
 });
 
 const generalOptions = reactive(storage.getGeneralOptions());
@@ -505,7 +513,7 @@ function closeNewFileDialog() {
    state.newFileDialogPath = "";
 }
 
-async function createFile(source: string, content = "") {
+async function createFile(source: string, content: string | ArrayBuffer = "") {
    if (!source) return;
 
    source = join("/", source);
@@ -528,7 +536,9 @@ async function createFile(source: string, content = "") {
    // Create file in bundler IF we successfully created a file in the explorer
    let hasCreatedFile = !!newFile;
    if (hasCreatedFile) {
-      setModel(source, content);
+      if (typeof content == "string") {
+         setModel(source, content);
+      }
 
       busyState.bundler = true;
       busyState.files = true;
@@ -622,6 +632,7 @@ async function removeFile(path: string) {
 
    // Remove from explorer
    drawer.value?.removeFile(path);
+
    // Iterate through disposedPaths
    busyState.bundler = true;
    busyState.files = true;
@@ -643,6 +654,9 @@ async function removeFile(path: string) {
       if (state.copiedFileDescriptor?.fullPath == disposedPath) {
          state.copiedFileDescriptor = null;
       }
+
+      // Remove from explorer
+      drawer.value?.removeFile(disposedPath);
 
       // Remove from models
       monaco.value?.removeModel(disposedPath);
@@ -884,6 +898,42 @@ function setModel(path: string, content = "") {
    return monaco.value?.setModel(path, content);
 }
 
+function downloadProject() {
+   state.downloadStatus = "Compiling project...";
+   state.isDownloading = true;
+   bundler
+      .bundle(true, {
+         mode: "production",
+      })
+      .then(async (result) => {
+         state.downloadStatus = "Getting files ready...";
+         let assets = await bundler.getAssets();
+         let bundleAsset = assets.find((a) => a.source == "/dist/bundle.js");
+
+         if (bundleAsset) {
+            let currentProjectName =
+               storage.getProjects().find((p) => p.id == state.currentProjectId)
+                  ?.name || "default-project";
+            const zip = new JSZip();
+            zip.file(
+               join(currentProjectName, "index.html"),
+               basicHTMLBundleContent
+            );
+            zip.file(
+               join(currentProjectName, bundleAsset.source.replace(/^\//, "")),
+               bundleAsset.content
+            );
+            zip.generateAsync({ type: "blob" }).then((content) => {
+               saveAs(content, currentProjectName + ".zip");
+               state.downloadStatus = "";
+               state.isDownloading = false;
+            });
+         } else {
+            state.downloadStatus = "ERROR: Couldn't find the bundle.";
+         }
+      });
+}
+
 async function runProject(isHardRun = false) {
    if (busyState.bundler) return;
    if (!monaco.value) {
@@ -998,6 +1048,28 @@ addEventListener("keydown", (event) => {
 });
 
 onMounted(async () => {
+   const dropzone = new Dropzone(".explorer-pane", {
+      url: "/",
+      autoProcessQueue: false,
+   });
+
+   dropzone.on("addedfile", async (file) => {
+      dropzone.removeFile(file);
+      let source = (file as any).fullPath ? (file as any).fullPath : file.name;
+      let content: string | ArrayBuffer;
+
+      if (file.type.startsWith("image") || file.type.startsWith("video")) {
+         pushNotification(
+            "Invalid File",
+            "Failed to Images and videos are currently not supported.",
+            "error"
+         );
+      } else {
+         content = await file.text();
+         await createFile(source, content);
+      }
+   });
+
    let autosaveTempProject = storage.getTempProject();
 
    if (!autosaveTempProject) {

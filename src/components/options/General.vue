@@ -24,7 +24,6 @@
                suffix=" ms"
                :disabled="!options.autorun"
                showButtons
-               :spellcheck="false"
                :useGrouping="false"
                :allowEmpty="false"
             ></InputNumber>

@@ -103,7 +103,6 @@ watch(
 function createFile(path: string) {
    if (!path) return;
 
-   let isFile = !!extname(path);
 
    let validation = validateFile(path);
    if (validation?.message) {
@@ -112,7 +111,7 @@ function createFile(path: string) {
       return;
    }
 
-   if (isFile) {
+   if (isFile(path)) {
       if (drawer.getFileFromPath(path)) return null;
 
       return drawer.addFileFromPath(path);
@@ -123,11 +122,16 @@ function createFile(path: string) {
    }
 }
 
+function isFile(path: string) {
+   let extension = extname(path);
+   let isValid = /^.[a-zA-Z]+$/g.test(extension);
+   return !!extension && isValid;
+}
+
 function removeFile(path: string) {
    if (!path) return;
-   let isFile = !!extname(path);
-
-   if (isFile) {
+   
+   if (isFile(path)) {
       drawer.removeFileFromPath(path);
    } else {
       drawer.removeDirectoryFromPath(path);
@@ -148,6 +152,7 @@ defineExpose({
    removeFile,
    highlightFile,
    self: drawer,
+   element: drawerElement
 });
 
 const emit = defineEmits([

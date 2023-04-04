@@ -167,6 +167,35 @@
          ></Button>
       </template>
    </Dialog>
+   <Dialog
+      v-model:visible="state.showDownloadProjectDialog"
+      dismissableMask
+      modal
+      class="col-10 col-md-5"
+   >
+      <template #header>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-download me-2"></i>
+            <b>Download Project</b>
+         </div>
+      </template>
+      <template #default>
+         <div class="d-flex flex-column w-100">
+            <span>{{ props.downloadStatus }}</span>
+            <ProgressBar
+               v-if="isDownloading"
+               mode="indeterminate"
+            ></ProgressBar>
+         </div>
+      </template>
+      <template #footer>
+         <Button
+            label="Download"
+            @click="emit('downloadProject')"
+            :loading="isDownloading"
+         ></Button>
+      </template>
+   </Dialog>
 </template>
 
 <script setup lang="ts">
@@ -176,6 +205,7 @@ import Menubar from "primevue/menubar";
 import SplitButton from "primevue/splitbutton";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
+import ProgressBar from "primevue/progressbar";
 import InputText from "primevue/inputtext";
 import { useConfirm } from "primevue/useconfirm";
 import logo from "@app/assets/logo_240x240.png";
@@ -193,12 +223,15 @@ const props = defineProps<{
    babelOptions: typeof babelOptions;
    editorOptions: editor.IStandaloneEditorConstructionOptions;
    typescriptOptions: languages.typescript.CompilerOptions;
+   downloadStatus?: string;
+   isDownloading?: boolean;
 }>();
 
 const state = reactive({
    showProjectsDialog: false,
    showNewProjectDialog: false,
    showOptionsDialog: false,
+   showDownloadProjectDialog: false,
    saveProjectName: "",
    showSaveProjectDialog: false,
    newProjectName: "",
@@ -219,8 +252,8 @@ const emit = defineEmits([
    "newProjectDialog",
    "openProjectDialog",
    "saveProjectDialog",
-   "downloadProjectDialog",
    "openOptionsDialog",
+   "downloadProject",
    "openProject",
    "saveProject",
    "newProject",
@@ -251,8 +284,7 @@ function currentProjectIsSaved() {
 function currentProjectIsEmpty() {
    // Check if empty
    let temp = storage.getTempProject();
-   let currentProjectIsEmpty =
-      !temp?.files?.length && !temp?.packages?.length;
+   let currentProjectIsEmpty = !temp?.files?.length && !temp?.packages?.length;
    return currentProjectIsEmpty;
 }
 
@@ -282,7 +314,7 @@ const navbarItems = reactive([
                   emit("newProject");
                }
             },
-            disabled: props.isBusy
+            disabled: props.isBusy,
          },
          {
             label: "Open...",
@@ -290,7 +322,7 @@ const navbarItems = reactive([
             command: () => {
                state.showProjectsDialog = true;
             },
-            disabled: props.isBusy
+            disabled: props.isBusy,
          },
          {
             label: "Save As...",
@@ -302,7 +334,9 @@ const navbarItems = reactive([
          {
             label: "Download",
             icon: "mdi mdi-download",
-            command: () => {},
+            command: () => {
+               state.showDownloadProjectDialog = true;
+            },
          },
          {
             label: "Options",
@@ -329,10 +363,13 @@ watch(
    }
 );
 
-watch(() => props.isBusy, (newValue) => {
-   navbarItems[0].items[0].disabled = newValue;
-   navbarItems[0].items[1].disabled = newValue;
-});
+watch(
+   () => props.isBusy,
+   (newValue) => {
+      navbarItems[0].items[0].disabled = newValue;
+      navbarItems[0].items[1].disabled = newValue;
+   }
+);
 
 function saveProject(projectName: string) {
    if (!projectName) return;

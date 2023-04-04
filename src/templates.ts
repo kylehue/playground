@@ -36,6 +36,17 @@ function mergeWithDefaultOptions(opts: Template["options"]) {
    return result;
 }
 
+export const basicHTMLBundleContent = `<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <script defer src="./dist/bundle.js"></script>
+   </head>
+   <body>
+   </body>
+</html>`;
+
 const templates: Template[] = [
    {
       id: "default",

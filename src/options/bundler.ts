@@ -6,7 +6,7 @@ interface ResolveOptions {
 
 interface BundlerOptions {
    entry: string;
-   envMode: "development" | "production" | "auto";
+   envMode: "development" | "production";
    sourceMap: "full" | "none" | "cheap";
    infiniteLoopProtection: boolean;
    resolve: ResolveOptions;
@@ -16,7 +16,7 @@ interface BundlerOptions {
 const options: BundlerOptions = {
    entry: "/",
    infiniteLoopProtection: true,
-   envMode: "auto",
+   envMode: "development",
    replace: {},
    resolve: {
       alias: {},

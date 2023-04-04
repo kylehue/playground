@@ -130,7 +130,6 @@ const props = defineProps<{
 }>();
 
 const optionsEnvMode: Array<typeof defaultBundlerOptions["envMode"]> = [
-   "auto",
    "development",
    "production",
 ];

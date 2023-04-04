@@ -246,7 +246,6 @@
                :min="0"
                :step="1"
                showButtons
-               :spellcheck="false"
                :useGrouping="false"
             ></InputNumber>
          </template>

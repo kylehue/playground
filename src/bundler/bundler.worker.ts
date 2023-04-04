@@ -7,15 +7,18 @@ import BabelLoader from "toypack/lib/BabelLoader";
 import { join } from "path-browserify";
 import type defaultBundlerOptions from "@app/options/bundler";
 import type defaultBabelOptions from "@app/options/babel";
+import { SimpleAsset } from ".";
 
 const bundler = new Toypack({
    bundleOptions: {
       mode: "development",
       entry: "/",
       output: {
-         path: "lib",
+         path: "dist",
          resourceType: "external",
          sourceMap: "inline-cheap-sources",
+         filename: "bundle.js",
+         assetFilename: "assets/[base]",
       },
       resolve: {
          alias: {},
@@ -57,6 +60,21 @@ thread.listen("addAsset", async (data) => {
    return data;
 });
 
+thread.listen("getAssets", () => {
+   let entries = Object.fromEntries(bundler.assets);
+   let simplifiedAssets: SimpleAsset[] = [];
+   for (let asset of Object.values(entries)) {
+      if (asset.source.startsWith("/node_modules/")) continue;
+
+      simplifiedAssets.push({
+         source: asset.source,
+         content: asset.content
+      });
+   }
+
+   return simplifiedAssets;
+});
+
 thread.listen("removeAsset", (data) => {
    try {
       bundler.assets.delete(data.source);
@@ -94,7 +112,7 @@ thread.listen("renameAsset", async (data) => {
 thread.listen("bundle", async (data) => {
    try {
       let bundleResult = await bundler.bundle(
-         undefined,
+         data.options,
          data.isHardBundle ? "hard" : "soft"
       );
 
@@ -128,10 +146,6 @@ thread.listen("updateOptions", (data) => {
 
    if (options.envMode == "development" || options.envMode == "production") {
       bundleOptions.mode = options.envMode;
-   }
-
-   if (options.envMode == "auto") {
-      bundleOptions.mode = "development";
    }
 
    if (typeof options.infiniteLoopProtection == "boolean") {
