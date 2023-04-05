@@ -181,6 +181,13 @@
       </template>
       <template #default>
          <div class="d-flex flex-column w-100">
+            <Dropdown
+               v-if="!isDownloading"
+               v-model="state.downloadType"
+               :options="optionsDownloadType"
+               option-label="label"
+               option-value="value"
+            ></Dropdown>
             <span>{{ props.downloadStatus }}</span>
             <ProgressBar
                v-if="isDownloading"
@@ -191,8 +198,40 @@
       <template #footer>
          <Button
             label="Download"
-            @click="emit('downloadProject')"
+            @click="emit('downloadProject', state.downloadType)"
             :loading="isDownloading"
+         ></Button>
+      </template>
+   </Dialog>
+   <Dialog
+      v-model:visible="state.showImportDialog"
+      dismissableMask
+      modal
+      class="col-10 col-md-5"
+   >
+      <template #header>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-code-json me-2"></i>
+            <b>Import JSON</b>
+         </div>
+      </template>
+      <template #default>
+         <FileUpload
+            :multiple="false"
+            mode="basic"
+            @select="state.importJSONFile = $event.files[0]"
+            @clear="state.importJSONFile = null"
+            accept="application/json"
+            :custom-upload="true"
+         >
+         </FileUpload>
+      </template>
+      <template #footer>
+         <Button
+            label="Import"
+            @click="emit('importJSON', state.importJSONFile)"
+            :loading="isBusy"
+            :disabled="!state.importJSONFile"
          ></Button>
       </template>
    </Dialog>
@@ -203,9 +242,11 @@ import Projects from "@app/components/navbar/Projects.vue";
 import Options from "@app/components/options/Options.vue";
 import Menubar from "primevue/menubar";
 import SplitButton from "primevue/splitbutton";
+import FileUpload from "primevue/fileupload";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import ProgressBar from "primevue/progressbar";
+import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import { useConfirm } from "primevue/useconfirm";
 import logo from "@app/assets/logo_240x240.png";
@@ -234,6 +275,7 @@ const state = reactive({
    showDownloadProjectDialog: false,
    saveProjectName: "",
    showSaveProjectDialog: false,
+   showImportDialog: false,
    newProjectName: "",
    projects: storage.getProjects(),
    renameProjectNewName: "",
@@ -241,7 +283,20 @@ const state = reactive({
    showRenameProjectDialog: false,
    renameProjectId: "",
    enableLoopProtection: true,
+   downloadType: "production",
+   importJSONFile: null as any
 });
+
+const optionsDownloadType = [
+   {
+      label: "for production",
+      value: "production",
+   },
+   {
+      label: "as JSON",
+      value: "json",
+   },
+];
 
 defineExpose({
    state,
@@ -258,6 +313,7 @@ const emit = defineEmits([
    "saveProject",
    "newProject",
    "notify",
+   "importJSON",
 ]);
 
 const menuBar = ref<InstanceType<typeof Menubar>>();
@@ -332,6 +388,14 @@ const navbarItems = reactive([
             },
          },
          {
+            label: "Import JSON",
+            icon: "mdi mdi-code-json",
+            command: () => {
+               state.showImportDialog = true;
+            },
+            disabled: props.isBusy,
+         },
+         {
             label: "Download",
             icon: "mdi mdi-download",
             command: () => {
@@ -368,6 +432,8 @@ watch(
    (newValue) => {
       navbarItems[0].items[0].disabled = newValue;
       navbarItems[0].items[1].disabled = newValue;
+      navbarItems[0].items[2].disabled = newValue;
+      navbarItems[0].items[3].disabled = newValue;
    }
 );
 

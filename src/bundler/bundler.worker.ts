@@ -30,6 +30,7 @@ const bundler = new Toypack({
 });
 
 const babelLoader: IBabelLoader = new BabelLoader();
+babelLoader.options?.transformOptions?.plugins?.push("add-module-exports");
 
 const definePlugin = new DefinePlugin({});
 bundler.loaders.push(babelLoader as any);
@@ -220,8 +221,8 @@ thread.listen("updateBabelOptions", (data) => {
 
    if (options.transformPlugins?.length) {
       // Preserve defaults
-      let defaultTransformPlugins: any[] = [];
-      if (defaultTransformPlugins.find((p) => p == infiniteLoopPluginId)) {
+      let defaultTransformPlugins: string[] = [];
+      if (transformOptions.plugins?.find((p) => p == infiniteLoopPluginId)) {
          defaultTransformPlugins.push(infiniteLoopPluginId);
       }
 

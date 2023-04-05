@@ -1,6 +1,6 @@
 const options = {
    transformPresets: ["env"] as string[],
-   transformPlugins: ["add-module-exports"] as string[],
+   transformPlugins: [] as string[],
    parsePlugins: [] as string[],
 };
 

@@ -107,6 +107,7 @@
       @saveProject="saveProject"
       @notify="pushNotification"
       @downloadProject="downloadProject"
+      @importJSON="importJSON"
       :currentProjectId="state.currentProjectId"
       :generalOptions="generalOptions"
       :editorOptions="editorOptions"
@@ -898,40 +899,61 @@ function setModel(path: string, content = "") {
    return monaco.value?.setModel(path, content);
 }
 
-function downloadProject() {
-   state.downloadStatus = "Compiling project...";
-   state.isDownloading = true;
-   bundler
-      .bundle(true, {
-         mode: "production",
-      })
-      .then(async (result) => {
-         state.downloadStatus = "Getting files ready...";
-         let assets = await bundler.getAssets();
-         let bundleAsset = assets.find((a) => a.source == "/dist/bundle.js");
+async function importJSON(file: File) {
+   if (file) {
+      let content = await file.text();
+      let template: Template = JSON.parse(content);
+      await loadTemplate(template);
+      state.currentProjectId = template.id;
+      await runProject();
+   }
+}
 
-         if (bundleAsset) {
-            let currentProjectName =
-               storage.getProjects().find((p) => p.id == state.currentProjectId)
-                  ?.name || "default-project";
-            const zip = new JSZip();
-            zip.file(
-               join(currentProjectName, "index.html"),
-               basicHTMLBundleContent
-            );
-            zip.file(
-               join(currentProjectName, bundleAsset.source.replace(/^\//, "")),
-               bundleAsset.content
-            );
-            zip.generateAsync({ type: "blob" }).then((content) => {
-               saveAs(content, currentProjectName + ".zip");
-               state.downloadStatus = "";
-               state.isDownloading = false;
-            });
-         } else {
-            state.downloadStatus = "ERROR: Couldn't find the bundle.";
-         }
+function downloadProject(type: string) {
+   let currentProjectName =
+      storage.getProjects().find((p) => p.id == state.currentProjectId)?.name ||
+      "default-project";
+   if (type == "json") {
+      let temp = storage.getTempProject();
+      let blob = new Blob([JSON.stringify(temp) || "{}"], {
+         type: "application/json;charset=utf-8",
       });
+      saveAs(blob, currentProjectName + ".json");
+   } else if (type == "production") {
+      state.downloadStatus = "Compiling project...";
+      state.isDownloading = true;
+      bundler
+         .bundle(true, {
+            mode: "production",
+         })
+         .then(async (result) => {
+            state.downloadStatus = "Getting files ready...";
+            let assets = await bundler.getAssets();
+            let bundleAsset = assets.find((a) => a.source == "/dist/bundle.js");
+
+            if (bundleAsset) {
+               const zip = new JSZip();
+               zip.file(
+                  join(currentProjectName, "index.html"),
+                  basicHTMLBundleContent
+               );
+               zip.file(
+                  join(
+                     currentProjectName,
+                     bundleAsset.source.replace(/^\//, "")
+                  ),
+                  bundleAsset.content
+               );
+               zip.generateAsync({ type: "blob" }).then((content) => {
+                  saveAs(content, currentProjectName + ".zip");
+                  state.downloadStatus = "";
+                  state.isDownloading = false;
+               });
+            } else {
+               state.downloadStatus = "ERROR: Couldn't find the bundle.";
+            }
+         });
+   }
 }
 
 async function runProject(isHardRun = false) {
@@ -1061,7 +1083,7 @@ onMounted(async () => {
       if (file.type.startsWith("image") || file.type.startsWith("video")) {
          pushNotification(
             "Invalid File",
-            "Failed to Images and videos are currently not supported.",
+            "Images and videos are currently not supported due to storage limitations.",
             "error"
          );
       } else {
