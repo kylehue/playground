@@ -1,7 +1,7 @@
 // @import url("https://fonts.googleapis.com/css2?family=Catamaran:wght@400;500;700&display=swap");
 @import url("https://cdn.jsdelivr.net/npm/@mdi/font@7.2.x/css/materialdesignicons.min.css");
 @import "bootstrap/dist/css/bootstrap.min.css";
-@import "primevue/resources/themes/mdc-dark-indigo/theme.css";
+@import "primevue/resources/themes/md-dark-indigo/theme.css";
 @import "primevue/resources/primevue.min.css";
 @import "primeicons/primeicons.css";
 @import "./variables.scss";
@@ -153,4 +153,8 @@ img[alt="logo"] {
 
 .p-checkbox-icon::before {
    box-sizing: unset !important;
+}
+
+.p-inputgroup .p-button {
+   flex-shrink: 0;
 }

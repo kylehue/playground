@@ -12,11 +12,12 @@ function resolve(source) {
 }
 
 const config = {
-   entry: resolve("src/main.ts"),
+   entry: [resolve("src/main.ts")],
    output: {
       path: resolve("dist"),
       filename: "[name].bundle.js",
       clean: true,
+      publicPath: "/"
    },
    module: {
       rules: [

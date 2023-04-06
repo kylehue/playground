@@ -235,12 +235,100 @@
          ></Button>
       </template>
    </Dialog>
+   <Dialog
+      v-model:visible="state.showSetNameDialog"
+      dismissableMask
+      modal
+      class="col-10 col-md-5"
+   >
+      <template #header>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-account-edit me-2"></i>
+            <b>Set Name</b>
+         </div>
+      </template>
+      <template #default>
+         <InputText
+            type="text"
+            v-model="state.username"
+            v-focus
+            placeholder="Enter your name"
+            spellcheck="false"
+            autocomplete="off"
+            class="w-100"
+            @keypress.enter="setUsername(state.username)"
+         ></InputText>
+      </template>
+      <template #footer>
+         <Button
+            label="Set"
+            @click="setUsername(state.username)"
+            :disabled="!state.username"
+         ></Button>
+      </template>
+   </Dialog>
+   <Dialog
+      v-model:visible="showCreateRoomDialog"
+      dismissableMask
+      modal
+      class="col-10 col-md-5"
+   >
+      <template #header>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-plus-box-outline me-2"></i>
+            <b>Create Room</b>
+         </div>
+      </template>
+      <template #default>
+         <div class="p-inputgroup flex-1">
+            <Button
+               icon="mdi mdi-shuffle-variant"
+               @click="emit('generateRandomRoomId')"
+               :loading="isLoadingRandomRoomId || isLoadingCreateRoom"
+               v-tooltip.left="'Generate random'"
+            ></Button>
+            <InputText
+               id="roomIdInput"
+               type="text"
+               v-model="generatedRoomId"
+               spellcheck="false"
+               autocomplete="off"
+               class="w-100"
+               :disabled="isLoadingRandomRoomId || isLoadingCreateRoom"
+               @keypress.enter="createRoom"
+            ></InputText>
+            <Button
+               icon="mdi mdi-content-copy"
+               :disabled="
+                  !generatedRoomId ||
+                  isLoadingRandomRoomId ||
+                  isLoadingCreateRoom
+               "
+               @click="copyRoomId"
+               v-tooltip.right="'Copy'"
+            ></Button>
+         </div>
+         <small v-if="!!createRoomErrorMessage" class="text-danger">{{
+            createRoomErrorMessage
+         }}</small>
+      </template>
+      <template #footer>
+         <Button
+            label="Create Room"
+            @click="createRoom"
+            :loading="isLoadingCreateRoom"
+            :disabled="!generatedRoomId"
+         ></Button>
+      </template>
+   </Dialog>
 </template>
 
 <script setup lang="ts">
+import { ref, reactive, watch, onUnmounted } from "vue";
 import Projects from "@app/components/navbar/Projects.vue";
 import Options from "@app/components/options/Options.vue";
 import Menubar from "primevue/menubar";
+import { MenuItem } from "primevue/menuitem";
 import SplitButton from "primevue/splitbutton";
 import FileUpload from "primevue/fileupload";
 import Button from "primevue/button";
@@ -250,7 +338,6 @@ import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import { useConfirm } from "primevue/useconfirm";
 import logo from "@app/assets/logo_240x240.png";
-import { ref, reactive, watch } from "vue";
 import * as storage from "@app/utils/storage";
 import { editor, languages } from "monaco-editor";
 import type generalOptions from "@app/options/general";
@@ -266,13 +353,34 @@ const props = defineProps<{
    typescriptOptions: languages.typescript.CompilerOptions;
    downloadStatus?: string;
    isDownloading?: boolean;
+   generatedRoomId?: string;
+   actualRoomId: string;
+   isLoadingRandomRoomId?: boolean;
+   isLoadingCreateRoom?: boolean;
+   createRoomErrorMessage?: string;
 }>();
+
+const generatedRoomId = ref(props.generatedRoomId);
+
+watch(
+   () => props.generatedRoomId,
+   () => {
+      generatedRoomId.value = props.generatedRoomId;
+   }
+);
+
+const showCreateRoomDialog = ref(false);
+
+watch(showCreateRoomDialog, () => {
+   generatedRoomId.value = props.actualRoomId;
+});
 
 const state = reactive({
    showProjectsDialog: false,
    showNewProjectDialog: false,
    showOptionsDialog: false,
    showDownloadProjectDialog: false,
+   showSetNameDialog: false,
    saveProjectName: "",
    showSaveProjectDialog: false,
    showImportDialog: false,
@@ -284,7 +392,8 @@ const state = reactive({
    renameProjectId: "",
    enableLoopProtection: true,
    downloadType: "production",
-   importJSONFile: null as any
+   importJSONFile: null as any,
+   username: storage.getUsername(),
 });
 
 const optionsDownloadType = [
@@ -314,6 +423,8 @@ const emit = defineEmits([
    "newProject",
    "notify",
    "importJSON",
+   "generateRandomRoomId",
+   "createRoom",
 ]);
 
 const menuBar = ref<InstanceType<typeof Menubar>>();
@@ -327,6 +438,16 @@ const runButtonMenuItems = [
       },
    },
 ];
+
+function createRoom() {
+   emit("createRoom", generatedRoomId.value);
+}
+
+function copyRoomId() {
+   if (!!props.generatedRoomId && typeof props.generatedRoomId == "string") {
+      navigator.clipboard.writeText(props.generatedRoomId);
+   }
+}
 
 function currentProjectIsSaved() {
    // Check if the current project is saved or not
@@ -345,7 +466,7 @@ function currentProjectIsEmpty() {
 }
 
 const unsavedProjectTitle = "Unsaved Project";
-const navbarItems = reactive([
+const navbarItems = reactive<MenuItem[]>([
    {
       label: unsavedProjectTitle,
       icon: "mdi mdi-folder-open",
@@ -411,6 +532,30 @@ const navbarItems = reactive([
          },
       ],
    },
+   {
+      label: "Collaboration",
+      icon: "mdi mdi-account-group",
+      items: [
+         {
+            label: "Set name",
+            icon: "mdi mdi-account-edit",
+            command: () => {
+               state.showSetNameDialog = true;
+            },
+         },
+         {
+            label: "Create room",
+            icon: "mdi mdi-plus-box-outline",
+            command: () => {
+               showCreateRoomDialog.value = true;
+            },
+         },
+         {
+            label: "Join room",
+            icon: "mdi mdi-login",
+         },
+      ],
+   },
 ]);
 
 watch(
@@ -430,12 +575,20 @@ watch(
 watch(
    () => props.isBusy,
    (newValue) => {
-      navbarItems[0].items[0].disabled = newValue;
-      navbarItems[0].items[1].disabled = newValue;
-      navbarItems[0].items[2].disabled = newValue;
-      navbarItems[0].items[3].disabled = newValue;
+      let projectMenuItems = navbarItems[0].items;
+      if (projectMenuItems) {
+         projectMenuItems[0].disabled = newValue;
+         projectMenuItems[1].disabled = newValue;
+         projectMenuItems[2].disabled = newValue;
+         projectMenuItems[3].disabled = newValue;
+      }
    }
 );
+
+function setUsername(username: string) {
+   storage.setUsername(username);
+   state.showSetNameDialog = false;
+}
 
 function saveProject(projectName: string) {
    if (!projectName) return;

@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 import { defineAsyncComponent } from "vue";
 import Splash from "./Splash.vue";
 import { setupMonacoEnv, loadOnigasm } from "@app/monacoSetup";
@@ -14,7 +14,7 @@ const App = defineAsyncComponent({
 });
 
 const router = createRouter({
-   history: createWebHashHistory(),
+   history: createWebHistory(),
    routes: [
       {
          path: "/",
@@ -22,7 +22,7 @@ const router = createRouter({
       },
       {
          name: "App",
-         path: "/app",
+         path: "/app/:roomId?",
          component: App,
       },
    ],

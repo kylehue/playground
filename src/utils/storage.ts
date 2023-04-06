@@ -7,8 +7,17 @@ const storageKeys = {
    projects: "projects",
    generalOptions: "options.general",
    editorOptions: "options.editor",
-   temp: "temp"
+   temp: "temp",
+   username: "username"
 };
+
+export function setUsername(username: string) {
+   localStorage.setItem(storageKeys.username, username);
+}
+
+export function getUsername() {
+   return localStorage.getItem(storageKeys.username) || "anonymous";
+}
 
 export function saveTempProject(project: Partial<Template>) {
    try {

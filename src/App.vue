@@ -108,6 +108,8 @@
       @notify="pushNotification"
       @downloadProject="downloadProject"
       @importJSON="importJSON"
+      @generateRandomRoomId="generateRandomRoomId"
+      @createRoom="createRoom"
       :currentProjectId="state.currentProjectId"
       :generalOptions="generalOptions"
       :editorOptions="editorOptions"
@@ -116,6 +118,11 @@
       :typescriptOptions="typescriptOptions"
       :downloadStatus="state.downloadStatus"
       :isDownloading="state.isDownloading"
+      :generated-room-id="state.generatedRoomId"
+      :actual-room-id="state.actualRoomId"
+      :is-loading-random-room-id="busyState.randomRoomId"
+      :is-loading-create-room="busyState.creatingRoom"
+      :create-room-error-message="state.createRoomErrorMessage"
    ></Navbar>
    <Splitpanes v-fill-remaining-height>
       <Pane size="20" min-size="5" class="explorer-pane">
@@ -170,7 +177,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, reactive, watch, computed } from "vue";
+import { onMounted, ref, reactive, watch } from "vue";
+import { useRouter } from "vue-router";
 import { Splitpanes, Pane } from "splitpanes";
 import Drawer from "@app/components/explorer/Drawer.vue";
 import Packages from "@app/components/explorer/Packages.vue";
@@ -204,7 +212,10 @@ import { setupLanguageFormats } from "@app/monacoSetup";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import Dropzone from "dropzone";
+import { io } from "socket.io-client";
 
+const socket = io();
+const router = useRouter();
 const toast = useToast();
 const monaco = ref<InstanceType<typeof MonacoEditor>>();
 const drawer = ref<InstanceType<typeof Drawer>>();
@@ -225,8 +236,12 @@ const state = reactive({
    requiredPackages: [] as Array<{ name: string; version: string }>,
    downloadStatus: "",
    isDownloading: false,
+   actualRoomId: "",
+   generatedRoomId: "",
+   createRoomErrorMessage: "",
 });
 
+const connectedState = ref(false);
 const generalOptions = reactive(storage.getGeneralOptions());
 const editorOptions = reactive(storage.getEditorOptions());
 const bundlerOptions = reactive(defaultBundlerOptions);
@@ -239,6 +254,8 @@ const busyState = reactive({
    packageList: false,
    packageSearch: false,
    packageSearchVersion: false,
+   randomRoomId: false,
+   creatingRoom: false,
 });
 
 let hardRunRequired = false;
@@ -280,6 +297,22 @@ watch(typescriptOptions, () => {
    saveProject();
 });
 
+watch(connectedState, () => {
+   if (connectedState.value) {
+      pushNotification(
+         "Connected",
+         "You have been connected to the server.",
+         "success"
+      );
+   } else {
+      pushNotification(
+         "Disconnected",
+         "You have been disconnected from the server.",
+         "error"
+      );
+   }
+});
+
 // Initial set
 bundler.updateOptions(defaultBundlerOptions);
 bundler.updateBabelOptions({
@@ -287,6 +320,57 @@ bundler.updateBabelOptions({
    transformPresets: defaultBabelOptions.transformPresets,
    parsePlugins: defaultBabelOptions.parsePlugins,
 });
+
+// Socket
+socket.on("connect", () => {
+   socket.on("result:generateRandomRoomId", (error, randomRoomId) => {
+      busyState.randomRoomId = false;
+      if (error) return;
+
+      state.generatedRoomId = randomRoomId;
+   });
+
+   socket.on("result:createRoom", (error, createdRoomId) => {
+      busyState.creatingRoom = false;
+      state.createRoomErrorMessage = error;
+      if (error) {
+         return;
+      }
+
+      state.actualRoomId = createdRoomId;
+      pushNotification(
+         "Create Room",
+         `You have successfully created the room #${createdRoomId}`,
+         "success"
+      );
+
+      router.push({
+         params: {
+            roomId: createdRoomId,
+         },
+      });
+   });
+
+   connectedState.value = true;
+});
+
+socket.on("disconnect", () => {
+   connectedState.value = false;
+});
+
+function createRoom(roomId: string) {
+   console.log("Joining: " + roomId);
+
+   if (!roomId) return;
+
+   socket.emit("createRoom", roomId);
+   busyState.creatingRoom = true;
+}
+
+function generateRandomRoomId() {
+   socket.emit("generateRandomRoomId");
+   busyState.randomRoomId = true;
+}
 
 function highlightDrawerFile(source: string) {
    if (!source) return;
