@@ -268,7 +268,7 @@
       </template>
    </Dialog>
    <Dialog
-      v-model:visible="showCreateRoomDialog"
+      v-model:visible="roomState.showCreateRoomDialog"
       dismissableMask
       modal
       class="col-10 col-md-5"
@@ -283,41 +283,47 @@
          <div class="p-inputgroup flex-1">
             <Button
                icon="mdi mdi-shuffle-variant"
-               @click="emit('generateRandomRoomId')"
-               :loading="isLoadingRandomRoomId || isLoadingCreateRoom"
+               @click="generateRandomRoomId"
+               :loading="
+                  roomState.isBusyGeneratingRandomId ||
+                  roomState.isBusyCreatingRoom
+               "
                v-tooltip.left="'Generate random'"
             ></Button>
             <InputText
                id="roomIdInput"
                type="text"
-               v-model="generatedRoomId"
+               v-model="roomState.generatedRoomId"
                spellcheck="false"
                autocomplete="off"
                class="w-100"
-               :disabled="isLoadingRandomRoomId || isLoadingCreateRoom"
+               :disabled="
+                  roomState.isBusyGeneratingRandomId ||
+                  roomState.isBusyCreatingRoom
+               "
                @keypress.enter="createRoom"
             ></InputText>
             <Button
                icon="mdi mdi-content-copy"
                :disabled="
-                  !generatedRoomId ||
-                  isLoadingRandomRoomId ||
-                  isLoadingCreateRoom
+                  !roomState.generatedRoomId ||
+                  roomState.isBusyGeneratingRandomId ||
+                  roomState.isBusyCreatingRoom
                "
                @click="copyRoomId"
                v-tooltip.right="'Copy'"
             ></Button>
          </div>
-         <small v-if="!!createRoomErrorMessage" class="text-danger">{{
-            createRoomErrorMessage
+         <small v-if="!!roomState.createRoomErrorMessage" class="text-danger">{{
+            roomState.createRoomErrorMessage
          }}</small>
       </template>
       <template #footer>
          <Button
             label="Create Room"
             @click="createRoom"
-            :loading="isLoadingCreateRoom"
-            :disabled="!generatedRoomId"
+            :loading="roomState.isBusyCreatingRoom"
+            :disabled="!roomState.generatedRoomId"
          ></Button>
       </template>
    </Dialog>
@@ -325,6 +331,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import Projects from "@app/components/navbar/Projects.vue";
 import Options from "@app/components/options/Options.vue";
 import Menubar from "primevue/menubar";
@@ -343,6 +350,8 @@ import { editor, languages } from "monaco-editor";
 import type generalOptions from "@app/options/general";
 import type bundlerOptions from "@app/options/bundler";
 import type babelOptions from "@app/options/babel";
+import { socket } from "@app/socket";
+import { join } from "path-browserify";
 const props = defineProps<{
    isBusy: boolean;
    currentProjectId: string;
@@ -353,27 +362,8 @@ const props = defineProps<{
    typescriptOptions: languages.typescript.CompilerOptions;
    downloadStatus?: string;
    isDownloading?: boolean;
-   generatedRoomId?: string;
-   actualRoomId: string;
-   isLoadingRandomRoomId?: boolean;
-   isLoadingCreateRoom?: boolean;
-   createRoomErrorMessage?: string;
+   roomId?: string;
 }>();
-
-const generatedRoomId = ref(props.generatedRoomId);
-
-watch(
-   () => props.generatedRoomId,
-   () => {
-      generatedRoomId.value = props.generatedRoomId;
-   }
-);
-
-const showCreateRoomDialog = ref(false);
-
-watch(showCreateRoomDialog, () => {
-   generatedRoomId.value = props.actualRoomId;
-});
 
 const state = reactive({
    showProjectsDialog: false,
@@ -396,6 +386,15 @@ const state = reactive({
    username: storage.getUsername(),
 });
 
+const roomState = reactive({
+   showCreateRoomDialog: false,
+   generatedRoomId: "",
+   isBusyGeneratingRandomId: false,
+   isBusyCreatingRoom: false,
+   createRoomErrorMessage: "",
+});
+
+const router = useRouter();
 const optionsDownloadType = [
    {
       label: "for production",
@@ -423,30 +422,71 @@ const emit = defineEmits([
    "newProject",
    "notify",
    "importJSON",
-   "generateRandomRoomId",
-   "createRoom",
+   "update:roomId",
 ]);
 
-const menuBar = ref<InstanceType<typeof Menubar>>();
+socket.on("update:room", (room) => {
+   console.log(room);
+   console.log(socket);
+});
 
-const runButtonMenuItems = [
-   {
-      label: "Hard run",
-      icon: "mdi mdi-play",
-      command: () => {
-         emit("runProject", true);
+socket.on("result:generateRandomRoomId", (error, randomRoomId) => {
+   roomState.isBusyGeneratingRandomId = false;
+   if (error) return;
+
+   roomState.generatedRoomId = randomRoomId;
+});
+
+socket.on("result:createRoom", (error, createdRoomId) => {
+   roomState.isBusyCreatingRoom = false;
+   roomState.createRoomErrorMessage = error;
+   if (error) {
+      return;
+   }
+
+   roomState.createRoomErrorMessage = "";
+   emit("update:roomId", createdRoomId);
+   emit(
+      "notify",
+      "Create Room",
+      `You have successfully created the room #${createdRoomId}`,
+      "success"
+   );
+
+   router.push({
+      params: {
+         roomId: createdRoomId,
       },
-   },
-];
+   });
+});
 
-function createRoom() {
-   emit("createRoom", generatedRoomId.value);
-}
+watch(() => roomState.showCreateRoomDialog, (isVisible) => {
+   if (!isVisible) {
+      roomState.createRoomErrorMessage = "";
+      roomState.generatedRoomId = props.roomId || "";
+   }
+});
 
 function copyRoomId() {
-   if (!!props.generatedRoomId && typeof props.generatedRoomId == "string") {
-      navigator.clipboard.writeText(props.generatedRoomId);
+   if (!!roomState.generatedRoomId && typeof roomState.generatedRoomId == "string") {
+      let location = window.location;
+      let roomURL = location.protocol + "//" + join(location.host, "app", roomState.generatedRoomId);
+      navigator.clipboard.writeText(roomURL);
    }
+}
+
+function createRoom() {
+   let roomId = roomState.generatedRoomId;
+   console.log("Creating room: " + roomId);
+   if (!roomId) return;
+
+   socket.emit("createRoom", roomId);
+   roomState.isBusyCreatingRoom = true;
+}
+
+function generateRandomRoomId() {
+   socket.emit("generateRandomRoomId");
+   roomState.isBusyGeneratingRandomId = true;
 }
 
 function currentProjectIsSaved() {
@@ -464,6 +504,19 @@ function currentProjectIsEmpty() {
    let currentProjectIsEmpty = !temp?.files?.length && !temp?.packages?.length;
    return currentProjectIsEmpty;
 }
+
+const menuBar = ref<InstanceType<typeof Menubar>>();
+
+const runButtonMenuItems = [
+   {
+      label: "Hard run",
+      icon: "mdi mdi-play",
+      command: () => {
+         emit("runProject", true);
+      },
+   },
+];
+
 
 const unsavedProjectTitle = "Unsaved Project";
 const navbarItems = reactive<MenuItem[]>([
@@ -547,7 +600,7 @@ const navbarItems = reactive<MenuItem[]>([
             label: "Create room",
             icon: "mdi mdi-plus-box-outline",
             command: () => {
-               showCreateRoomDialog.value = true;
+               roomState.showCreateRoomDialog = true;
             },
          },
          {
