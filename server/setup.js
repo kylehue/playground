@@ -8,9 +8,9 @@ const history = require("connect-history-api-fallback");
 const app = express();
 const port = process.env.PORT || 8080;
 app.set("trust proxy", true);
-app.get("/", (request, response) => {
+/* app.get("/", (request, response) => {
    return response.sendFile(path.join(__dirname, "../index.html"));
-});
+}); */
 
 // Setup static files
 app.use(history());
@@ -18,6 +18,7 @@ if (env == "dev") {
    const webpackMiddleware = require("./webpack.middleware.js");
    webpackMiddleware(app);
 } else if (env == "prod") {
+   console.log("prod!");
    app.use(express.static(path.resolve(__dirname, "../dist/")));
 }
 

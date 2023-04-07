@@ -17,6 +17,7 @@ const config = {
       path: resolve("dist"),
       filename: "[name].bundle.js",
       clean: true,
+      publicPath: "/",
    },
    module: {
       rules: [
@@ -55,7 +56,7 @@ const config = {
       extensions: [".ts", ".js", ".json"],
       fallback: {
          path: require.resolve("path-browserify"),
-         "perf_hooks": false
+         perf_hooks: false,
       },
    },
    plugins: [
@@ -74,24 +75,30 @@ const config = {
       ),
       new webpack.ContextReplacementPlugin(
          /(.+)?@volar-plugins(\\|\/)css(.+)?/,
-         path.resolve(__dirname, "./../src"),
+         resolve("./../src"),
          {}
       ),
       new webpack.ContextReplacementPlugin(
          /(.+)?@volar-plugins(\\|\/)html(.+)?/,
-         path.resolve(__dirname, "./../src"),
+         resolve("./../src"),
          {}
       ),
       new webpack.ContextReplacementPlugin(
          /(.+)?@volar(\\|\/)vue-language-core(.+)?/,
-         path.resolve(__dirname, "./../src"),
+         resolve("./../src"),
          {}
       ),
       new webpack.ContextReplacementPlugin(
          /(.+)?typescript(\\|\/)lib(.+)?/,
-         path.resolve(__dirname, "./../src"),
+         resolve("./../src"),
          {}
       ),
+      new HTMLWebpackPlugin({
+         title: "JS Playground",
+         favicon: resolve("./src/assets/logo_24x24.png"),
+         template: resolve("./index.html"),
+         filename: "index.html",
+      }),
    ],
 };
 
@@ -105,18 +112,6 @@ if (env == "dev") {
       hot: true,
       liveReload: false,
    };
-
-   config.plugins.push(
-      new HTMLWebpackPlugin({
-         title: "JS Playground",
-         favicon: resolve("./src/assets/logo_24x24.png"),
-         templateContent: `<body>
-   <div id="root" class="d-flex flex-column vh-100">
-   </div>
-</body>`,
-         filename: "index.html",
-      })
-   );
 } else {
    config.mode = "production";
 
@@ -126,11 +121,7 @@ if (env == "dev") {
          new TerserPlugin({
             terserOptions: {
                compress: {
-                  pure_funcs: [
-                     "console.log",
-                     "console.info",
-                     "console.debug",
-                  ],
+                  pure_funcs: ["console.log", "console.info", "console.debug"],
                },
             },
          }),

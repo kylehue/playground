@@ -47,12 +47,26 @@ module.exports = {
          this.rooms.delete(roomId);
       }
    },
+   getSocketIp(socketId) {
+      let ip = null;
+
+      // Get socket
+      let socket = io.sockets.sockets.get(socketId);
+      if (!socket) return ip;
+
+      // Get ip
+      let headers = socket.handshake.headers;
+      let xxf = headers?.["x-forwarded-for"];
+      if (xxf) {
+         ip = xxf.split(",")[0];
+      }
+
+      return ip;
+   },
    banUser(roomId, socketId) {
       let room = this.rooms.get(roomId);
       if (!room) return;
-      let socket = io.sockets.sockets.get(socketId);
-      if (!socket) return;
-      let userIp = socket.handshake.address;
+      let userIp = this.getSocketIp(socketId);
 
       if (!room.bannedIps.includes(userIp)) {
          room.bannedIps.push(userIp);
@@ -61,9 +75,7 @@ module.exports = {
    unbanUser(roomId, socketId) {
       let room = this.rooms.get(roomId);
       if (!room) return;
-      let socket = io.sockets.sockets.get(socketId);
-      if (!socket) return;
-      let userIp = socket.handshake.address;
+      let userIp = this.getSocketIp(socketId);
       let index = room.bannedIps.indexOf(userIp);
 
       if (index != -1) {
