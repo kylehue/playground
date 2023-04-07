@@ -288,7 +288,6 @@
                   roomState.isBusyGeneratingRandomId ||
                   roomState.isBusyCreatingRoom
                "
-               v-tooltip.left="'Generate random'"
             ></Button>
             <InputText
                id="roomIdInput"
@@ -312,7 +311,6 @@
                   roomState.isBusyCreatingRoom
                "
                @click="copyRoomId"
-               v-tooltip.right="'Copy'"
             ></Button>
          </div>
          <small v-if="!!roomState.createRoomErrorMessage" class="text-danger">{{
