@@ -8,6 +8,9 @@ const history = require("connect-history-api-fallback");
 const app = express();
 const port = process.env.PORT || 8080;
 app.set("trust proxy", true);
+app.get("/", (request, response) => {
+   return response.sendFile(path.join(__dirname, "../index.html"));
+});
 
 // Setup static files
 app.use(history());
