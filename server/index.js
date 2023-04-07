@@ -16,6 +16,8 @@ io.on("connection", (socket) => {
       );
    });
 
+   socket.emit("ip", socket.handshake.address);
+
    socket.on("createRoom", (roomId) => {
       // is the user already in this room?
       if (socket.rooms.has(roomId)) {

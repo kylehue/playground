@@ -294,6 +294,7 @@
                id="roomIdInput"
                type="text"
                v-model="roomState.generatedRoomId"
+               placeholder="Room ID"
                spellcheck="false"
                autocomplete="off"
                class="w-100"
@@ -301,7 +302,7 @@
                   roomState.isBusyGeneratingRandomId ||
                   roomState.isBusyCreatingRoom
                "
-               @keypress.enter="createRoom"
+               @keypress.enter="createRoom(roomState.generatedRoomId)"
             ></InputText>
             <Button
                icon="mdi mdi-content-copy"
@@ -320,10 +321,42 @@
       </template>
       <template #footer>
          <Button
-            label="Create Room"
-            @click="createRoom"
+            label="Create & Join"
+            @click="createRoom(roomState.generatedRoomId)"
             :loading="roomState.isBusyCreatingRoom"
             :disabled="!roomState.generatedRoomId"
+         ></Button>
+      </template>
+   </Dialog>
+   <Dialog
+      v-model:visible="roomState.showJoinRoomDialog"
+      dismissableMask
+      modal
+      class="col-10 col-md-5"
+   >
+      <template #header>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-login me-2"></i>
+            <b>Join Room</b>
+         </div>
+      </template>
+      <template #default>
+         <InputText
+            type="text"
+            v-model="roomState.joinRoomId"
+            v-focus
+            placeholder="Room ID"
+            spellcheck="false"
+            autocomplete="off"
+            class="w-100"
+            @keypress.enter="joinRoom(roomState.joinRoomId)"
+         ></InputText>
+      </template>
+      <template #footer>
+         <Button
+            label="Join"
+            @click="joinRoom(roomState.joinRoomId)"
+            :disabled="!roomState.joinRoomId"
          ></Button>
       </template>
    </Dialog>
@@ -388,10 +421,13 @@ const state = reactive({
 
 const roomState = reactive({
    showCreateRoomDialog: false,
+   showJoinRoomDialog: false,
    generatedRoomId: "",
    isBusyGeneratingRandomId: false,
    isBusyCreatingRoom: false,
+   isBusyJoiningRoom: false,
    createRoomErrorMessage: "",
+   joinRoomId: ""
 });
 
 const router = useRouter();
@@ -429,6 +465,10 @@ socket.on("update:room", (room) => {
    console.log(room);
    console.log(socket);
 });
+
+socket.on("ip", ip => {
+   alert(ip);
+})
 
 socket.on("result:generateRandomRoomId", (error, randomRoomId) => {
    roomState.isBusyGeneratingRandomId = false;
@@ -475,13 +515,20 @@ function copyRoomId() {
    }
 }
 
-function createRoom() {
-   let roomId = roomState.generatedRoomId;
+function createRoom(roomId: string) {
    console.log("Creating room: " + roomId);
    if (!roomId) return;
 
    socket.emit("createRoom", roomId);
    roomState.isBusyCreatingRoom = true;
+}
+
+function joinRoom(roomId: string) {
+   console.log("Joining room: " + roomId);
+   if (!roomId) return;
+
+   socket.emit("joinRoom", roomId);
+   roomState.isBusyJoiningRoom = true;
 }
 
 function generateRandomRoomId() {
@@ -606,6 +653,9 @@ const navbarItems = reactive<MenuItem[]>([
          {
             label: "Join room",
             icon: "mdi mdi-login",
+            command: () => {
+               roomState.showJoinRoomDialog = true;
+            },
          },
       ],
    },
