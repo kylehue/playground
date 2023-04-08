@@ -1,6 +1,8 @@
 import path from "path";
 import yargs from "yargs";
 import webpackMiddleware from "./webpack.middleware";
+import * as url from "url";
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 const env = yargs(process.argv).argv.env;
 
 // Setup server
@@ -16,7 +18,7 @@ if (env == "dev") {
    webpackMiddleware(app);
 } else {
    console.log("prod!");
-   app.use(express.static(path.resolve(global.__dirname, "../dist/")));
+   app.use(express.static(path.resolve(__dirname, "../dist/")));
 }
 
 // Serve the files on port.
@@ -27,4 +29,3 @@ const server = app.listen(port, function () {
 // Setup socket.io
 import { Server } from "socket.io";
 export const io = new Server(server);
-

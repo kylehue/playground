@@ -17,6 +17,7 @@ import Drawer from "@kylehue/drawer";
 import { ref, reactive, onMounted, watch } from "vue";
 import ExplorerSpace from "@app/components/explorer/ExplorerSpace.vue";
 import ContextMenu from "primevue/contextmenu";
+import { MenuItem } from "primevue/menuitem";
 import { useConfirm } from "primevue/useconfirm";
 import { resolve, extname, dirname, relative } from "path-browserify";
 import validateFile from "@app/utils/validateFile";
@@ -47,7 +48,7 @@ const drawer = new Drawer({
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>();
 const contextMenuFocusedItem = ref();
-const contextMenuModel = reactive([
+const contextMenuModel = reactive<MenuItem[]>([
    {
       label: "New file",
       icon: "mdi mdi-plus",
@@ -84,6 +85,7 @@ const contextMenuModel = reactive([
       command: () => {
          removeClick(contextMenuFocusedItem.value);
       },
+      class: "text-danger"
    },
 ]);
 

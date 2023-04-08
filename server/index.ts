@@ -1,54 +1,101 @@
-import * as roomManager from "./utils/roomManager";
 import { io } from "./setup";
+import { createResultData, IRoomIdResult, IUserIdResult } from "./types";
+import rooms, { generateRandomRoomId, serializeRoom } from "./utils/rooms";
+import User from "./utils/User";
 
 io.on("connection", (socket) => {
-   let clientIp = roomManager.getSocketIp(socket.id);
-   console.log(`${socket.id} ${clientIp} has connected.`);
+   const user = new User(socket);
+   console.log(`${user.id} ${user.ip} has connected.`);
 
-   socket.on("disconnect", () => {});
+   socket.on("disconnect", () => {
+      if (user.currentRoom) {
+         user.leave(user.currentRoom.id);
+      }
+   });
 
-   socket.on("generateRandomRoomId", () => {
+   socket.on("user:updateName", (userId, newName) => {
+      // Return if not a host and changing other user's name
+      if (userId && user.id !== user.currentRoom?.hostId && userId !== user.id)
+         return;
+      let userToUpdate =
+         userId === user.id || !userId
+            ? user
+            : user.currentRoom?.users.find((u) => u.id === userId);
+      if (!userToUpdate) return;
+      userToUpdate.name = newName;
+      userToUpdate.socket.emit(
+         "result:user:updateName",
+         createResultData<IUserIdResult>(null, {
+            userId: userToUpdate.id,
+         })
+      );
+      console.log(`Changing user#${user.id}'s name to ${newName}`);
+   });
+
+   socket.on("user:generateRandomRoomId", () => {
       socket.emit(
-         "result:generateRandomRoomId",
-         "",
-         roomManager.generateRandomRoomId()
+         "result:user:generateRandomRoomId",
+         createResultData<IRoomIdResult>(null, {
+            roomId: generateRandomRoomId(),
+         })
       );
    });
 
-   socket.emit("joinRoom", (roomId) => {
-      
+   socket.on("user:joinRoom", (roomId: string) => {
+      console.log(`${user.id} ${user.ip} is joining room#${roomId}`);
+
+      user.join(roomId);
+      socket.emit(
+         "result:user:joinRoom",
+         createResultData<IRoomIdResult>(null, {
+            roomId,
+         })
+      );
    });
 
-   socket.on("createRoom", (roomId) => {
-      // is the user already in this room?
+   socket.on("user:createRoom", (roomId: string) => {
+      console.log(`${user.id} ${user.ip} is creating room#${roomId}`);
+
+      // Is the user already in this room?
       if (socket.rooms.has(roomId)) {
          socket.emit(
-            "result:createRoom",
-            "You have already created this room.",
-            null
+            "result:user:createRoom",
+            createResultData<IRoomIdResult>("You already created this room.")
          );
+
          return;
       }
 
-      // does the room already exist?
-      if (roomManager.rooms.get(roomId)) {
-         socket.emit("result:createRoom", "Room ID already exists.", null);
+      // Is the room ID unique?
+      if (rooms.get(roomId)) {
+         socket.emit(
+            "result:user:createRoom",
+            createResultData<IRoomIdResult>("Room ID already exists.")
+         );
+
          return;
       }
 
-      /* for (let userPreviousRoomId of socket.rooms) {
-         let previousRoom = roomManager.rooms.get(userPreviousRoomId);
-         socket.broadcast
-            .in(userPreviousRoomId)
-            .emit("update:room", previousRoom);
-         socket.leave(userPreviousRoomId);
-         roomManager.decrementUserCount(userPreviousRoomId);
-         console.log("Leaving room: " + userPreviousRoomId);
-      } */
+      // Join
+      let room = user.join(roomId);
+      socket.emit(
+         "result:user:createRoom",
+         createResultData<IRoomIdResult>(null, {
+            roomId: room.id,
+         })
+      );
+   });
 
-      socket.join(roomId);
-      
-      socket.emit("update:room", roomManager.rooms.get(roomId));
-      socket.emit("result:createRoom", "", roomId);
+   socket.on("user:transferHost", (userId: string) => {
+      if (user.currentRoom && user.currentRoom.hostId === user.id) {
+         user.currentRoom.hostId = userId;
+
+         socket.emit(
+            "result:user:transferHost",
+            createResultData<IUserIdResult>(null, {
+               userId: userId,
+            })
+         );
+      }
    });
 });

@@ -16,6 +16,7 @@ declare module "*.css" {
 
 declare module "monaco-vue";
 declare module "*.wasm";
+declare module "resurrect-js";
 
 declare module "monaco-editor-core" { 
    export * from "monaco-editor";

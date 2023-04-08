@@ -57,10 +57,30 @@ body {
    transition-duration: 100ms !important;
 }
 
+.p-tooltip {
+   max-width: unset !important;
+}
+
 .p-tooltip-text,
 .p-menuitem-text,
 .p-button-label {
    font-size: 0.9em;
+}
+
+.p-button-label {
+   flex: 1 !important;
+   overflow: hidden !important;
+   text-overflow: ellipsis !important;
+   white-space: nowrap !important;
+}
+
+.p-virtualscroller-content {
+   width: 100%;
+}
+
+.text-danger * {
+   color: var(--bs-danger) !important;
+   font-weight: bold;
 }
 
 .p-menuitem-text {
@@ -155,6 +175,10 @@ img[alt="logo"] {
    box-sizing: unset !important;
 }
 
-.p-inputgroup .p-button {
+.p-inputgroup .p-button, .p-sidebar-close {
    flex-shrink: 0;
+}
+
+.p-sidebar-header-content {
+   width: 100% !important;
 }

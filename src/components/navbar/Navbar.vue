@@ -236,7 +236,7 @@
       </template>
    </Dialog>
    <Dialog
-      v-model:visible="state.showSetNameDialog"
+      v-model:visible="roomState.showSetNameDialog"
       dismissableMask
       modal
       class="col-10 col-md-5"
@@ -250,20 +250,20 @@
       <template #default>
          <InputText
             type="text"
-            v-model="state.username"
+            v-model="roomState.username"
             v-focus
             placeholder="Enter your name"
             spellcheck="false"
             autocomplete="off"
             class="w-100"
-            @keypress.enter="setUsername(state.username)"
+            @keypress.enter="setUsername(roomState.username)"
          ></InputText>
       </template>
       <template #footer>
          <Button
             label="Set"
-            @click="setUsername(state.username)"
-            :disabled="!state.username"
+            @click="setUsername(roomState.username)"
+            :disabled="!roomState.username"
          ></Button>
       </template>
    </Dialog>
@@ -322,7 +322,11 @@
             label="Create & Join"
             @click="createRoom(roomState.generatedRoomId)"
             :loading="roomState.isBusyCreatingRoom"
-            :disabled="!roomState.generatedRoomId"
+            :disabled="
+               !roomState.generatedRoomId ||
+               roomState.isBusyGeneratingRandomId ||
+               roomState.isBusyCreatingRoom
+            "
          ></Button>
       </template>
    </Dialog>
@@ -348,6 +352,7 @@
             autocomplete="off"
             class="w-100"
             @keypress.enter="joinRoom(roomState.joinRoomId)"
+            :disabled="roomState.isBusyJoiningRoom"
          ></InputText>
       </template>
       <template #footer>
@@ -355,21 +360,44 @@
             label="Join"
             @click="joinRoom(roomState.joinRoomId)"
             :disabled="!roomState.joinRoomId"
+            :loading="roomState.isBusyJoiningRoom"
          ></Button>
       </template>
    </Dialog>
+   <Sidebar
+      v-model:visible="roomState.showCollaboratorsSidebar"
+      position="left"
+   >
+      <template #header>
+         <div class="d-flex align-items-center">
+            <i class="mdi mdi-account-group me-2"></i>
+            <b>Collaborators — {{ roomState.room?.users.length || 0 }}</b>
+         </div>
+      </template>
+      <template #default>
+         <UserList
+            v-if="roomState.room"
+            v-model="(roomState.room as IRoom)"
+            @openSetNameDialogWithTargetUserId="
+               openSetNameDialogWithTargetUserId
+            "
+         ></UserList>
+      </template>
+   </Sidebar>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, watch, onUnmounted } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import Projects from "@app/components/navbar/Projects.vue";
 import Options from "@app/components/options/Options.vue";
+import UserList from "@app/components/navbar/UserList.vue";
 import Menubar from "primevue/menubar";
 import { MenuItem } from "primevue/menuitem";
 import SplitButton from "primevue/splitbutton";
 import FileUpload from "primevue/fileupload";
 import Button from "primevue/button";
+import Sidebar from "primevue/sidebar";
 import Dialog from "primevue/dialog";
 import ProgressBar from "primevue/progressbar";
 import Dropdown from "primevue/dropdown";
@@ -381,8 +409,16 @@ import { editor, languages } from "monaco-editor";
 import type generalOptions from "@app/options/general";
 import type bundlerOptions from "@app/options/bundler";
 import type babelOptions from "@app/options/babel";
+import {
+   IResultData,
+   IRoomIdResult,
+   IUser,
+   IRoom,
+   IUserIdResult,
+} from "@server/types";
 import { socket } from "@app/socket";
 import { join } from "path-browserify";
+import * as flatted from "flatted";
 const props = defineProps<{
    isBusy: boolean;
    currentProjectId: string;
@@ -401,7 +437,6 @@ const state = reactive({
    showNewProjectDialog: false,
    showOptionsDialog: false,
    showDownloadProjectDialog: false,
-   showSetNameDialog: false,
    saveProjectName: "",
    showSaveProjectDialog: false,
    showImportDialog: false,
@@ -414,21 +449,37 @@ const state = reactive({
    enableLoopProtection: true,
    downloadType: "production",
    importJSONFile: null as any,
-   username: storage.getUsername(),
 });
 
 const roomState = reactive({
    showCreateRoomDialog: false,
+   showSetNameDialog: false,
    showJoinRoomDialog: false,
+   showCollaboratorsSidebar: false,
    generatedRoomId: "",
    isBusyGeneratingRandomId: false,
    isBusyCreatingRoom: false,
    isBusyJoiningRoom: false,
    createRoomErrorMessage: "",
-   joinRoomId: ""
+   joinRoomId: "",
+   room: null as IRoom | null,
+   setNameTargetUserId: "",
+   username: storage.getUsername(),
 });
 
+(window as any).roomState = roomState;
+
+watch(
+   () => props.roomId,
+   (roomId) => {
+      if (roomId) {
+         roomState.generatedRoomId = roomId;
+      }
+   }
+);
+
 const router = useRouter();
+const route = useRoute();
 const optionsDownloadType = [
    {
       label: "for production",
@@ -459,79 +510,157 @@ const emit = defineEmits([
    "update:roomId",
 ]);
 
-socket.on("update:room", (room) => {
+socket.on("room:update", (serializedRoom) => {
+   let room: IRoom = flatted.parse(serializedRoom);
+   room.users.sort((a, b) => a.name.localeCompare(b.name));
+   roomState.room = room;
    console.log(room);
-   console.log(socket);
 });
 
-socket.on("ip", ip => {
-   alert(ip);
-})
+// Set client username
+function setUsername(username: string, userId = roomState.setNameTargetUserId) {
+   socket.emit("user:updateName", userId, username);
 
-socket.on("result:generateRandomRoomId", (error, randomRoomId) => {
-   roomState.isBusyGeneratingRandomId = false;
-   if (error) return;
+   roomState.showSetNameDialog = false;
+   roomState.setNameTargetUserId = socket.id;
+}
 
-   roomState.generatedRoomId = randomRoomId;
+socket.on("result:user:updateName", (data: IResultData<IUserIdResult>) => {
+   if (!roomState.room) return;
+   if (!data.result) return;
+   let user = roomState.room.users.find((u) => u.id === data.result!.userId);
+   if (!user) return;
+
+   storage.setUsername(user.name);
+   roomState.username = user.name;
+   roomState.showSetNameDialog = false;
+   roomState.setNameTargetUserId = socket.id;
 });
 
-socket.on("result:createRoom", (error, createdRoomId) => {
-   roomState.isBusyCreatingRoom = false;
-   roomState.createRoomErrorMessage = error;
-   if (error) {
-      return;
+watch(
+   () => roomState.setNameTargetUserId,
+   (setNameTargetUserId) => {
+      if (!roomState.room) return;
+      let user = roomState.room.users.find((u) => u.id === setNameTargetUserId);
+      if (!user) return;
+
+      roomState.username = user.name;
    }
+);
+
+function openSetNameDialogWithTargetUserId(targetUserId: string) {
+   roomState.setNameTargetUserId = targetUserId;
+   roomState.showSetNameDialog = true;
+}
+
+if (roomState.username) {
+   setUsername(roomState.username);
+}
+
+// Random room id generation
+function generateRandomRoomId() {
+   socket.emit("user:generateRandomRoomId");
+   roomState.isBusyGeneratingRandomId = true;
+}
+
+socket.on(
+   "result:user:generateRandomRoomId",
+   (data: IResultData<IRoomIdResult>) => {
+      roomState.isBusyGeneratingRandomId = false;
+      if (data.error || !data.result) return;
+
+      roomState.generatedRoomId = data.result.roomId;
+   }
+);
+
+// Creating rooms
+function createRoom(roomId: string) {
+   console.log("Creating room: " + roomId);
+   if (!roomId) return;
+
+   socket.emit("user:createRoom", roomId);
+   roomState.isBusyCreatingRoom = true;
+}
+
+socket.on("result:user:createRoom", (data: IResultData<IRoomIdResult>) => {
+   roomState.isBusyCreatingRoom = false;
+   roomState.createRoomErrorMessage = data.error || "";
+   if (data.error || !data.result) return;
+   let roomId = data.result.roomId;
 
    roomState.createRoomErrorMessage = "";
-   emit("update:roomId", createdRoomId);
+   emit("update:roomId", roomId);
    emit(
       "notify",
       "Create Room",
-      `You have successfully created the room #${createdRoomId}`,
+      `You have successfully created the room #${roomId}`,
       "success"
    );
 
    router.push({
       params: {
-         roomId: createdRoomId,
+         roomId: roomId,
       },
    });
 });
 
-watch(() => roomState.showCreateRoomDialog, (isVisible) => {
-   if (!isVisible) {
-      roomState.createRoomErrorMessage = "";
-      roomState.generatedRoomId = props.roomId || "";
+watch(
+   () => roomState.showCreateRoomDialog,
+   (isVisible) => {
+      if (!isVisible) {
+         roomState.createRoomErrorMessage = "";
+         roomState.generatedRoomId = props.roomId || "";
+      }
    }
-});
+);
 
-function copyRoomId() {
-   if (!!roomState.generatedRoomId && typeof roomState.generatedRoomId == "string") {
-      let location = window.location;
-      let roomURL = location.protocol + "//" + join(location.host, "app", roomState.generatedRoomId);
-      navigator.clipboard.writeText(roomURL);
-   }
-}
-
-function createRoom(roomId: string) {
-   console.log("Creating room: " + roomId);
-   if (!roomId) return;
-
-   socket.emit("createRoom", roomId);
-   roomState.isBusyCreatingRoom = true;
-}
-
+// Joining rooms
 function joinRoom(roomId: string) {
    console.log("Joining room: " + roomId);
    if (!roomId) return;
 
-   socket.emit("joinRoom", roomId);
+   socket.emit("user:joinRoom", roomId);
    roomState.isBusyJoiningRoom = true;
 }
 
-function generateRandomRoomId() {
-   socket.emit("generateRandomRoomId");
-   roomState.isBusyGeneratingRandomId = true;
+socket.on("result:user:joinRoom", (data: IResultData<IRoomIdResult>) => {
+   roomState.isBusyJoiningRoom = false;
+   if (data.error || !data.result) return;
+   let roomId = data.result.roomId;
+   roomState.showJoinRoomDialog = false;
+   emit("update:roomId", roomId);
+   router.push({
+      params: {
+         roomId: roomId,
+      },
+   });
+});
+
+watch(
+   () => roomState.showJoinRoomDialog,
+   (isVisible) => {
+      if (!isVisible) {
+         roomState.joinRoomId = "";
+      }
+   }
+);
+
+if (route.params.roomId) {
+   joinRoom(route.params.roomId as string);
+}
+
+function copyRoomId() {
+   if (
+      !!roomState.generatedRoomId &&
+      typeof roomState.generatedRoomId == "string"
+   ) {
+      let location = window.location;
+      let roomURL =
+         location.protocol +
+         "//" +
+         join(location.host, "app", roomState.generatedRoomId);
+      navigator.clipboard.writeText(roomURL);
+   }
 }
 
 function currentProjectIsSaved() {
@@ -561,7 +690,6 @@ const runButtonMenuItems = [
       },
    },
 ];
-
 
 const unsavedProjectTitle = "Unsaved Project";
 const navbarItems = reactive<MenuItem[]>([
@@ -638,7 +766,7 @@ const navbarItems = reactive<MenuItem[]>([
             label: "Set name",
             icon: "mdi mdi-account-edit",
             command: () => {
-               state.showSetNameDialog = true;
+               roomState.showSetNameDialog = true;
             },
          },
          {
@@ -653,6 +781,13 @@ const navbarItems = reactive<MenuItem[]>([
             icon: "mdi mdi-login",
             command: () => {
                roomState.showJoinRoomDialog = true;
+            },
+         },
+         {
+            label: "View collaborators",
+            icon: "mdi mdi-account-eye",
+            command: () => {
+               roomState.showCollaboratorsSidebar = true;
             },
          },
       ],
@@ -685,11 +820,6 @@ watch(
       }
    }
 );
-
-function setUsername(username: string) {
-   storage.setUsername(username);
-   state.showSetNameDialog = false;
-}
 
 function saveProject(projectName: string) {
    if (!projectName) return;

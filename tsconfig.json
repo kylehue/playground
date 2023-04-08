@@ -9,15 +9,20 @@
       "allowSyntheticDefaultImports": true,
       "esModuleInterop": true,
       "baseUrl": ".",
-      "rootDir": "./src",
+      "rootDir": ".",
       "paths": {
          "@app/*": ["./src/*"],
+         "@server/*": ["./server/*"],
          "toypack": ["./node_modules/toypack/"]
       },
       "sourceMap": true,
       "outDir": "dist",
       "declaration": false,
       "noImplicitAny": false
+   },
+   "ts-node": {
+      "esm": true,
+      "experimentalSpecifierResolution": "node"
    },
    "include": ["./src/**/*.*", "./src/global.d.ts"],
 }

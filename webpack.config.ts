@@ -7,10 +7,10 @@ import HTMLWebpackPlugin from "html-webpack-plugin";
 import TerserPlugin from "terser-webpack-plugin";
 import path from "path";
 import * as url from "url";
-global.__dirname = url.fileURLToPath(new URL(".", import.meta.url));
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 function resolve(source) {
-   return path.resolve(global.__dirname, source);
+   return path.resolve(__dirname, source);
 }
 
 const env = yargs(process.argv).argv.env;

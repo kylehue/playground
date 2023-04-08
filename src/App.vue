@@ -60,6 +60,7 @@
             forceSelection
             dropdown
             dropdownMode="current"
+            :dropdown-class="!state.packageResults.length ? 'p-disabled' : undefined"
          >
          </AutoComplete>
          <Dropdown
@@ -228,9 +229,9 @@ const state = reactive({
    downloadStatus: "",
    isDownloading: false,
    roomId: "",
+   connected: false
 });
 
-const connectedState = ref(false);
 const generalOptions = reactive(storage.getGeneralOptions());
 const editorOptions = reactive(storage.getEditorOptions());
 const bundlerOptions = reactive(defaultBundlerOptions);
@@ -284,8 +285,8 @@ watch(typescriptOptions, () => {
    saveProject();
 });
 
-watch(connectedState, () => {
-   if (connectedState.value) {
+watch(() => state.connected, () => {
+   if (state.connected) {
       pushNotification(
          "Connected",
          "You have been connected to the server.",
@@ -310,11 +311,11 @@ bundler.updateBabelOptions({
 
 // Socket
 socket.on("connect", () => {
-   connectedState.value = true;
+   state.connected = true;
 });
 
 socket.on("disconnect", () => {
-   connectedState.value = false;
+   state.connected = false;
 });
 
 function highlightDrawerFile(source: string) {
