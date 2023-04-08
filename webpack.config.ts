@@ -1,17 +1,20 @@
-const yargs = require("yargs");
-const path = require("path");
-const env = yargs.argv.env;
-const webpack = require("webpack");
-const vueLoader = require("vue-loader");
-const MonacoEditorPlugin = require("monaco-editor-webpack-plugin");
-const HTMLWebpackPlugin = require("html-webpack-plugin");
-const TerserPlugin = require("terser-webpack-plugin");
+import yargs from "yargs";
+import webpack from "webpack";
+import "webpack-dev-server";
+import { VueLoaderPlugin } from "vue-loader";
+import MonacoEditorPlugin from "monaco-editor-webpack-plugin";
+import HTMLWebpackPlugin from "html-webpack-plugin";
+import TerserPlugin from "terser-webpack-plugin";
+import path from "path";
+import * as url from "url";
+global.__dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 function resolve(source) {
-   return path.resolve(__dirname, source);
+   return path.resolve(global.__dirname, source);
 }
 
-const config = {
+const env = yargs(process.argv).argv.env;
+const config: webpack.Configuration = {
    entry: [resolve("src/main.ts")],
    output: {
       path: resolve("dist"),
@@ -19,6 +22,7 @@ const config = {
       clean: true,
       publicPath: "/",
    },
+   watch: false,
    module: {
       rules: [
          {
@@ -55,8 +59,8 @@ const config = {
       },
       extensions: [".ts", ".js", ".json"],
       fallback: {
-         path: require.resolve("path-browserify"),
-         perf_hooks: false,
+         path: "path-browserify",
+         perf_hooks: false
       },
    },
    plugins: [
@@ -64,7 +68,7 @@ const config = {
          __VUE_OPTIONS_API__: true,
          __VUE_PROD_DEVTOOLS__: false,
       }),
-      new vueLoader.VueLoaderPlugin(),
+      new VueLoaderPlugin(),
       new MonacoEditorPlugin({
          languages: ["javascript", "css", "html", "typescript", "scss", "json"],
       }),
@@ -104,14 +108,13 @@ const config = {
 
 if (env == "dev") {
    config.mode = "development";
-   config.watch = false;
    config.devtool = "inline-cheap-source-map";
    config.devServer = {
       historyApiFallback: true,
       port: process.env.PORT || 8080,
       hot: true,
       liveReload: false,
-   };
+   } as webpack.Configuration["devServer"];
 } else {
    config.mode = "production";
 
@@ -129,4 +132,4 @@ if (env == "dev") {
    };
 }
 
-module.exports = config;
+export default config;

@@ -1,10 +1,9 @@
-const roomManager = require("./utils/roomManager.js");
-const { io } = require("./setup.js");
+import * as roomManager from "./utils/roomManager";
+import { io } from "./setup";
 
 io.on("connection", (socket) => {
-   console.log(`${socket.id} has connected.`);
-
-   console.log(socket.handshake.address);
+   let clientIp = roomManager.getSocketIp(socket.id);
+   console.log(`${socket.id} ${clientIp} has connected.`);
 
    socket.on("disconnect", () => {});
 
@@ -16,7 +15,9 @@ io.on("connection", (socket) => {
       );
    });
 
-   socket.emit("ip", socket.handshake.address);
+   socket.emit("joinRoom", (roomId) => {
+      
+   });
 
    socket.on("createRoom", (roomId) => {
       // is the user already in this room?
@@ -35,7 +36,7 @@ io.on("connection", (socket) => {
          return;
       }
 
-      for (let userPreviousRoomId of socket.rooms) {
+      /* for (let userPreviousRoomId of socket.rooms) {
          let previousRoom = roomManager.rooms.get(userPreviousRoomId);
          socket.broadcast
             .in(userPreviousRoomId)
@@ -43,10 +44,10 @@ io.on("connection", (socket) => {
          socket.leave(userPreviousRoomId);
          roomManager.decrementUserCount(userPreviousRoomId);
          console.log("Leaving room: " + userPreviousRoomId);
-      }
+      } */
 
       socket.join(roomId);
-      roomManager.incrementUserCount(roomId);
+      
       socket.emit("update:room", roomManager.rooms.get(roomId));
       socket.emit("result:createRoom", "", roomId);
    });
