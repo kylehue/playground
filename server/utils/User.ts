@@ -6,6 +6,7 @@ import rooms, { serializeRoom, Room } from "./rooms";
 export default class User implements IUser {
    public readonly id: string;
    public readonly ip: string;
+   public readonly state: IUser["state"];
    private _currentRoom: IRoom | null = null;
    private _name = "";
 
@@ -22,6 +23,8 @@ export default class User implements IUser {
       }
 
       this.ip = ip;
+
+      this.state = {};
    }
 
    public get name() {
@@ -85,7 +88,6 @@ export default class User implements IUser {
       if (index == -1) return;
 
       room.users.splice(index, 1);
-      this.socket.leave(room.id);
       this.currentRoom = null;
 
       if (room.users.length) {
@@ -93,13 +95,14 @@ export default class User implements IUser {
          if (this.id === room.hostId) {
             room.hostId = room.users[0].id;
          }
-
-         // Emit event
-         io.in(room.id).emit("room:update", serializeRoom(room));
       } else {
          // Dispose room if there are no users left
          rooms.delete(room.id);
       }
+
+      // Emit event
+      io.in(room.id).emit("room:update", null);
+      this.socket.leave(room.id);
 
       return room;
    }

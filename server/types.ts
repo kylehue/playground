@@ -6,6 +6,10 @@ export interface IUser {
    socket: Readonly<Socket>;
    name: string;
    currentRoom: IRoom | null;
+   state: {
+      path?: string;
+      offset?: number;
+   }
 }
 
 export interface IRoom {
@@ -38,4 +42,14 @@ export interface IRoomIdResult {
 
 export interface IUserIdResult {
    userId: string;
+}
+
+export interface ICursorPositionResult {
+   userId: string;
+   path: string;
+   offset: number;
+}
+
+export interface IUpdatePathResult {
+   userStatesInSamePath: { id: string; state: IUser["state"] }[];
 }

@@ -1,5 +1,5 @@
 import { io } from "./setup";
-import { createResultData, IRoomIdResult, IUserIdResult } from "./types";
+import { createResultData, ICursorPositionResult, IRoomIdResult, IUpdatePathResult, IUser, IUserIdResult } from "./types";
 import rooms, { generateRandomRoomId, serializeRoom } from "./utils/rooms";
 import User from "./utils/User";
 
@@ -10,6 +10,19 @@ io.on("connection", (socket) => {
    socket.on("disconnect", () => {
       if (user.currentRoom) {
          user.leave(user.currentRoom.id);
+      }
+   });
+
+   socket.on("user:leave", () => {
+      if (user.currentRoom) {
+         let roomId = user.currentRoom.id;
+         user.leave(user.currentRoom.id);
+         socket.emit(
+            "result:user:leaveRoom",
+            createResultData<IRoomIdResult>(null, {
+               roomId: roomId,
+            })
+         );
       }
    });
 
@@ -97,5 +110,43 @@ io.on("connection", (socket) => {
             })
          );
       }
+   });
+
+   // Update cursor position
+   socket.on("user:update:cursorPosition", (path: string, offset: number) => {
+      if (!user.currentRoom) return;
+      user.state.offset = offset;
+      socket.broadcast.in(user.currentRoom.id).emit(
+         "result:user:update:cursorPosition",
+         createResultData<ICursorPositionResult>(null, {
+            userId: user.id,
+            offset,
+            path,
+         })
+      );
+   });
+
+   // Update user path
+   socket.on("user:update:path", (path: string) => {
+      if (!user.currentRoom) return;
+
+      user.state.path = path;
+      let userStatesInSamePath: IUpdatePathResult["userStatesInSamePath"] = [];
+
+      for (let u of user.currentRoom.users) {
+         if (u.state.path == path) {
+            userStatesInSamePath.push({
+               id: u.id,
+               state: u.state
+            });
+         }
+      }
+
+      socket.emit(
+         "result:user:update:path",
+         createResultData<IUpdatePathResult>(null, {
+            userStatesInSamePath: userStatesInSamePath,
+         })
+      );
    });
 });

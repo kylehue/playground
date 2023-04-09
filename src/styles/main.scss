@@ -166,7 +166,8 @@ img[alt="logo"] {
    white-space: normal !important;
 }
 
-.p-multiselect-token, .p-chips-token {
+.p-multiselect-token,
+.p-chips-token {
    margin-top: 0.125rem;
    margin-bottom: 0.125rem;
 }
@@ -175,10 +176,23 @@ img[alt="logo"] {
    box-sizing: unset !important;
 }
 
-.p-inputgroup .p-button, .p-sidebar-close {
+.p-inputgroup .p-button,
+.p-sidebar-close {
    flex-shrink: 0;
 }
 
 .p-sidebar-header-content {
    width: 100% !important;
+}
+
+.monaco-remote-cursor-tooltip {
+   display: none;
+}
+
+.monaco-remote-cursor {
+   &:hover {
+      .monaco-remote-cursor-tooltip {
+         display: block !important;
+      }
+   }
 }

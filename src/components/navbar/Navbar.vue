@@ -292,7 +292,6 @@
             <InputText
                id="roomIdInput"
                type="text"
-               v-model="roomState.generatedRoomId"
                placeholder="Room ID"
                spellcheck="false"
                autocomplete="off"
@@ -301,12 +300,14 @@
                   roomState.isBusyGeneratingRandomId ||
                   roomState.isBusyCreatingRoom
                "
-               @keypress.enter="createRoom(roomState.generatedRoomId)"
+               v-model="roomState.createRoomId"
+               v-focus
+               @keypress.enter="createRoom(roomState.createRoomId)"
             ></InputText>
             <Button
                icon="mdi mdi-content-copy"
                :disabled="
-                  !roomState.generatedRoomId ||
+                  !roomState.createRoomId ||
                   roomState.isBusyGeneratingRandomId ||
                   roomState.isBusyCreatingRoom
                "
@@ -320,10 +321,10 @@
       <template #footer>
          <Button
             label="Create & Join"
-            @click="createRoom(roomState.generatedRoomId)"
+            @click="createRoom(roomState.createRoomId)"
             :loading="roomState.isBusyCreatingRoom"
             :disabled="
-               !roomState.generatedRoomId ||
+               !roomState.createRoomId ||
                roomState.isBusyGeneratingRandomId ||
                roomState.isBusyCreatingRoom
             "
@@ -371,13 +372,13 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-account-group me-2"></i>
-            <b>Collaborators — {{ roomState.room?.users.length || 0 }}</b>
+            <b>Collaborators — {{ room?.users.length || 0 }}</b>
          </div>
       </template>
       <template #default>
          <UserList
-            v-if="roomState.room"
-            v-model="(roomState.room as IRoom)"
+            v-if="room"
+            v-model="(room as IRoom)"
             @openSetNameDialogWithTargetUserId="
                openSetNameDialogWithTargetUserId
             "
@@ -427,9 +428,9 @@ const props = defineProps<{
    babelOptions: typeof babelOptions;
    editorOptions: editor.IStandaloneEditorConstructionOptions;
    typescriptOptions: languages.typescript.CompilerOptions;
+   room: IRoom | null;
    downloadStatus?: string;
    isDownloading?: boolean;
-   roomId?: string;
 }>();
 
 const state = reactive({
@@ -456,27 +457,15 @@ const roomState = reactive({
    showSetNameDialog: false,
    showJoinRoomDialog: false,
    showCollaboratorsSidebar: false,
-   generatedRoomId: "",
    isBusyGeneratingRandomId: false,
    isBusyCreatingRoom: false,
    isBusyJoiningRoom: false,
    createRoomErrorMessage: "",
-   joinRoomId: "",
-   room: null as IRoom | null,
+   createRoomId: props.room?.id || "",
+   joinRoomId: props.room?.id || "",
    setNameTargetUserId: "",
    username: storage.getUsername(),
 });
-
-(window as any).roomState = roomState;
-
-watch(
-   () => props.roomId,
-   (roomId) => {
-      if (roomId) {
-         roomState.generatedRoomId = roomId;
-      }
-   }
-);
 
 const router = useRouter();
 const route = useRoute();
@@ -505,17 +494,10 @@ const emit = defineEmits([
    "openProject",
    "saveProject",
    "newProject",
-   "notify",
+   "pushNotification",
    "importJSON",
-   "update:roomId",
+   "leaveCurrentRoom",
 ]);
-
-socket.on("room:update", (serializedRoom) => {
-   let room: IRoom = flatted.parse(serializedRoom);
-   room.users.sort((a, b) => a.name.localeCompare(b.name));
-   roomState.room = room;
-   console.log(room);
-});
 
 // Set client username
 function setUsername(username: string, userId = roomState.setNameTargetUserId) {
@@ -526,9 +508,9 @@ function setUsername(username: string, userId = roomState.setNameTargetUserId) {
 }
 
 socket.on("result:user:updateName", (data: IResultData<IUserIdResult>) => {
-   if (!roomState.room) return;
+   if (!props.room) return;
    if (!data.result) return;
-   let user = roomState.room.users.find((u) => u.id === data.result!.userId);
+   let user = props.room.users.find((u) => u.id === data.result!.userId);
    if (!user) return;
 
    storage.setUsername(user.name);
@@ -540,8 +522,8 @@ socket.on("result:user:updateName", (data: IResultData<IUserIdResult>) => {
 watch(
    () => roomState.setNameTargetUserId,
    (setNameTargetUserId) => {
-      if (!roomState.room) return;
-      let user = roomState.room.users.find((u) => u.id === setNameTargetUserId);
+      if (!props.room) return;
+      let user = props.room.users.find((u) => u.id === setNameTargetUserId);
       if (!user) return;
 
       roomState.username = user.name;
@@ -569,7 +551,7 @@ socket.on(
       roomState.isBusyGeneratingRandomId = false;
       if (data.error || !data.result) return;
 
-      roomState.generatedRoomId = data.result.roomId;
+      roomState.createRoomId = data.result.roomId;
    }
 );
 
@@ -589,9 +571,8 @@ socket.on("result:user:createRoom", (data: IResultData<IRoomIdResult>) => {
    let roomId = data.result.roomId;
 
    roomState.createRoomErrorMessage = "";
-   emit("update:roomId", roomId);
    emit(
-      "notify",
+      "pushNotification",
       "Create Room",
       `You have successfully created the room #${roomId}`,
       "success"
@@ -609,7 +590,7 @@ watch(
    (isVisible) => {
       if (!isVisible) {
          roomState.createRoomErrorMessage = "";
-         roomState.generatedRoomId = props.roomId || "";
+         roomState.createRoomId = props.room?.id || "";
       }
    }
 );
@@ -628,7 +609,12 @@ socket.on("result:user:joinRoom", (data: IResultData<IRoomIdResult>) => {
    if (data.error || !data.result) return;
    let roomId = data.result.roomId;
    roomState.showJoinRoomDialog = false;
-   emit("update:roomId", roomId);
+   emit(
+      "pushNotification",
+      "Join Room",
+      `You joined room #${roomId}`,
+      "info"
+   );
    router.push({
       params: {
          roomId: roomId,
@@ -649,16 +635,31 @@ if (route.params.roomId) {
    joinRoom(route.params.roomId as string);
 }
 
+socket.on("result:user:leaveRoom", (data: IResultData<IRoomIdResult>) => {
+   emit(
+      "pushNotification",
+      "Leave Room",
+      `You left room #${data.result?.roomId || ""}`,
+      "info"
+   );
+
+   router.push({
+      params: {
+         roomId: undefined
+      }
+   });
+});
+
 function copyRoomId() {
    if (
-      !!roomState.generatedRoomId &&
-      typeof roomState.generatedRoomId == "string"
+      !!roomState.createRoomId &&
+      typeof roomState.createRoomId == "string"
    ) {
       let location = window.location;
       let roomURL =
          location.protocol +
          "//" +
-         join(location.host, "app", roomState.generatedRoomId);
+         join(location.host, "app", roomState.createRoomId);
       navigator.clipboard.writeText(roomURL);
    }
 }
@@ -698,6 +699,7 @@ const navbarItems = reactive<MenuItem[]>([
       icon: "mdi mdi-folder-open",
       items: [
          {
+            key: "newProject",
             label: "New",
             icon: "mdi mdi-plus",
             command: () => {
@@ -720,6 +722,7 @@ const navbarItems = reactive<MenuItem[]>([
             disabled: props.isBusy,
          },
          {
+            key: "openProject",
             label: "Open...",
             icon: "mdi mdi-folder-open",
             command: () => {
@@ -728,6 +731,7 @@ const navbarItems = reactive<MenuItem[]>([
             disabled: props.isBusy,
          },
          {
+            key: "saveProject",
             label: "Save As...",
             icon: "mdi mdi-content-save",
             command: () => {
@@ -735,6 +739,7 @@ const navbarItems = reactive<MenuItem[]>([
             },
          },
          {
+            key: "importJSON",
             label: "Import JSON",
             icon: "mdi mdi-code-json",
             command: () => {
@@ -743,6 +748,7 @@ const navbarItems = reactive<MenuItem[]>([
             disabled: props.isBusy,
          },
          {
+            key: "downloadProject",
             label: "Download",
             icon: "mdi mdi-download",
             command: () => {
@@ -750,6 +756,7 @@ const navbarItems = reactive<MenuItem[]>([
             },
          },
          {
+            key: "options",
             label: "Options",
             icon: "mdi mdi-cog",
             command: () => {
@@ -763,13 +770,7 @@ const navbarItems = reactive<MenuItem[]>([
       icon: "mdi mdi-account-group",
       items: [
          {
-            label: "Set name",
-            icon: "mdi mdi-account-edit",
-            command: () => {
-               roomState.showSetNameDialog = true;
-            },
-         },
-         {
+            key: "createRoom",
             label: "Create room",
             icon: "mdi mdi-plus-box-outline",
             command: () => {
@@ -777,6 +778,7 @@ const navbarItems = reactive<MenuItem[]>([
             },
          },
          {
+            key: "joinRoom",
             label: "Join room",
             icon: "mdi mdi-login",
             command: () => {
@@ -784,21 +786,49 @@ const navbarItems = reactive<MenuItem[]>([
             },
          },
          {
+            key: "collaborators",
             label: "View collaborators",
             icon: "mdi mdi-account-eye",
             command: () => {
                roomState.showCollaboratorsSidebar = true;
             },
+            visible: !!props.room?.users.length
+         },
+         {
+            key: "leaveRoom",
+            label: "Leave room",
+            icon: "mdi mdi-logout",
+            class: "text-danger",
+            command: () => {
+               emit("leaveCurrentRoom");
+            },
+            visible: !!props.room?.users.length
          },
       ],
    },
 ]);
 
+// Disable view collab menu button when there are no collaborators
+watch(
+   () => props.room,
+   (room) => {
+      let collaborationMenuItems = navbarItems[1].items!;
+      for (let item of collaborationMenuItems) {
+         if (item.key == "collaborators" || item.key == "leaveRoom") {
+            item.visible = !!room?.users.length && !!room;
+         }
+      }
+
+      roomState.createRoomId = room?.id || "";
+   }
+);
+
+// Change menu name to project name
 watch(
    () => props.currentProjectId,
-   (newValue) => {
+   (currentProjectId) => {
       let projects = storage.getProjects();
-      let project = projects.find((p) => p.id === newValue);
+      let project = projects.find((p) => p.id === currentProjectId);
 
       if (project) {
          navbarItems[0].label = project.name || unsavedProjectTitle;
@@ -808,15 +838,21 @@ watch(
    }
 );
 
+// Disable some buttons when busy
 watch(
    () => props.isBusy,
-   (newValue) => {
-      let projectMenuItems = navbarItems[0].items;
-      if (projectMenuItems) {
-         projectMenuItems[0].disabled = newValue;
-         projectMenuItems[1].disabled = newValue;
-         projectMenuItems[2].disabled = newValue;
-         projectMenuItems[3].disabled = newValue;
+   (isBusy) => {
+      let projectMenuItems = navbarItems[0].items!;
+      for (let item of projectMenuItems) {
+         if (
+            item.key == "newProject" ||
+            item.key == "openProject" ||
+            item.key == "saveProject" ||
+            item.key == "importJSON"
+         ) {
+            item.disabled = isBusy;
+            break;
+         }
       }
    }
 );
@@ -834,7 +870,7 @@ function saveProject(projectName: string) {
    state.saveProjectName = "";
 
    emit("saveProject", project.id);
-   emit("notify", "Project has been saved!", "", "success");
+   emit("pushNotification", "Project has been saved!", "", "success");
 }
 
 function deleteProject(projectId: string) {

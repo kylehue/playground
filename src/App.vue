@@ -60,7 +60,9 @@
             forceSelection
             dropdown
             dropdownMode="current"
-            :dropdown-class="!state.packageResults.length ? 'p-disabled' : undefined"
+            :dropdown-class="
+               !state.packageResults.length ? 'p-disabled' : undefined
+            "
          >
          </AutoComplete>
          <Dropdown
@@ -106,7 +108,7 @@
       @newProject="createNewProject"
       @openProject="openProject"
       @saveProject="saveProject"
-      @notify="pushNotification"
+      @pushNotification="pushNotification"
       @downloadProject="downloadProject"
       @importJSON="importJSON"
       :currentProjectId="state.currentProjectId"
@@ -117,7 +119,8 @@
       :typescriptOptions="typescriptOptions"
       :downloadStatus="state.downloadStatus"
       :isDownloading="state.isDownloading"
-      v-model:roomId="state.roomId"
+      :room="(roomState.room as any)"
+      @leaveCurrentRoom="leaveCurrentRoom"
    ></Navbar>
    <Splitpanes v-fill-remaining-height>
       <Pane size="20" min-size="5" class="explorer-pane">
@@ -154,6 +157,7 @@
             @onDidChangeModelContent="onDidChangeModelContent"
             :editor-options="editorOptions"
             :typescript-options="typescriptOptions"
+            :room="(roomState.room as any)"
          ></MonacoEditor>
       </Pane>
       <Pane
@@ -186,6 +190,7 @@ import Dropdown from "primevue/dropdown";
 import ProgressBar from "primevue/progressbar";
 import { MessageProps } from "primevue/message";
 import ConfirmDialog from "primevue/confirmdialog";
+import { useConfirm } from "primevue/useconfirm";
 import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 import * as storage from "@app/utils/storage";
@@ -207,8 +212,11 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import Dropzone from "dropzone";
 import { socket } from "@app/socket";
+import { IResultData, IRoom, IRoomIdResult } from "@server/types";
+import * as flatted from "flatted";
 
 const toast = useToast();
+const confirm = useConfirm();
 const monaco = ref<InstanceType<typeof MonacoEditor>>();
 const drawer = ref<InstanceType<typeof Drawer>>();
 const iframe = ref<InstanceType<typeof HTMLIFrameElement>>();
@@ -228,8 +236,7 @@ const state = reactive({
    requiredPackages: [] as Array<{ name: string; version: string }>,
    downloadStatus: "",
    isDownloading: false,
-   roomId: "",
-   connected: false
+   connected: false,
 });
 
 const generalOptions = reactive(storage.getGeneralOptions());
@@ -285,22 +292,6 @@ watch(typescriptOptions, () => {
    saveProject();
 });
 
-watch(() => state.connected, () => {
-   if (state.connected) {
-      pushNotification(
-         "Connected",
-         "You have been connected to the server.",
-         "success"
-      );
-   } else {
-      pushNotification(
-         "Disconnected",
-         "You have been disconnected from the server.",
-         "error"
-      );
-   }
-});
-
 // Initial set
 bundler.updateOptions(defaultBundlerOptions);
 bundler.updateBabelOptions({
@@ -310,6 +301,10 @@ bundler.updateBabelOptions({
 });
 
 // Socket
+const roomState = reactive({
+   room: null as IRoom | null,
+});
+
 socket.on("connect", () => {
    state.connected = true;
 });
@@ -317,6 +312,56 @@ socket.on("connect", () => {
 socket.on("disconnect", () => {
    state.connected = false;
 });
+
+socket.on("room:update", (serializedRoom) => {
+   let room: IRoom | null = serializedRoom ? flatted.parse(serializedRoom) : null;
+
+   room?.users.sort((a, b) => a.name.localeCompare(b.name));
+   roomState.room = room;
+   console.log(room);
+});
+
+watch(
+   () => state.connected,
+   () => {
+      if (state.connected) {
+         pushNotification(
+            "Connected",
+            "You have been connected to the server.",
+            "success"
+         );
+      } else {
+         pushNotification(
+            "Disconnected",
+            "You have been disconnected from the server.",
+            "error"
+         );
+      }
+   }
+);
+
+async function leaveCurrentRoom() {
+   if (!roomState.room) return;
+
+   return await new Promise((resolve) => {
+      confirm.require({
+         message: "Are you sure you want to leave the room?",
+         header: `Leave Room`,
+         icon: "mdi mdi-alert",
+         acceptClass: "p-button-danger",
+         accept() {
+            socket.emit("user:leave");
+            resolve(true);
+         },
+         reject() {
+            resolve(false);
+         },
+         onHide() {
+            resolve(false);
+         },
+      });
+   });
+}
 
 function highlightDrawerFile(source: string) {
    if (!source) return;
@@ -798,6 +843,8 @@ async function clearProject() {
 
 async function createNewProject(template?: Template) {
    if (busyState.bundler) return;
+   let doLeave = await leaveCurrentRoom();
+   if (!doLeave) return;
    if (template) {
       await loadTemplate(template);
    } else {
@@ -853,6 +900,9 @@ async function loadTemplate(template: Partial<Template>) {
 async function openProject(projectId: string) {
    if (busyState.bundler) return;
    if (!projectId) return;
+   let doLeave = await leaveCurrentRoom();
+   if (!doLeave) return;
+
    saveProject();
 
    if (busyState.bundler || busyState.files || busyState.packageList) return;

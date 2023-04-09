@@ -3,6 +3,8 @@ import yargs from "yargs";
 import webpackMiddleware from "./webpack.middleware";
 import * as url from "url";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
+
+// @ts-ignore
 const env = yargs(process.argv).argv.env;
 
 // Setup server
