@@ -124,7 +124,7 @@ if (env == "dev") {
          new TerserPlugin({
             terserOptions: {
                compress: {
-                  pure_funcs: ["console.log", "console.info", "console.debug"],
+                  pure_funcs: ["console.log", "console.debug"],
                },
             },
          }),

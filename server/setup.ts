@@ -30,4 +30,5 @@ const server = app.listen(port, function () {
 
 // Setup socket.io
 import { Server } from "socket.io";
-export const io = new Server(server);
+import { ClientToServerEvents, ServerToClientEvents } from "./types";
+export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server);

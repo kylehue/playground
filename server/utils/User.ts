@@ -3,10 +3,36 @@ import { IRoom, IUser } from "../types";
 import { io } from "../setup";
 import rooms, { serializeRoom, Room } from "./rooms";
 
+const collabAvailableColors: string[] = [
+   "#ff7d7d",
+   "#ff9b7d",
+   "#ffb37d",
+   "#ffd27d",
+   "#fff27d",
+   "#e1ff7d",
+   "#b8ff7d",
+   "#8eff7d",
+   "#7dff99",
+   "#7dffbe",
+   "#7dffe5",
+   "#7df0ff",
+   "#7dcfff",
+   "#7da6ff",
+   "#7d81ff",
+   "#a07dff",
+   "#c77dff",
+   "#e37dff",
+   "#ff7df9",
+   "#ff7ddc",
+   "#ff7db8",
+   "#ff7d97"
+];
+
 export default class User implements IUser {
    public readonly id: string;
    public readonly ip: string;
    public readonly state: IUser["state"];
+   public color: string;
    private _currentRoom: IRoom | null = null;
    private _name = "";
 
@@ -25,6 +51,10 @@ export default class User implements IUser {
       this.ip = ip;
 
       this.state = {};
+      this.color =
+         collabAvailableColors[
+            Math.floor(Math.random() * collabAvailableColors.length)
+         ];
    }
 
    public get name() {
@@ -95,13 +125,15 @@ export default class User implements IUser {
          if (this.id === room.hostId) {
             room.hostId = room.users[0].id;
          }
+
+         io.in(room.id).emit("room:update", serializeRoom(room));
       } else {
          // Dispose room if there are no users left
          rooms.delete(room.id);
+
+         io.in(room.id).emit("room:update", null);
       }
 
-      // Emit event
-      io.in(room.id).emit("room:update", null);
       this.socket.leave(room.id);
 
       return room;

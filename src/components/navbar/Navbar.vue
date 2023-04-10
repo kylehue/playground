@@ -410,13 +410,7 @@ import { editor, languages } from "monaco-editor";
 import type generalOptions from "@app/options/general";
 import type bundlerOptions from "@app/options/bundler";
 import type babelOptions from "@app/options/babel";
-import {
-   IResultData,
-   IRoomIdResult,
-   IUser,
-   IRoom,
-   IUserIdResult,
-} from "@server/types";
+import { IUser, IRoom } from "@server/types";
 import { socket } from "@app/socket";
 import { join } from "path-browserify";
 import * as flatted from "flatted";
@@ -507,7 +501,7 @@ function setUsername(username: string, userId = roomState.setNameTargetUserId) {
    roomState.setNameTargetUserId = socket.id;
 }
 
-socket.on("result:user:updateName", (data: IResultData<IUserIdResult>) => {
+socket.on("result:user:updateName", (data) => {
    if (!props.room) return;
    if (!data.result) return;
    let user = props.room.users.find((u) => u.id === data.result!.userId);
@@ -545,15 +539,12 @@ function generateRandomRoomId() {
    roomState.isBusyGeneratingRandomId = true;
 }
 
-socket.on(
-   "result:user:generateRandomRoomId",
-   (data: IResultData<IRoomIdResult>) => {
-      roomState.isBusyGeneratingRandomId = false;
-      if (data.error || !data.result) return;
+socket.on("result:user:generateRandomRoomId", (data) => {
+   roomState.isBusyGeneratingRandomId = false;
+   if (data.error || !data.result) return;
 
-      roomState.createRoomId = data.result.roomId;
-   }
-);
+   roomState.createRoomId = data.result.roomId;
+});
 
 // Creating rooms
 function createRoom(roomId: string) {
@@ -564,7 +555,7 @@ function createRoom(roomId: string) {
    roomState.isBusyCreatingRoom = true;
 }
 
-socket.on("result:user:createRoom", (data: IResultData<IRoomIdResult>) => {
+socket.on("result:user:createRoom", (data) => {
    roomState.isBusyCreatingRoom = false;
    roomState.createRoomErrorMessage = data.error || "";
    if (data.error || !data.result) return;
@@ -599,22 +590,17 @@ watch(
 function joinRoom(roomId: string) {
    console.log("Joining room: " + roomId);
    if (!roomId) return;
-
-   socket.emit("user:joinRoom", roomId);
+   let url = location.protocol + "//" + join(location.host, "app/");
+   socket.emit("user:joinRoom", roomId.replace(url, ""));
    roomState.isBusyJoiningRoom = true;
 }
 
-socket.on("result:user:joinRoom", (data: IResultData<IRoomIdResult>) => {
+socket.on("result:user:joinRoom", (data) => {
    roomState.isBusyJoiningRoom = false;
    if (data.error || !data.result) return;
    let roomId = data.result.roomId;
    roomState.showJoinRoomDialog = false;
-   emit(
-      "pushNotification",
-      "Join Room",
-      `You joined room #${roomId}`,
-      "info"
-   );
+   emit("pushNotification", "Join Room", `You joined room #${roomId}`, "info");
    router.push({
       params: {
          roomId: roomId,
@@ -635,7 +621,7 @@ if (route.params.roomId) {
    joinRoom(route.params.roomId as string);
 }
 
-socket.on("result:user:leaveRoom", (data: IResultData<IRoomIdResult>) => {
+socket.on("result:user:leaveRoom", (data) => {
    emit(
       "pushNotification",
       "Leave Room",
@@ -645,16 +631,13 @@ socket.on("result:user:leaveRoom", (data: IResultData<IRoomIdResult>) => {
 
    router.push({
       params: {
-         roomId: undefined
-      }
+         roomId: undefined,
+      },
    });
 });
 
 function copyRoomId() {
-   if (
-      !!roomState.createRoomId &&
-      typeof roomState.createRoomId == "string"
-   ) {
+   if (!!roomState.createRoomId && typeof roomState.createRoomId == "string") {
       let location = window.location;
       let roomURL =
          location.protocol +
@@ -792,7 +775,7 @@ const navbarItems = reactive<MenuItem[]>([
             command: () => {
                roomState.showCollaboratorsSidebar = true;
             },
-            visible: !!props.room?.users.length
+            visible: !!props.room?.users.length,
          },
          {
             key: "leaveRoom",
@@ -802,7 +785,7 @@ const navbarItems = reactive<MenuItem[]>([
             command: () => {
                emit("leaveCurrentRoom");
             },
-            visible: !!props.room?.users.length
+            visible: !!props.room?.users.length,
          },
       ],
    },
