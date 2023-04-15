@@ -67,6 +67,11 @@ thread.listen("getAssets", () => {
    for (let asset of Object.values(entries)) {
       if (asset.source.startsWith("/node_modules/")) continue;
 
+      if (typeof asset.content !== "string") {
+         console.error("Asset content must be string.");
+         return;
+      }
+
       simplifiedAssets.push({
          source: asset.source,
          content: asset.content

@@ -29,6 +29,10 @@ const server = app.listen(port, function () {
 });
 
 // Setup socket.io
+import { YSocketIO } from "y-socket.io/dist/server";
 import { Server } from "socket.io";
 import { ClientToServerEvents, ServerToClientEvents } from "./types";
 export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server);
+const ysocketio = new YSocketIO(io);
+// Execute initialize method
+ysocketio.initialize();

@@ -1,6 +1,6 @@
 import { io } from "./setup";
-import { IUpdatePathResult } from "./types";
-import rooms, { generateRandomRoomId } from "./utils/rooms";
+import { ClientToServerEvents, ServerToClientEvents } from "./types";
+import rooms, { generateRandomRoomId, serializeRoom } from "./utils/rooms";
 import User from "./utils/User";
 
 io.on("connection", (socket) => {
@@ -145,7 +145,7 @@ io.on("connection", (socket) => {
       if (!user.currentRoom) return;
 
       user.state.path = path;
-      let userStatesInSamePath: IUpdatePathResult["userStatesInSamePath"] = [];
+      let userStatesInSamePath: any[] = [];
 
       for (let u of user.currentRoom.users) {
          if (u.state.path == path) {
@@ -162,10 +162,12 @@ io.on("connection", (socket) => {
          },
       });
    });
+   let edits: Parameters<ClientToServerEvents["user:editor:insert"]>[] = [];
 
    // Content insert
    socket.on("user:editor:insert", (path, index, text, content) => {
       if (!user.currentRoom) return;
+      edits.push([path, index, text, content]);
 
       socket.broadcast
          .in(user.currentRoom.id)
@@ -214,6 +216,78 @@ io.on("connection", (socket) => {
                   index,
                   length,
                },
+            },
+         });
+   });
+
+   socket.on("room:createOrUpdateFile", (path, content) => {
+      if (!user.currentRoom) return;
+      let file = user.currentRoom.files.find((f) => f.path === path);
+
+      if (file) {
+         if (file.content == content) return;
+
+         file.content = content;
+      } else {
+         user.currentRoom.files.push({
+            path,
+            content,
+         });
+      }
+
+      socket.broadcast
+         .in(user.currentRoom.id)
+         .emit("result:room:createOrUpdateFile", {
+            result: {
+               path,
+               content,
+            },
+         });
+   });
+
+   socket.on("room:removeFile", (path) => {
+      if (!user.currentRoom) return;
+
+      let isDeleted = false;
+      for (let i = 0; i < user.currentRoom.files.length; i++) {
+         const file = user.currentRoom.files[i];
+         if (file.path === path) {
+            user.currentRoom.files.splice(i, 1);
+            isDeleted = true;
+            break;
+         }
+      }
+
+      if (isDeleted) {
+         socket.broadcast
+            .in(user.currentRoom.id)
+            .emit("result:room:removeFile", {
+               result: {
+                  path,
+               },
+            });
+      }
+   });
+
+   socket.on("room:addPackage", (name, version) => {
+      if (!user.currentRoom) return;
+
+      socket.broadcast.in(user.currentRoom.id).emit("result:room:addPackage", {
+         result: {
+            name,
+            version,
+         },
+      });
+   });
+
+   socket.on("room:removePackage", (name) => {
+      if (!user.currentRoom) return;
+
+      socket.broadcast
+         .in(user.currentRoom.id)
+         .emit("result:room:removePackage", {
+            result: {
+               name,
             },
          });
    });

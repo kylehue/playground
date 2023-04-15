@@ -90,6 +90,8 @@ export default class User implements IUser {
             bannedIps: [],
             id: roomId,
             users: [],
+            files: [],
+            packages: []
          });
 
          rooms.set(room.id, room);

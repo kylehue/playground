@@ -120,7 +120,7 @@
       :downloadStatus="state.downloadStatus"
       :isDownloading="state.isDownloading"
       :room="(roomState.room as any)"
-      @leaveCurrentRoom="leaveCurrentRoom"
+      @leaveCurrentRoom="confirmLeaveCurrentRoom"
    ></Navbar>
    <Splitpanes v-fill-remaining-height>
       <Pane size="20" min-size="5" class="explorer-pane">
@@ -131,7 +131,7 @@
                   @openNewFileDialog="openCreateFileDialog"
                   @addFileButtonClick="openCreateFileDialog"
                   @removeButtonClick="removeFile"
-                  @changeEditorModel="setModel"
+                  @changeEditorModel="monaco?.setModel"
                   @copyButtonClick="setCopiedFilePath"
                   @pasteButtonClick="pasteCopiedFilePath"
                   @renameAsset="renameFile"
@@ -153,7 +153,7 @@
       <Pane size="40" min-size="5">
          <MonacoEditor
             ref="monaco"
-            @onDidChangeModel="highlightDrawerFile"
+            @onDidChangeModel="onDidChangeModel"
             @onDidChangeModelContent="onDidChangeModelContent"
             :editor-options="editorOptions"
             :typescript-options="typescriptOptions"
@@ -212,8 +212,9 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import Dropzone from "dropzone";
 import { socket } from "@app/socket";
-import { IResultData, IRoom, IRoomIdResult } from "@server/types";
+import { IResultData, IRoom } from "@server/types";
 import * as flatted from "flatted";
+import { Uri, editor } from "monaco-editor";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -314,11 +315,51 @@ socket.on("disconnect", () => {
 });
 
 socket.on("room:update", (serializedRoom) => {
-   let room: IRoom | null = serializedRoom ? flatted.parse(serializedRoom) : null;
+   let room: IRoom | null = serializedRoom
+      ? flatted.parse(serializedRoom)
+      : null;
 
    room?.users.sort((a, b) => a.name.localeCompare(b.name));
    roomState.room = room;
    console.log(room);
+});
+
+socket.on("result:user:createRoom", (data) => {
+   if (!data.result) return;
+   // Get current files
+   let files: Array<bundler.SimpleAsset> = [];
+
+   for (let [path, model] of getCurrentModels().entries()) {
+      files.push({
+         source: path,
+         content: model.getValue(),
+      });
+   }
+
+   clearProject();
+
+   for (let file of files) {
+      socket.emit("room:createOrUpdateFile", file.source, file.content);
+   }
+});
+
+socket.on("result:room:createOrUpdateFile", async (data) => {
+   console.log("result:room:createOrUpdateFile");
+   
+   if (!data.result) return;
+   let models = getCurrentModels();
+   let model = models.get(data.result.path);
+
+   if (!model) {
+      await createFile(data.result.path, data.result.content);
+   } else {
+      
+   }
+});
+
+socket.on("result:user:joinRoom", (data) => {
+   if (!data.result) return;
+   clearProject();
 });
 
 watch(
@@ -340,10 +381,13 @@ watch(
    }
 );
 
-async function leaveCurrentRoom() {
-   if (!roomState.room) return;
-
+async function confirmLeaveCurrentRoom() {
    return await new Promise((resolve) => {
+      if (!roomState.room) {
+         resolve(true);
+         return;
+      }
+
       confirm.require({
          message: "Are you sure you want to leave the room?",
          header: `Leave Room`,
@@ -363,10 +407,10 @@ async function leaveCurrentRoom() {
    });
 }
 
-function highlightDrawerFile(source: string) {
-   if (!source) return;
-
-   drawer.value?.highlightFile(source);
+function onDidChangeModel(model: editor.ITextModel) {
+   if (!model || !monaco.value) return;
+   drawer.value?.highlightFile(model.uri.path);
+   //bindEditor(monaco.value.editorInstance, model);
 }
 
 function pushNotification(
@@ -591,6 +635,7 @@ function closeNewFileDialog() {
 
 async function createFile(source: string, content: string | ArrayBuffer = "") {
    if (!source) return;
+   if (typeof content != "string") return;
 
    source = join("/", source);
 
@@ -606,16 +651,8 @@ async function createFile(source: string, content: string | ArrayBuffer = "") {
    }
 
    closeNewFileDialog();
-   // Create file in explorer
-   let newFile = drawer.value?.createFile(source);
 
-   // Create file in bundler IF we successfully created a file in the explorer
-   let hasCreatedFile = !!newFile;
-   if (hasCreatedFile) {
-      if (typeof content == "string") {
-         setModel(source, content);
-      }
-
+   const updateBundlerAsset = async () => {
       busyState.bundler = true;
       busyState.files = true;
       let status = await bundler.addAsset(source, content);
@@ -634,58 +671,21 @@ async function createFile(source: string, content: string | ArrayBuffer = "") {
       busyState.bundler = false;
       busyState.files = false;
    }
-}
 
-async function createBulkFiles(files: bundler.SimpleAsset[]) {
-   if (!files || !files.length) return;
+   // Create file in explorer
+   let newFile = drawer.value?.createFile(source);
 
-   closeNewFileDialog();
+   // Create file in bundler IF we successfully created a file in the explorer
+   let hasCreatedFile = !!newFile;
+   if (hasCreatedFile) {
+      monaco.value?.createModel(source, content);
 
-   for (let file of files) {
-      let source = join("/", file.source);
-      let validation = validateFile(source);
-      if (validation?.message) {
-         pushNotification(
-            validation.title,
-            validation.message,
-            validation.severity
-         );
-         console[validation.severity](validation.message);
-         return;
-      }
+      await updateBundlerAsset();
    }
 
-   let bulkQueue: bundler.SimpleAsset[] = [];
-   // Create files in explorer
-   for (let file of files) {
-      let source = join("/", file.source);
-      let newFile = drawer.value?.createFile(source);
-
-      if (newFile && typeof file.content == "string") {
-         bulkQueue.push(file);
-         setModel(file.source, file.content);
-      }
-   }
-
-   // Create files in bundler
-   busyState.bundler = true;
-   busyState.files = true;
-   let result = await bundler.addBulkAssets(bulkQueue);
-   if (result?._error) {
-      let errorTitle = "Error";
-      let errorMessage = result._error;
-      if (result._error.message && result._error.stack) {
-         errorTitle = result._error.message;
-         errorMessage = result._error.stack;
-      }
-      pushNotification(errorTitle, errorMessage, "error");
-   }
-   busyState.bundler = false;
-   busyState.files = false;
-
-   if (!!status) {
-      saveProject();
-   }
+   /* // Update in remote
+   let ytext = new yjs.Text(content);
+   docList?.set(source, ytext); */
 }
 
 async function removeFile(path: string) {
@@ -843,7 +843,7 @@ async function clearProject() {
 
 async function createNewProject(template?: Template) {
    if (busyState.bundler) return;
-   let doLeave = await leaveCurrentRoom();
+   let doLeave = await confirmLeaveCurrentRoom();
    if (!doLeave) return;
    if (template) {
       await loadTemplate(template);
@@ -860,15 +860,22 @@ async function loadTemplate(template: Partial<Template>) {
 
    await clearProject();
    if (template.files) {
-      await createBulkFiles(template.files);
-
-      // Focus main file
+      let mainSource = "";
       for (let file of template.files) {
+         await createFile(file.source, file.content);
          if (basename(file.source).startsWith("index")) {
-            setModel(file.source);
-            break;
+            mainSource = file.source;
          }
       }
+
+      // Focus main file
+      if (mainSource) {
+         monaco.value?.setModel(mainSource);
+      }
+   }
+
+   if (template.files?.length) {
+      monaco.value?.setModel(template.files[0].source);
    }
 
    if (template.options?.bundlerOptions) {
@@ -900,7 +907,7 @@ async function loadTemplate(template: Partial<Template>) {
 async function openProject(projectId: string) {
    if (busyState.bundler) return;
    if (!projectId) return;
-   let doLeave = await leaveCurrentRoom();
+   let doLeave = await confirmLeaveCurrentRoom();
    if (!doLeave) return;
 
    saveProject();
@@ -919,11 +926,11 @@ async function openProject(projectId: string) {
    }
 }
 
-function saveProject(projectId?: string) {
-   let files: Array<bundler.SimpleAsset> = [];
+function getCurrentModels() {
+   let models = new Map<string, editor.ITextModel>();
    if (!monaco.value) {
       console.error("Error: Monaco editor instance is undefined.");
-      return;
+      return models;
    }
 
    for (let model of monaco.value?.getValidModels()) {
@@ -938,8 +945,22 @@ function saveProject(projectId?: string) {
          continue;
       }
 
+      models.set(model.uri.path, model);
+   }
+
+   return models;
+}
+
+function saveProject(projectId?: string) {
+   let files: Array<bundler.SimpleAsset> = [];
+   if (!monaco.value) {
+      console.error("Error: Monaco editor instance is undefined.");
+      return;
+   }
+
+   for (let [path, model] of getCurrentModels().entries()) {
       files.push({
-         source: model.uri.path,
+         source: path,
          content: model.getValue(),
       });
    }
@@ -960,6 +981,8 @@ function saveProject(projectId?: string) {
       },
    };
 
+   return;
+
    storage.updateProject(state.currentProjectId, savestate);
 
    // Save in temp
@@ -973,10 +996,6 @@ function openCreateFileDialog(path = "") {
    }
 
    state.showNewFileDialog = true;
-}
-
-function setModel(path: string, content = "") {
-   return monaco.value?.setModel(path, content);
 }
 
 async function importJSON(file: File) {
@@ -1175,7 +1194,7 @@ onMounted(async () => {
    let autosaveTempProject = storage.getTempProject();
 
    if (!autosaveTempProject) {
-      let defaultProject = templates[0];
+      let defaultProject = templates[1];
 
       if (defaultProject) {
          await loadTemplate(defaultProject);

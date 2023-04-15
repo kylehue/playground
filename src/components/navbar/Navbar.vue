@@ -562,18 +562,19 @@ socket.on("result:user:createRoom", (data) => {
    let roomId = data.result.roomId;
 
    roomState.createRoomErrorMessage = "";
-   emit(
-      "pushNotification",
-      "Create Room",
-      `You have successfully created the room #${roomId}`,
-      "success"
-   );
 
    router.push({
       params: {
          roomId: roomId,
       },
    });
+
+   emit(
+      "pushNotification",
+      "Create Room",
+      `You have successfully created the room #${roomId}`,
+      "success"
+   );
 });
 
 watch(
@@ -600,12 +601,13 @@ socket.on("result:user:joinRoom", (data) => {
    if (data.error || !data.result) return;
    let roomId = data.result.roomId;
    roomState.showJoinRoomDialog = false;
-   emit("pushNotification", "Join Room", `You joined room #${roomId}`, "info");
    router.push({
       params: {
          roomId: roomId,
       },
    });
+
+   emit("pushNotification", "Join Room", `You joined room #${roomId}`, "info");
 });
 
 watch(
@@ -622,18 +624,18 @@ if (route.params.roomId) {
 }
 
 socket.on("result:user:leaveRoom", (data) => {
+   router.push({
+      params: {
+         roomId: undefined,
+      },
+   });
+
    emit(
       "pushNotification",
       "Leave Room",
       `You left room #${data.result?.roomId || ""}`,
       "info"
    );
-
-   router.push({
-      params: {
-         roomId: undefined,
-      },
-   });
 });
 
 function copyRoomId() {

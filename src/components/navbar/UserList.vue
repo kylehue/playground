@@ -50,7 +50,7 @@ import ContextMenu from "primevue/contextmenu";
 import VirtualScroller from "primevue/virtualscroller";
 import Badge from "primevue/badge";
 import Button from "primevue/button";
-import { IRoom, IUser, IResultData, IUserIdResult } from "@server/types";
+import { IRoom, IUser, IResultData } from "@server/types";
 import { reactive, ref } from "vue";
 import { MenuItem } from "primevue/menuitem";
 import { socket } from "@app/socket";
@@ -74,7 +74,7 @@ const gapSize = 5;
 const menu = ref<InstanceType<typeof ContextMenu>>();
 const menuModel = reactive<MenuItem[]>([]);
 
-socket.on("result:user:transferHost", (data: IResultData<IUserIdResult>) => {
+socket.on("result:user:transferHost", (data) => {
    const hostingUser = props.modelValue.users.find(
       (u) => u.id === data.result?.userId || ""
    );

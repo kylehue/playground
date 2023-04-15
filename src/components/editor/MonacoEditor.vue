@@ -19,7 +19,16 @@ import {
 } from "@convergencelabs/monaco-collab-ext";
 import "@convergencelabs/monaco-collab-ext/src/css/monaco-collab-ext.css";
 import { IRoom } from "@server/types";
+
+// Collab
 import { socket } from "@app/socket";
+import * as yjs from "yjs";
+import { SocketIOProvider } from "y-socket.io";
+import { MonacoBinding } from "y-monaco";
+let ydoc: yjs.Doc | null = null;
+let docList: yjs.Map<yjs.Text> | null = null;
+let provider: SocketIOProvider | null = null;
+let monacoBinding: MonacoBinding | null = null;
 
 // Definitions
 const props = defineProps<{
@@ -106,7 +115,7 @@ watch(props.editorOptions, (options) => {
 });
 
 function removeModel(source: string) {
-   let uri = monaco.Uri.parse(join("/", source));
+   let uri = monaco.Uri.parse(source);
    monaco.editor.getModel(uri)?.dispose();
    modelMap.delete(uri.path);
 
@@ -130,13 +139,11 @@ function renameModel(source: string, newSource: string) {
    modelMap.set(newSource, modelMap.get(oldSource));
    modelMap.delete(oldSource);
 
-   let oldModel = monaco.editor.getModel(
-      monaco.Uri.parse(join("/", oldSource))
-   );
+   let oldModel = monaco.editor.getModel(monaco.Uri.parse(oldSource));
    if (oldModel) {
       let value = oldModel.getValue();
       let lang = oldModel.getLanguageId();
-      let newUri = monaco.Uri.parse(join("/", newSource));
+      let newUri = monaco.Uri.parse(newSource);
       let newModel = monaco.editor.createModel(value, lang, newUri);
 
       // Change language
@@ -158,22 +165,30 @@ function addDts(pkgName: string, content: string) {
    );
 }
 
-function setModel(path: string, content = "") {
+function setModel(path: string) {
    let uri = monaco.Uri.parse(path);
    let model = monaco.editor.getModel(uri);
-   // Create model if it doesn't exist
-   if (!model) {
-      model = monaco.editor.createModel(content, getLang(path), uri);
-      if (!modelMap.get(path)) {
-         modelMap.set(path, {});
-      }
-   } else if (content) {
-      model.setValue(content);
+
+   if (model) {
+      editorInstance.setModel(model);
+      editorInstance.focus();
    }
 
-   // Set
-   editorInstance.setModel(model);
-   editorInstance.focus();
+   return model;
+}
+
+function createModel(path: string, content = "") {
+   let uri = monaco.Uri.parse(path);
+   let model = monaco.editor.getModel(uri) || monaco.editor.createModel(content, getLang(path), uri);
+   model.setValue(content);
+   modelMap.set(uri.path, {});
+
+   let isRoomCreator = props.room?.users.length == 1 && props.room.users[0].id === socket.id && props.room.hostId === socket.id;
+   if (isRoomCreator) {
+      let ytext = new yjs.Text(content);
+      docList?.set(path, ytext);
+   }
+
    return model;
 }
 
@@ -197,8 +212,69 @@ defineExpose({
    removeModel,
    renameModel,
    addDts,
+   createModel,
    setModel,
    getValidModels,
+   currentModel
+});
+
+function joinCollabRoom(roomId: string) {
+   ydoc?.destroy();
+   provider?.destroy();
+   ydoc = new yjs.Doc();
+   provider = new SocketIOProvider("", roomId, ydoc, {});
+   docList = ydoc.getMap<yjs.Text>(roomId);
+}
+
+function leaveCollabRoom() {
+   ydoc?.destroy();
+   provider?.destroy();
+   monacoBinding?.destroy();
+   docList = null;
+   ydoc = null;
+   provider = null;
+   monacoBinding = null;
+}
+
+function bindCollaborativeModel(model: monaco.editor.ITextModel
+) {
+   if (!provider) return;
+   if (!ydoc) return;
+   let ytext = docList?.get(model.uri.path);
+   if (!ytext) return;
+   if (monacoBinding) {
+      monacoBinding.destroy();
+      console.log("destroying!");
+   }
+
+   console.log("binding!");
+   monacoBinding = new MonacoBinding(
+      ytext,
+      model,
+      new Set([editorInstance]),
+      provider.awareness
+   );
+}
+
+socket.on("room:update", () => {
+   if (currentModel) {
+      bindCollaborativeModel(currentModel);
+   }
+});
+
+socket.on("result:user:createRoom", (data) => {
+   if (!data.result) return;
+   joinCollabRoom(data.result.roomId);
+});
+
+socket.on("result:user:joinRoom", (data) => {
+   if (!data.result) return;
+   joinCollabRoom(data.result.roomId);
+});
+
+socket.on("result:user:leaveRoom", (data) => {
+   if (!data.result) return;
+   leaveCollabRoom();
 });
 
 const collabCursorManager = new RemoteCursorManager({
@@ -267,13 +343,10 @@ const collabContentManager = new EditorContentManager({
 socket.on("result:user:editor:insert", (data) => {
    if (!data.result) return;
    if (!currentModel) return;
+   console.log(data);
+
    // Sync contents
-   if (data.result.path == currentModel.uri.path) {
-      collabContentManager.insert(
-         data.result.specifics.index,
-         data.result.specifics.text
-      );
-   } else {
+   if (data.result.path != currentModel.uri.path) {
       let model = monaco.editor.getModel(monaco.Uri.parse(data.result.path));
       if (model) {
          model.setValue(data.result.content);
@@ -287,12 +360,7 @@ socket.on("result:user:editor:delete", (data) => {
    if (!currentModel) return;
 
    // Sync contents
-   if (data.result.path == currentModel.uri.path) {
-      collabContentManager.delete(
-         data.result.specifics.index,
-         data.result.specifics.length
-      );
-   } else {
+   if (data.result.path != currentModel.uri.path) {
       let model = monaco.editor.getModel(monaco.Uri.parse(data.result.path));
       if (model) {
          model.setValue(data.result.content);
@@ -306,13 +374,7 @@ socket.on("result:user:editor:replace", (data) => {
    if (!currentModel) return;
 
    // Sync contents
-   if (data.result.path == currentModel.uri.path) {
-      collabContentManager.replace(
-         data.result.specifics.index,
-         data.result.specifics.length,
-         data.result.specifics.text
-      );
-   } else {
+   if (data.result.path != currentModel.uri.path) {
       let model = monaco.editor.getModel(monaco.Uri.parse(data.result.path));
       if (model) {
          model.setValue(data.result.content);
@@ -323,8 +385,10 @@ socket.on("result:user:editor:replace", (data) => {
 watch(
    () => props.room?.users,
    (users = []) => {
+      if (currentModel) {
+      }
       for (let user of users) {
-         if (!collabUserCursors.has(user.id)) {
+         if (!collabUserCursors.has(user.id) && user.id !== socket.id) {
             // Add cursor for new users
             let userCursor = collabCursorManager.addCursor(
                user.id,
@@ -368,18 +432,38 @@ watch(
       updateCollabElements();
    }
 );
-
+let doCancelCursorUpdateEmit = false;
 // Content change
 editorInstance.onDidChangeModelContent((event) => {
-   // Update bundler asset content
    if (!currentModel) return;
    let currentModelPath = currentModel.uri.path;
 
+   // Read .dts files
    if (currentModelPath.endsWith(".d.ts")) {
       monaco.languages.typescript.typescriptDefaults.addExtraLib(
          currentModel.getValue() || "",
          currentModelPath
       );
+   }
+
+   // Remove cursor follow delay when client's cursor is typing at other user's cursor's position
+   // If client's cursor's position is equal to other user's cursors' position, we can just update other user's cursors' position by imitating client's cursor position
+   // It's also important to cancel the client's cursor update so that it doesn't go back to its old target position
+   console.log(collabUserCursors);
+   let myPosition = editorInstance.getPosition();
+   if (myPosition) {
+      let myOffset =
+         currentModel.getOffsetAt(myPosition) - event.changes[0].text.length;
+      collabUserCursors.forEach((userCursor) => {
+         let userPosition = userCursor.getPosition();
+         if (!userPosition) return;
+         let userOffset = currentModel!.getOffsetAt(userPosition);
+
+         if (myOffset == userOffset) {
+            userCursor.setOffset(myOffset);
+            doCancelCursorUpdateEmit = true;
+         }
+      });
    }
 
    emit("onDidChangeModelContent");
@@ -424,10 +508,12 @@ editorInstance.onDidChangeCursorPosition((event) => {
       modelMapModel.position = event.position;
    }
 
-   if (props.room) {
+   if (props.room && !doCancelCursorUpdateEmit) {
       const offset = currentModel.getOffsetAt(event.position);
       socket.emit("user:update:cursorPosition", currentModel.uri.path, offset);
    }
+
+   doCancelCursorUpdateEmit = false;
 });
 
 socket.on("result:user:update:cursorPosition", (data) => {
@@ -529,7 +615,6 @@ editorInstance.onDidChangeModel(function (event) {
          monaco.editor.ScrollType.Immediate
       );
    }
-
    // Hide all remote cursors
    collabUserCursors.forEach((userCursor) => {
       userCursor.hide();
@@ -542,7 +627,8 @@ editorInstance.onDidChangeModel(function (event) {
 
    updateCollabElements();
 
-   emit("onDidChangeModel", currentModelPath);
+   emit("onDidChangeModel", currentModel);
+   bindCollaborativeModel(currentModel);
 });
 
 // Add shortcut for block commentada

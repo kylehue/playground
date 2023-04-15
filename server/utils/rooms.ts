@@ -1,5 +1,5 @@
 import { customAlphabet } from "nanoid";
-import { IRoom, IUser } from "../types";
+import { IFile, IPackage, IRoom, IUser } from "../types";
 import { io } from "../setup";
 import * as flatted from "flatted";
 const nanoid = customAlphabet("1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6);
@@ -38,6 +38,8 @@ export function serializeRoom(room: IRoom) {
 
    clone.hostId = clone._hostId;
    delete clone._hostId;
+   delete clone.files;
+   delete clone.packages;
 
    return flatted.stringify(clone);
 }
@@ -47,11 +49,15 @@ export class Room implements IRoom {
    private _hostId: string;
    public users: IUser[];
    public bannedIps: string[];
+   public files: IFile[];
+   public packages: IPackage[];
    constructor(room: IRoom) {
       this.id = room.id;
       this._hostId = room.hostId;
       this.users = room.users;
       this.bannedIps = room.bannedIps;
+      this.files = room.files;
+      this.packages = room.packages;
    }
 
    public get hostId() {

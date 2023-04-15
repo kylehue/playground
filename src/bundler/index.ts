@@ -8,7 +8,7 @@ export const worker = new WorkerClient(
 
 export interface SimpleAsset {
    source: string;
-   content: string | ArrayBuffer;
+   content: string;
 }
 
 export async function installPackage(name: string, version: string) {

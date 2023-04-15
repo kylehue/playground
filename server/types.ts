@@ -13,8 +13,18 @@ export interface IUser {
       selectionOffset?: {
          start: number;
          end: number;
-      }
-   }
+      };
+   };
+}
+
+export interface IFile {
+   path: string;
+   content: string;
+}
+
+export interface IPackage {
+   name: string;
+   version: string;
 }
 
 export interface IRoom {
@@ -22,6 +32,8 @@ export interface IRoom {
    bannedIps: string[];
    id: string;
    users: IUser[];
+   files: IFile[];
+   packages: IPackage[];
 }
 
 export interface IResultData<ResultType> {
@@ -29,85 +41,97 @@ export interface IResultData<ResultType> {
    result?: ResultType;
 }
 
-export interface IRoomIdResult {
-   roomId: string;
-}
-
-export interface IUserIdResult {
-   userId: string;
-}
-
-export interface ICursorPositionResult {
-   userId: string;
-   path: string;
-   cursorOffset: number;
-}
-
-export interface ISelectionResult {
-   userId: string;
-   path: string;
-   startOffset: number;
-   endOffset: number;
-}
-
-export interface IUpdatePathResult {
-   userStatesInSamePath: { id: string; state: IUser["state"] }[];
-}
-
-export interface IEditorInsertResult {
-   path: string;
-   content: string;
-   specifics: {
-      index: number;
-      text: string;
-   };
-}
-
-export interface IEditorReplaceResult {
-   path: string;
-   content: string;
-   specifics: {
-      index: number;
-      length: number;
-      text: string;
-   };
-}
-
-export interface IEditorDeleteResult {
-   path: string;
-   content: string;
-   specifics: {
-      index: number;
-      length: number;
-   };
-}
-
 export interface ServerToClientEvents {
-   "result:user:leaveRoom": (data: IResultData<IRoomIdResult>) => void;
-   "result:user:updateName": (data: IResultData<IUserIdResult>) => void;
+   "result:user:leaveRoom": (
+      data: IResultData<{
+         roomId: string;
+      }>
+   ) => void;
+   "result:user:updateName": (
+      data: IResultData<{
+         userId: string;
+      }>
+   ) => void;
    "result:user:generateRandomRoomId": (
-      data: IResultData<IRoomIdResult>
+      data: IResultData<{
+         roomId: string;
+      }>
    ) => void;
-   "result:user:joinRoom": (data: IResultData<IRoomIdResult>) => void;
-   "result:user:createRoom": (data: IResultData<IRoomIdResult>) => void;
-   "result:user:transferHost": (data: IResultData<IUserIdResult>) => void;
+   "result:user:joinRoom": (
+      data: IResultData<{
+         roomId: string;
+      }>
+   ) => void;
+   "result:user:createRoom": (
+      data: IResultData<{
+         roomId: string;
+      }>
+   ) => void;
+   "result:user:transferHost": (
+      data: IResultData<{
+         userId: string;
+      }>
+   ) => void;
    "result:user:update:cursorPosition": (
-      data: IResultData<ICursorPositionResult>
+      data: IResultData<{
+         userId: string;
+         path: string;
+         cursorOffset: number;
+      }>
    ) => void;
-   "result:user:update:path": (data: IResultData<IUpdatePathResult>) => void;
+   "result:user:update:path": (
+      data: IResultData<{
+         userStatesInSamePath: { id: string; state: IUser["state"] }[];
+      }>
+   ) => void;
    "result:user:update:selection": (
-      data: IResultData<ISelectionResult>
+      data: IResultData<{
+         userId: string;
+         path: string;
+         startOffset: number;
+         endOffset: number;
+      }>
    ) => void;
    "result:user:editor:insert": (
-      data: IResultData<IEditorInsertResult>
+      data: IResultData<{
+         path: string;
+         content: string;
+         specifics: {
+            index: number;
+            text: string;
+         };
+      }>
    ) => void;
    "result:user:editor:replace": (
-      data: IResultData<IEditorReplaceResult>
+      data: IResultData<{
+         path: string;
+         content: string;
+         specifics: {
+            index: number;
+            length: number;
+            text: string;
+         };
+      }>
    ) => void;
    "result:user:editor:delete": (
-      data: IResultData<IEditorDeleteResult>
+      data: IResultData<{
+         path: string;
+         content: string;
+         specifics: {
+            index: number;
+            length: number;
+         };
+      }>
    ) => void;
    "room:update": (serializedRoom: string | null) => void;
+   "result:room:createOrUpdateFile": (
+      data: IResultData<{ path: string; content: string }>
+   ) => void;
+   "result:room:removeFile": (data: IResultData<{ path: string }>) => void;
+   "result:room:addPackage": (
+      data: IResultData<{ name: string; version: string }>
+   ) => void;
+   "result:room:removePackage": (data: IResultData<{ name: string }>) => void;
 }
 
 export interface ClientToServerEvents {
@@ -143,4 +167,8 @@ export interface ClientToServerEvents {
       length: number,
       content: string
    ) => void;
+   "room:createOrUpdateFile": (path: string, content: string) => void;
+   "room:removeFile": (path: string) => void;
+   "room:addPackage": (name: string, version: string) => void;
+   "room:removePackage": (name: string) => void;
 }
