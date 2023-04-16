@@ -54,10 +54,13 @@ io.on("connection", (socket) => {
    socket.on("user:joinRoom", (roomId) => {
       console.log(`${user.id} ${user.ip} is joining room#${roomId}`);
 
-      user.join(roomId);
+      const room = user.join(roomId);
       socket.emit("result:user:joinRoom", {
          result: {
-            roomId,
+            roomId: room.id,
+            files: room.files,
+            packages: room.packages,
+            options: room.options
          },
       });
    });
@@ -114,7 +117,7 @@ io.on("connection", (socket) => {
             result: {
                userId: user.id,
                cursorOffset: offset,
-               path,
+               source: path,
             },
          });
    });
@@ -133,7 +136,7 @@ io.on("connection", (socket) => {
          .emit("result:user:update:selection", {
             result: {
                userId: user.id,
-               path,
+               source: path,
                startOffset,
                endOffset,
             },
@@ -173,7 +176,7 @@ io.on("connection", (socket) => {
          .in(user.currentRoom.id)
          .emit("result:user:editor:insert", {
             result: {
-               path,
+               source: path,
                content,
                specifics: {
                   index,
@@ -191,7 +194,7 @@ io.on("connection", (socket) => {
          .in(user.currentRoom.id)
          .emit("result:user:editor:replace", {
             result: {
-               path,
+               source: path,
                content,
                specifics: {
                   index,
@@ -210,7 +213,7 @@ io.on("connection", (socket) => {
          .in(user.currentRoom.id)
          .emit("result:user:editor:delete", {
             result: {
-               path,
+               source: path,
                content,
                specifics: {
                   index,
@@ -222,7 +225,7 @@ io.on("connection", (socket) => {
 
    socket.on("room:createOrUpdateFile", (path, content) => {
       if (!user.currentRoom) return;
-      let file = user.currentRoom.files.find((f) => f.path === path);
+      let file = user.currentRoom.files.find((f) => f.source === path);
 
       if (file) {
          if (file.content == content) return;
@@ -230,7 +233,7 @@ io.on("connection", (socket) => {
          file.content = content;
       } else {
          user.currentRoom.files.push({
-            path,
+            source: path,
             content,
          });
       }
@@ -239,7 +242,7 @@ io.on("connection", (socket) => {
          .in(user.currentRoom.id)
          .emit("result:room:createOrUpdateFile", {
             result: {
-               path,
+               source: path,
                content,
             },
          });
@@ -251,7 +254,7 @@ io.on("connection", (socket) => {
       let isDeleted = false;
       for (let i = 0; i < user.currentRoom.files.length; i++) {
          const file = user.currentRoom.files[i];
-         if (file.path === path) {
+         if (file.source === path) {
             user.currentRoom.files.splice(i, 1);
             isDeleted = true;
             break;
@@ -263,7 +266,7 @@ io.on("connection", (socket) => {
             .in(user.currentRoom.id)
             .emit("result:room:removeFile", {
                result: {
-                  path,
+                  source: path,
                },
             });
       }
@@ -271,6 +274,11 @@ io.on("connection", (socket) => {
 
    socket.on("room:addPackage", (name, version) => {
       if (!user.currentRoom) return;
+
+      user.currentRoom.packages.push({
+         name,
+         version
+      });
 
       socket.broadcast.in(user.currentRoom.id).emit("result:room:addPackage", {
          result: {
@@ -283,11 +291,55 @@ io.on("connection", (socket) => {
    socket.on("room:removePackage", (name) => {
       if (!user.currentRoom) return;
 
+      for (let i = 0; i < user.currentRoom.packages.length; i++) {
+         const pkg = user.currentRoom.packages[i];
+         if (pkg.name == name) {
+            user.currentRoom.packages.splice(i, 1);
+            break;
+         }
+      }
+
       socket.broadcast
          .in(user.currentRoom.id)
          .emit("result:room:removePackage", {
             result: {
                name,
+            },
+         });
+   });
+
+   socket.on("room:updateBabelOptions", (options) => {
+      if (!user.currentRoom) return;
+      user.currentRoom.options.babel = options;
+      socket.broadcast
+         .in(user.currentRoom.id)
+         .emit("result:room:updateBabelOptions", {
+            result: {
+               options,
+            },
+         });
+   });
+
+   socket.on("room:updateBundlerOptions", (options) => {
+      if (!user.currentRoom) return;
+      user.currentRoom.options.bundler = options;
+      socket.broadcast
+         .in(user.currentRoom.id)
+         .emit("result:room:updateBundlerOptions", {
+            result: {
+               options,
+            },
+         });
+   });
+
+   socket.on("room:updateTypescriptOptions", (options) => {
+      if (!user.currentRoom) return;
+      user.currentRoom.options.typescript = options;
+      socket.broadcast
+         .in(user.currentRoom.id)
+         .emit("result:room:updateTypescriptOptions", {
+            result: {
+               options,
             },
          });
    });

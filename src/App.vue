@@ -176,7 +176,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, reactive, watch } from "vue";
+import { onMounted, ref, reactive, watch, nextTick } from "vue";
 import { Splitpanes, Pane } from "splitpanes";
 import Drawer from "@app/components/explorer/Drawer.vue";
 import Packages from "@app/components/explorer/Packages.vue";
@@ -265,6 +265,8 @@ watch(editorOptions, () => {
    setupLanguageFormats(editorOptions);
 });
 
+let suppressOptionsServerUpdate = false;
+
 watch(bundlerOptions, (newBundlerOptions) => {
    let options: typeof newBundlerOptions = JSON.parse(
       JSON.stringify(newBundlerOptions)
@@ -272,6 +274,12 @@ watch(bundlerOptions, (newBundlerOptions) => {
    bundler.updateOptions(options);
    hardRunRequired = true;
    saveProject();
+
+   if (roomState.room && !suppressOptionsServerUpdate) {
+      socket.emit("room:updateBundlerOptions", options);
+   }
+
+   suppressOptionsServerUpdate = false;
 });
 
 watch(babelOptions, (newBabelOptions) => {
@@ -287,10 +295,20 @@ watch(babelOptions, (newBabelOptions) => {
 
    hardRunRequired = true;
    saveProject();
+   if (roomState.room && !suppressOptionsServerUpdate) {
+      socket.emit("room:updateBabelOptions", options);
+   }
+
+   suppressOptionsServerUpdate = false;
 });
 
 watch(typescriptOptions, () => {
    saveProject();
+   if (roomState.room && !suppressOptionsServerUpdate) {
+      socket.emit("room:updateTypescriptOptions", typescriptOptions);
+   }
+   
+   suppressOptionsServerUpdate = false;
 });
 
 // Initial set
@@ -324,8 +342,38 @@ socket.on("room:update", (serializedRoom) => {
    console.log(room);
 });
 
-socket.on("result:user:createRoom", (data) => {
+socket.on("result:room:updateBabelOptions", (data) => {
    if (!data.result) return;
+
+   suppressOptionsServerUpdate = true;
+   for (let key in data.result.options) {
+      babelOptions[key] = data.result.options[key];
+   }
+});
+
+socket.on("result:room:updateBundlerOptions", (data) => {
+   if (!data.result) return;
+
+   suppressOptionsServerUpdate = true;
+   for (let key in data.result.options) {
+      bundlerOptions[key] = data.result.options[key];
+   }
+});
+
+socket.on("result:room:updateTypescriptOptions", (data) => {
+   if (!data.result) return;
+
+   suppressOptionsServerUpdate = true;
+   for (let key in typescriptOptions) {
+      let value = data.result.options[key];
+      typescriptOptions[key] = typeof value == "boolean" ? value : null;
+   }
+});
+
+socket.on("result:user:createRoom", async (data) => {
+   if (!data.result) return;
+   monaco.value?.joinCollabRoom(data.result.roomId);
+
    // Get current files
    let files: Array<bundler.SimpleAsset> = [];
 
@@ -336,30 +384,84 @@ socket.on("result:user:createRoom", (data) => {
       });
    }
 
-   clearProject();
-
+   // Send files to server
    for (let file of files) {
+      monaco.value?.addToDocs(file.source, file.content);
       socket.emit("room:createOrUpdateFile", file.source, file.content);
    }
+
+   // Send packages to server
+   for (let pkg of state.installedPackages) {
+      socket.emit("room:addPackage", pkg.name, pkg.version);
+   }
+
+   // Send options to server
+   socket.emit("room:updateBabelOptions", babelOptions);
+   socket.emit("room:updateBundlerOptions", bundlerOptions);
+   socket.emit("room:updateTypescriptOptions", typescriptOptions);
+
+   // bind
+   let currentModel = monaco.value?.editorInstance.getModel();
+   if (currentModel) {
+      monaco.value?.bindCollaborativeModel(currentModel);
+   }
+});
+
+socket.on("result:user:joinRoom", async (data) => {
+   if (!data.result) return;
+   monaco.value?.joinCollabRoom(data.result.roomId);
+   await loadTemplate(
+      {
+         files: data.result.files,
+         packages: data.result.packages,
+         options: {
+            babelOptions: data.result.options.babel,
+            bundlerOptions: data.result.options.bundler,
+            typescriptOptions: data.result.options.typescript
+         }
+      },
+      {
+         createFileOptions: {
+            emitToServer: false,
+         },
+         addPackageOptions: {
+            emitToServer: false
+         }
+      }
+   );
+
+   await runProject();
+});
+
+socket.on("result:room:addPackage", async (data) => {
+   if (!data.result) return;
+   await addPackage(data.result.name, data.result.version, {
+      emitToServer: false,
+   });
+});
+
+socket.on("result:room:removePackage", async (data) => {
+   if (!data.result) return;
+   removePackage(data.result.name);
 });
 
 socket.on("result:room:createOrUpdateFile", async (data) => {
    console.log("result:room:createOrUpdateFile");
-   
    if (!data.result) return;
    let models = getCurrentModels();
-   let model = models.get(data.result.path);
+   let model = models.get(data.result.source);
 
    if (!model) {
-      await createFile(data.result.path, data.result.content);
-   } else {
-      
+      await createFile(data.result.source, data.result.content, {
+         emitToServer: false,
+      });
    }
 });
 
-socket.on("result:user:joinRoom", (data) => {
+socket.on("result:room:removeFile", async (data) => {
    if (!data.result) return;
-   clearProject();
+
+   await removeFile(data.result.source);
 });
 
 watch(
@@ -382,11 +484,15 @@ watch(
 );
 
 async function confirmLeaveCurrentRoom() {
-   return await new Promise((resolve) => {
+   return await new Promise(async (resolve) => {
+      console.log(!roomState.room);
+      
       if (!roomState.room) {
          resolve(true);
          return;
       }
+
+      await nextTick();
 
       confirm.require({
          message: "Are you sure you want to leave the room?",
@@ -452,6 +558,8 @@ function removePackage(packageName: string) {
          break;
       }
    }
+
+   socket.emit("room:removePackage", packageName);
 
    saveProject();
 }
@@ -520,7 +628,21 @@ function closeNewPackageDialog() {
    state.selectedPackageVersionResults = [];
 }
 
-async function addPackage(name: string, version: string) {
+interface AddPackageOptions {
+   emitToServer: boolean;
+}
+
+async function addPackage(
+   name: string,
+   version: string,
+   options?: Partial<AddPackageOptions>
+) {
+   options = Object.assign<AddPackageOptions, Partial<AddPackageOptions>>(
+      {
+         emitToServer: true,
+      },
+      options || {}
+   );
    if (!name || !version) return;
 
    if (
@@ -563,6 +685,10 @@ async function addPackage(name: string, version: string) {
          `${name}@${version} has been installed!`,
          "success"
       );
+
+      if (options.emitToServer && roomState.room) {
+         socket.emit("room:addPackage", name, version);
+      }
 
       if (!!status) {
          saveProject();
@@ -633,7 +759,22 @@ function closeNewFileDialog() {
    state.newFileDialogPath = "";
 }
 
-async function createFile(source: string, content: string | ArrayBuffer = "") {
+interface CreateFileOptions {
+   emitToServer: boolean;
+}
+
+async function createFile(
+   source: string,
+   content = "",
+   options?: Partial<CreateFileOptions>
+) {
+   options = Object.assign<CreateFileOptions, Partial<CreateFileOptions>>(
+      {
+         emitToServer: true,
+      },
+      options || {}
+   );
+
    if (!source) return;
    if (typeof content != "string") return;
 
@@ -670,7 +811,7 @@ async function createFile(source: string, content: string | ArrayBuffer = "") {
 
       busyState.bundler = false;
       busyState.files = false;
-   }
+   };
 
    // Create file in explorer
    let newFile = drawer.value?.createFile(source);
@@ -681,6 +822,11 @@ async function createFile(source: string, content: string | ArrayBuffer = "") {
       monaco.value?.createModel(source, content);
 
       await updateBundlerAsset();
+   }
+
+   if (options.emitToServer && roomState.room) {
+      socket.emit("room:createOrUpdateFile", source, content);
+      monaco.value?.addToDocs(source, content);
    }
 
    /* // Update in remote
@@ -758,6 +904,11 @@ async function removeFile(path: string) {
       busyState.files = false;
    } else {
       saveProject();
+   }
+
+   // emit to server
+   if (roomState.room) {
+      socket.emit("room:removeFile", path);
    }
 }
 
@@ -855,14 +1006,26 @@ async function createNewProject(template?: Template) {
    saveProject();
 }
 
-async function loadTemplate(template: Partial<Template>) {
+interface LoadTemplateOptions {
+   createFileOptions?: Partial<CreateFileOptions>;
+   addPackageOptions?: Partial<AddPackageOptions>;
+}
+
+async function loadTemplate(
+   template: Partial<Template>,
+   options?: LoadTemplateOptions
+) {
    if (!template) return;
 
    await clearProject();
    if (template.files) {
       let mainSource = "";
       for (let file of template.files) {
-         await createFile(file.source, file.content);
+         await createFile(
+            file.source,
+            file.content,
+            options?.createFileOptions
+         );
          if (basename(file.source).startsWith("index")) {
             mainSource = file.source;
          }
@@ -899,7 +1062,7 @@ async function loadTemplate(template: Partial<Template>) {
    if (template.packages) {
       state.requiredPackages = template.packages;
       for (let pkg of state.requiredPackages) {
-         await addPackage(pkg.name, pkg.version);
+         await addPackage(pkg.name, pkg.version, options?.addPackageOptions);
       }
    }
 }
@@ -981,7 +1144,9 @@ function saveProject(projectId?: string) {
       },
    };
 
-   return;
+   if (process.env.NODE_ENV == "development") {
+      return;
+   }
 
    storage.updateProject(state.currentProjectId, savestate);
 

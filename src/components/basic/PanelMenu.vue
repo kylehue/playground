@@ -17,7 +17,7 @@
          </span>
          <template v-for="item in items" :key="item.id">
             <Button
-               class="menu-button text-start"
+               class="menu-button text-md-start text-center"
                :label="item.label"
                :icon="item.icon"
                plain

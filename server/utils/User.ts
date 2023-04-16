@@ -85,14 +85,7 @@ export default class User implements IUser {
 
       // Create room if it doesn't exist
       if (!room) {
-         room = new Room({
-            hostId: this.id,
-            bannedIps: [],
-            id: roomId,
-            users: [],
-            files: [],
-            packages: []
-         });
+         room = new Room(roomId, this.id);
 
          rooms.set(room.id, room);
       }
@@ -137,6 +130,7 @@ export default class User implements IUser {
       }
 
       this.socket.leave(room.id);
+      this.socket.emit("room:update", null);
 
       return room;
    }

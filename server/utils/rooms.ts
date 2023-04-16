@@ -40,6 +40,7 @@ export function serializeRoom(room: IRoom) {
    delete clone._hostId;
    delete clone.files;
    delete clone.packages;
+   delete clone.options;
 
    return flatted.stringify(clone);
 }
@@ -51,13 +52,15 @@ export class Room implements IRoom {
    public bannedIps: string[];
    public files: IFile[];
    public packages: IPackage[];
-   constructor(room: IRoom) {
-      this.id = room.id;
-      this._hostId = room.hostId;
-      this.users = room.users;
-      this.bannedIps = room.bannedIps;
-      this.files = room.files;
-      this.packages = room.packages;
+   public options: { bundler?: any; babel?: any; typescript?: any; };
+   constructor(id: string, hostId: string) {
+      this.id = id;
+      this._hostId = hostId;
+      this.users = [];
+      this.bannedIps = [];
+      this.files = [];
+      this.packages = [];
+      this.options = {};
    }
 
    public get hostId() {

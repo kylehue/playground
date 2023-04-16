@@ -185,7 +185,7 @@ img[alt="logo"] {
    width: 100% !important;
 }
 
-.monaco-remote-cursor-tooltip {
+/* .monaco-remote-cursor-tooltip {
    display: none;
 }
 
@@ -194,5 +194,14 @@ img[alt="logo"] {
       .monaco-remote-cursor-tooltip {
          display: block !important;
       }
+   }
+} */
+
+.primary-color-text {
+   $color: var(--primary-color-text);
+   color: $color !important;
+
+   & > * {
+      color: $color !important;
    }
 }

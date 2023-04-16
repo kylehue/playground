@@ -13,7 +13,7 @@
             :key="pkg.name"
          >
             <div
-               class="flex-grow-1 d-flex flex-row align-items-center justify-content-between me-2 pe-none user-select-none"
+               class="flex-grow-1 d-flex flex-row align-items-center justify-content-between me-2 pe-none user-select-none text-truncate"
             >
                <span class="text-name">{{ pkg.name }}</span>
                <span class="text-version">{{ pkg.version }}</span>

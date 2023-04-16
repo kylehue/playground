@@ -326,7 +326,8 @@
             :disabled="
                !roomState.createRoomId ||
                roomState.isBusyGeneratingRandomId ||
-               roomState.isBusyCreatingRoom
+               roomState.isBusyCreatingRoom ||
+               props.isBusy
             "
          ></Button>
       </template>
@@ -360,7 +361,11 @@
          <Button
             label="Join"
             @click="joinRoom(roomState.joinRoomId)"
-            :disabled="!roomState.joinRoomId"
+            :disabled="
+               !roomState.joinRoomId ||
+               roomState.isBusyJoiningRoom ||
+               props.isBusy
+            "
             :loading="roomState.isBusyJoiningRoom"
          ></Button>
       </template>
@@ -646,6 +651,7 @@ function copyRoomId() {
          "//" +
          join(location.host, "app", roomState.createRoomId);
       navigator.clipboard.writeText(roomURL);
+      emit("pushNotification", "Copied to clipboard", "", "info")
    }
 }
 
@@ -761,6 +767,7 @@ const navbarItems = reactive<MenuItem[]>([
             command: () => {
                roomState.showCreateRoomDialog = true;
             },
+            disabled: props.isBusy,
          },
          {
             key: "joinRoom",
@@ -769,6 +776,7 @@ const navbarItems = reactive<MenuItem[]>([
             command: () => {
                roomState.showJoinRoomDialog = true;
             },
+            disabled: props.isBusy,
          },
          {
             key: "collaborators",
@@ -777,7 +785,7 @@ const navbarItems = reactive<MenuItem[]>([
             command: () => {
                roomState.showCollaboratorsSidebar = true;
             },
-            visible: !!props.room?.users.length,
+            disabled: !props.room?.users.length,
          },
          {
             key: "leaveRoom",
@@ -799,7 +807,11 @@ watch(
    (room) => {
       let collaborationMenuItems = navbarItems[1].items!;
       for (let item of collaborationMenuItems) {
-         if (item.key == "collaborators" || item.key == "leaveRoom") {
+         if (item.key == "collaborators") {
+            item.disabled = !room?.users.length;
+         }
+
+         if (item.key == "leaveRoom") {
             item.visible = !!room?.users.length && !!room;
          }
       }
@@ -828,6 +840,7 @@ watch(
    () => props.isBusy,
    (isBusy) => {
       let projectMenuItems = navbarItems[0].items!;
+      let collaborationMenuItems = navbarItems[0].items!;
       for (let item of projectMenuItems) {
          if (
             item.key == "newProject" ||
@@ -835,6 +848,13 @@ watch(
             item.key == "saveProject" ||
             item.key == "importJSON"
          ) {
+            item.disabled = isBusy;
+            break;
+         }
+      }
+
+      for (let item of collaborationMenuItems) {
+         if (item.key == "createRoom" || item.key == "joinRoom") {
             item.disabled = isBusy;
             break;
          }
@@ -956,12 +976,10 @@ function openProject(projectId: string) {
          acceptClass: "p-button-danger",
          accept() {
             emit("openProject", projectId);
-            state.showProjectsDialog = false;
          },
       });
    } else {
       emit("openProject", projectId);
-      state.showProjectsDialog = false;
    }
 }
 </script>

@@ -1,4 +1,7 @@
 import { Socket } from "socket.io";
+import type babelOptions from "@app/options/babel";
+import type bundlerOptions from "@app/options/bundler";
+import type typescriptOptions from "@app/options/typescript";
 
 export interface IUser {
    id: Readonly<string>;
@@ -18,7 +21,7 @@ export interface IUser {
 }
 
 export interface IFile {
-   path: string;
+   source: string;
    content: string;
 }
 
@@ -34,6 +37,11 @@ export interface IRoom {
    users: IUser[];
    files: IFile[];
    packages: IPackage[];
+   options: {
+      bundler?: typeof bundlerOptions;
+      babel?: typeof babelOptions;
+      typescript?: typeof typescriptOptions;
+   };
 }
 
 export interface IResultData<ResultType> {
@@ -60,6 +68,9 @@ export interface ServerToClientEvents {
    "result:user:joinRoom": (
       data: IResultData<{
          roomId: string;
+         files: IFile[];
+         packages: IPackage[];
+         options: IRoom["options"];
       }>
    ) => void;
    "result:user:createRoom": (
@@ -75,7 +86,7 @@ export interface ServerToClientEvents {
    "result:user:update:cursorPosition": (
       data: IResultData<{
          userId: string;
-         path: string;
+         source: string;
          cursorOffset: number;
       }>
    ) => void;
@@ -87,14 +98,14 @@ export interface ServerToClientEvents {
    "result:user:update:selection": (
       data: IResultData<{
          userId: string;
-         path: string;
+         source: string;
          startOffset: number;
          endOffset: number;
       }>
    ) => void;
    "result:user:editor:insert": (
       data: IResultData<{
-         path: string;
+         source: string;
          content: string;
          specifics: {
             index: number;
@@ -104,7 +115,7 @@ export interface ServerToClientEvents {
    ) => void;
    "result:user:editor:replace": (
       data: IResultData<{
-         path: string;
+         source: string;
          content: string;
          specifics: {
             index: number;
@@ -115,7 +126,7 @@ export interface ServerToClientEvents {
    ) => void;
    "result:user:editor:delete": (
       data: IResultData<{
-         path: string;
+         source: string;
          content: string;
          specifics: {
             index: number;
@@ -125,13 +136,22 @@ export interface ServerToClientEvents {
    ) => void;
    "room:update": (serializedRoom: string | null) => void;
    "result:room:createOrUpdateFile": (
-      data: IResultData<{ path: string; content: string }>
+      data: IResultData<{ source: string; content: string }>
    ) => void;
-   "result:room:removeFile": (data: IResultData<{ path: string }>) => void;
+   "result:room:removeFile": (data: IResultData<{ source: string }>) => void;
    "result:room:addPackage": (
       data: IResultData<{ name: string; version: string }>
    ) => void;
    "result:room:removePackage": (data: IResultData<{ name: string }>) => void;
+   "result:room:updateBabelOptions": (
+      data: IResultData<{ options: typeof babelOptions }>
+   ) => void;
+   "result:room:updateBundlerOptions": (
+      data: IResultData<{ options: typeof bundlerOptions }>
+   ) => void;
+   "result:room:updateTypescriptOptions": (
+      data: IResultData<{ options: typeof typescriptOptions }>
+   ) => void;
 }
 
 export interface ClientToServerEvents {
@@ -141,34 +161,37 @@ export interface ClientToServerEvents {
    "user:joinRoom": (roomId: string) => void;
    "user:createRoom": (roomId: string) => void;
    "user:transferHost": (userId: string) => void;
-   "user:update:cursorPosition": (path: string, offset: number) => void;
+   "user:update:cursorPosition": (source: string, offset: number) => void;
    "user:update:selection": (
-      path: string,
+      source: string,
       startOffset: number,
       endOffset: number
    ) => void;
-   "user:update:path": (path: string) => void;
+   "user:update:path": (source: string) => void;
    "user:editor:insert": (
-      path: string,
+      source: string,
       index: number,
       text: string,
       content: string
    ) => void;
    "user:editor:replace": (
-      path: string,
+      source: string,
       index: number,
       length: number,
       text: string,
       content: string
    ) => void;
    "user:editor:delete": (
-      path: string,
+      source: string,
       index: number,
       length: number,
       content: string
    ) => void;
-   "room:createOrUpdateFile": (path: string, content: string) => void;
-   "room:removeFile": (path: string) => void;
+   "room:createOrUpdateFile": (source: string, content: string) => void;
+   "room:removeFile": (source: string) => void;
    "room:addPackage": (name: string, version: string) => void;
    "room:removePackage": (name: string) => void;
+   "room:updateBabelOptions": (options: typeof babelOptions) => void;
+   "room:updateBundlerOptions": (options: typeof bundlerOptions) => void;
+   "room:updateTypescriptOptions": (options: typeof typescriptOptions) => void;
 }

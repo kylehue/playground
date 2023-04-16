@@ -179,16 +179,11 @@ function setModel(path: string) {
 
 function createModel(path: string, content = "") {
    let uri = monaco.Uri.parse(path);
-   let model = monaco.editor.getModel(uri) || monaco.editor.createModel(content, getLang(path), uri);
+   let model =
+      monaco.editor.getModel(uri) ||
+      monaco.editor.createModel(content, getLang(path), uri);
    model.setValue(content);
    modelMap.set(uri.path, {});
-
-   let isRoomCreator = props.room?.users.length == 1 && props.room.users[0].id === socket.id && props.room.hostId === socket.id;
-   if (isRoomCreator) {
-      let ytext = new yjs.Text(content);
-      docList?.set(path, ytext);
-   }
-
    return model;
 }
 
@@ -205,6 +200,17 @@ function getValidModels() {
    return models;
 }
 
+function addToDocs(source: string, content: string) {
+   console.log(`Adding ${source} to docs`);
+
+   let ytext = new yjs.Text(content);
+   if (docList) {
+      docList.set(source, ytext);
+   } else {
+      console.error("Document list is undefined.");
+   }
+}
+
 defineExpose({
    editorInstance,
    editor: monaco.editor,
@@ -215,7 +221,9 @@ defineExpose({
    createModel,
    setModel,
    getValidModels,
-   currentModel
+   bindCollaborativeModel,
+   addToDocs,
+   joinCollabRoom,
 });
 
 function joinCollabRoom(roomId: string) {
@@ -224,6 +232,7 @@ function joinCollabRoom(roomId: string) {
    ydoc = new yjs.Doc();
    provider = new SocketIOProvider("", roomId, ydoc, {});
    docList = ydoc.getMap<yjs.Text>(roomId);
+   console.log(provider.awareness);
 }
 
 function leaveCollabRoom() {
@@ -236,8 +245,8 @@ function leaveCollabRoom() {
    monacoBinding = null;
 }
 
-function bindCollaborativeModel(model: monaco.editor.ITextModel
-) {
+function bindCollaborativeModel(model: monaco.editor.ITextModel) {
+   console.log(`Binding collab model to ${model.uri.path}`);
    if (!provider) return;
    if (!ydoc) return;
    let ytext = docList?.get(model.uri.path);
@@ -251,26 +260,10 @@ function bindCollaborativeModel(model: monaco.editor.ITextModel
    monacoBinding = new MonacoBinding(
       ytext,
       model,
-      new Set([editorInstance]),
-      provider.awareness
+      new Set([editorInstance])
+      //provider.awareness
    );
 }
-
-socket.on("room:update", () => {
-   if (currentModel) {
-      bindCollaborativeModel(currentModel);
-   }
-});
-
-socket.on("result:user:createRoom", (data) => {
-   if (!data.result) return;
-   joinCollabRoom(data.result.roomId);
-});
-
-socket.on("result:user:joinRoom", (data) => {
-   if (!data.result) return;
-   joinCollabRoom(data.result.roomId);
-});
 
 socket.on("result:user:leaveRoom", (data) => {
    if (!data.result) return;
@@ -281,7 +274,8 @@ const collabCursorManager = new RemoteCursorManager({
    editor: editorInstance,
    tooltips: true,
    tooltipDuration: 2,
-   showTooltipOnHover: true,
+   showTooltipOnHover: false,
+   tooltipClassName: "primary-color-text"
 });
 
 const collabUserCursors = new Map<
@@ -346,8 +340,8 @@ socket.on("result:user:editor:insert", (data) => {
    console.log(data);
 
    // Sync contents
-   if (data.result.path != currentModel.uri.path) {
-      let model = monaco.editor.getModel(monaco.Uri.parse(data.result.path));
+   if (data.result.source != currentModel.uri.path) {
+      let model = monaco.editor.getModel(monaco.Uri.parse(data.result.source));
       if (model) {
          model.setValue(data.result.content);
       }
@@ -360,8 +354,8 @@ socket.on("result:user:editor:delete", (data) => {
    if (!currentModel) return;
 
    // Sync contents
-   if (data.result.path != currentModel.uri.path) {
-      let model = monaco.editor.getModel(monaco.Uri.parse(data.result.path));
+   if (data.result.source != currentModel.uri.path) {
+      let model = monaco.editor.getModel(monaco.Uri.parse(data.result.source));
       if (model) {
          model.setValue(data.result.content);
       }
@@ -374,8 +368,8 @@ socket.on("result:user:editor:replace", (data) => {
    if (!currentModel) return;
 
    // Sync contents
-   if (data.result.path != currentModel.uri.path) {
-      let model = monaco.editor.getModel(monaco.Uri.parse(data.result.path));
+   if (data.result.source != currentModel.uri.path) {
+      let model = monaco.editor.getModel(monaco.Uri.parse(data.result.source));
       if (model) {
          model.setValue(data.result.content);
       }
@@ -385,8 +379,6 @@ socket.on("result:user:editor:replace", (data) => {
 watch(
    () => props.room?.users,
    (users = []) => {
-      if (currentModel) {
-      }
       for (let user of users) {
          if (!collabUserCursors.has(user.id) && user.id !== socket.id) {
             // Add cursor for new users
@@ -400,10 +392,10 @@ watch(
             // Add selection for new users
             let userSelection = collabSelectionManager.addSelection(
                user.id,
-               user.color,
-               user.name
+               user.color
             );
             collabUserSelections.set(user.id, userSelection);
+            userSelection.hide();
          }
       }
 
@@ -446,25 +438,8 @@ editorInstance.onDidChangeModelContent((event) => {
       );
    }
 
-   // Remove cursor follow delay when client's cursor is typing at other user's cursor's position
-   // If client's cursor's position is equal to other user's cursors' position, we can just update other user's cursors' position by imitating client's cursor position
-   // It's also important to cancel the client's cursor update so that it doesn't go back to its old target position
-   console.log(collabUserCursors);
-   let myPosition = editorInstance.getPosition();
-   if (myPosition) {
-      let myOffset =
-         currentModel.getOffsetAt(myPosition) - event.changes[0].text.length;
-      collabUserCursors.forEach((userCursor) => {
-         let userPosition = userCursor.getPosition();
-         if (!userPosition) return;
-         let userOffset = currentModel!.getOffsetAt(userPosition);
-
-         if (myOffset == userOffset) {
-            userCursor.setOffset(myOffset);
-            doCancelCursorUpdateEmit = true;
-         }
-      });
-   }
+   // Don't update cursors/selections
+   doCancelCursorUpdateEmit = true;
 
    emit("onDidChangeModelContent");
 });
@@ -472,31 +447,49 @@ editorInstance.onDidChangeModelContent((event) => {
 editorInstance.onDidChangeCursorSelection((event) => {
    if (!currentModel) return;
    if (props.room) {
-      const startOffset = currentModel.getOffsetAt(
+      let startOffset = currentModel.getOffsetAt(
          event.selection.getStartPosition()
       );
-      const endOffset = currentModel.getOffsetAt(
+      let endOffset = currentModel.getOffsetAt(
          event.selection.getEndPosition()
       );
-      socket.emit(
-         "user:update:selection",
-         currentModel.uri.path,
-         startOffset,
-         endOffset
-      );
+      if (event.selection.getDirection() == monaco.SelectionDirection.RTL) {
+         [startOffset, endOffset] = [endOffset, startOffset];
+      }
+
+      if (!doCancelCursorUpdateEmit || startOffset == endOffset) {
+         socket.emit(
+            "user:update:selection",
+            currentModel.uri.path,
+            startOffset,
+            endOffset
+         );
+      }
    }
+
+   doCancelCursorUpdateEmit = false;
 });
 
 socket.on("result:user:update:selection", (data) => {
    if (!currentModel) return;
    if (!data.result) return;
    let userSelection = collabUserSelections.get(data.result.userId);
-   if (!userSelection) return;
-   if (data.result.path === currentModel.uri.path) {
+   let userCursor = collabUserCursors.get(data.result.userId);
+   if (!userSelection || !userCursor) return;
+   if (data.result.source === currentModel.uri.path) {
+      userCursor.setOffset(data.result.endOffset);
       userSelection.setOffsets(data.result.startOffset, data.result.endOffset);
+      userCursor.show();
       userSelection.show();
    } else {
+      userCursor.hide();
       userSelection.hide();
+   }
+
+   if (data.result.startOffset == data.result.endOffset) {
+      userSelection.hide();
+   } else {
+      userSelection.show();
    }
 });
 
@@ -507,26 +500,6 @@ editorInstance.onDidChangeCursorPosition((event) => {
    if (modelMapModel) {
       modelMapModel.position = event.position;
    }
-
-   if (props.room && !doCancelCursorUpdateEmit) {
-      const offset = currentModel.getOffsetAt(event.position);
-      socket.emit("user:update:cursorPosition", currentModel.uri.path, offset);
-   }
-
-   doCancelCursorUpdateEmit = false;
-});
-
-socket.on("result:user:update:cursorPosition", (data) => {
-   if (!currentModel) return;
-   if (!data.result) return;
-   let userCursor = collabUserCursors.get(data.result.userId);
-   if (!userCursor) return;
-   if (data.result.path === currentModel.uri.path) {
-      userCursor.setOffset(data.result.cursorOffset);
-      userCursor.show();
-   } else {
-      userCursor.hide();
-   }
 });
 
 socket.on("result:user:update:path", (data) => {
@@ -534,7 +507,7 @@ socket.on("result:user:update:path", (data) => {
    if (!data.result) return;
    if (!currentModel) return;
 
-   // Adjust the visibility of remote users' elements based on whether their current model path matches that of the other user
+   // Set the visibility of remote users' cursors based on their current model path
 
    // Cursor element
    collabUserCursors.forEach((userCursor, userCursorId) => {
@@ -554,11 +527,14 @@ socket.on("result:user:update:path", (data) => {
       let userStateInSamePath = data.result!.userStatesInSamePath.find(
          (u) => u.id === userSelectionId
       );
-      if (userStateInSamePath && userStateInSamePath.id !== socket.id) {
-         userSelection.setOffsets(
-            userStateInSamePath.state.selectionOffset?.start || 0,
-            userStateInSamePath.state.selectionOffset?.end || 0
-         );
+      let startOffset = userStateInSamePath?.state.selectionOffset?.start || 0;
+      let endOffset = userStateInSamePath?.state.selectionOffset?.end || 0;
+      if (
+         userStateInSamePath &&
+         userStateInSamePath.id !== socket.id &&
+         startOffset != endOffset
+      ) {
+         userSelection.setOffsets(startOffset, endOffset);
          userSelection.show();
       } else {
          userSelection.hide();
