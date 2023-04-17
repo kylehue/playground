@@ -1,5 +1,5 @@
 <template>
-   <Toast />
+   <Toast  />
    <ConfirmDialog :draggable="false" />
    <!-- New file dialog -->
    <Dialog
@@ -524,8 +524,26 @@ function pushNotification(
    message: string,
    severity: MessageProps["severity"]
 ) {
+   let toastNodes = Array.from(document.querySelectorAll<HTMLDivElement>(".p-toast-message"));
+
+   // Limit messages
+   if (toastNodes.length >= 4) {
+      toast.removeAllGroups();
+   }
+
+   // Only notify if unique
+   for (let toastNode of toastNodes) {
+      let titleNode = toastNode.querySelector<HTMLSpanElement>(".p-toast-summary");
+      let messageNode = toastNode.querySelector<HTMLSpanElement>(".p-toast-detail");
+
+      if (titleNode?.textContent == title && messageNode?.textContent == message) {
+         return;
+      }
+   }
+
+   let additionalTime = Math.min((title.length + message.length) * 20, 5000);
    toast.add({
-      life: severity == "error" ? 15000 : 3000,
+      life: 3000 + additionalTime,
       closable: true,
       severity: severity,
       summary: title,
