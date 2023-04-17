@@ -1,7 +1,13 @@
 import { Socket } from "socket.io";
-import { IRoom, IUser } from "../types";
+import {
+   ClientToServerEvents,
+   IRoom,
+   IUser,
+   ServerToClientEvents,
+} from "../types";
 import { io } from "../setup";
 import rooms, { serializeRoom, Room } from "./rooms";
+import { DefaultEventsMap } from "socket.io/dist/typed-events";
 
 const collabAvailableColors: string[] = [
    "#ff7d7d",
@@ -25,18 +31,46 @@ const collabAvailableColors: string[] = [
    "#ff7df9",
    "#ff7ddc",
    "#ff7db8",
-   "#ff7d97"
+   "#ff7d97",
+];
+
+const collabAvailableIcons: string[] = [
+   "bat",
+   "bee",
+   "bird",
+   "bug",
+   "butterfly",
+   "cat",
+   "cow",
+   "dog",
+   "duck",
+   "dolphin",
+   "fish",
+   "horse-variant",
+   "jellyfish",
+   "koala",
+   "owl",
+   "panda",
+   "paw",
+   "rabbit",
+   "spider",
+   "tortoise"
 ];
 
 export default class User implements IUser {
    public readonly id: string;
    public readonly ip: string;
    public readonly state: IUser["state"];
+   public readonly socket: Socket<ClientToServerEvents, ServerToClientEvents>;
    public color: string;
+   public icon: string;
+   public followers: IUser[];
+   public following: IUser | null;
    private _currentRoom: IRoom | null = null;
    private _name = "";
 
-   constructor(public socket: Socket) {
+   constructor(socket: Socket) {
+      this.socket = socket;
       this.id = socket.id;
 
       let ip: string = "";
@@ -55,6 +89,12 @@ export default class User implements IUser {
          collabAvailableColors[
             Math.floor(Math.random() * collabAvailableColors.length)
          ];
+      this.icon =
+         collabAvailableIcons[
+            Math.floor(Math.random() * collabAvailableIcons.length)
+         ];
+      this.followers = [];
+      this.following = null;
    }
 
    public get name() {
@@ -106,6 +146,20 @@ export default class User implements IUser {
       return room;
    }
 
+   unfollow() {
+      if (!this.following) return;
+
+      for (let i = 0; i < this.following.followers.length; i++) {
+         const follower = this.following.followers[i];
+         if (follower.id === this.id) {
+            this.following.followers.splice(i, 1);
+            break;
+         }
+      }
+
+      this.following = null;
+   }
+
    leave(roomId: string) {
       let room = rooms.get(roomId);
       if (!room) return;
@@ -114,6 +168,7 @@ export default class User implements IUser {
 
       room.users.splice(index, 1);
       this.currentRoom = null;
+      this.unfollow();
 
       if (room.users.length) {
          // If this user is the host of the room, pass the host to someone else

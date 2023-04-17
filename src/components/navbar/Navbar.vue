@@ -32,7 +32,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-folder-open me-2"></i>
-            <b>Projects</b>
+            <h5 class="m-0">Projects</h5>
          </div>
       </template>
       <Projects
@@ -56,7 +56,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-cog me-2"></i>
-            <b>Options</b>
+            <h5 class="m-0">Options</h5>
          </div>
       </template>
       <Options
@@ -76,7 +76,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-plus me-2"></i>
-            <b>Create new project</b>
+            <h5 class="m-0">Create new project</h5>
          </div>
       </template>
       <template #default>
@@ -96,6 +96,7 @@
             :disabled="!state.newProjectName"
             label="Create"
             @click="createProject(state.newProjectName)"
+            text
          ></Button>
       </template>
    </Dialog>
@@ -108,7 +109,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-content-save me-2"></i>
-            <b>Save as...</b>
+            <h5 class="m-0">Save as...</h5>
          </div>
       </template>
       <template #default>
@@ -128,6 +129,7 @@
             :disabled="!state.saveProjectName"
             label="Save"
             @click="saveProject(state.saveProjectName)"
+            text
          ></Button>
       </template>
    </Dialog>
@@ -140,7 +142,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-rename me-2"></i>
-            <b>Rename {{ state.renameProjectOldName }}</b>
+            <h5 class="m-0">Rename {{ state.renameProjectOldName }}</h5>
          </div>
       </template>
       <template #default>
@@ -164,6 +166,7 @@
             @click="
                renameProject(state.renameProjectId, state.renameProjectNewName)
             "
+            text
          ></Button>
       </template>
    </Dialog>
@@ -176,7 +179,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-download me-2"></i>
-            <b>Download Project</b>
+            <h5 class="m-0">Download Project</h5>
          </div>
       </template>
       <template #default>
@@ -199,7 +202,8 @@
          <Button
             label="Download"
             @click="emit('downloadProject', state.downloadType)"
-            :loading="isDownloading"
+            :disabled="isDownloading"
+            text
          ></Button>
       </template>
    </Dialog>
@@ -212,7 +216,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-code-json me-2"></i>
-            <b>Import JSON</b>
+            <h5 class="m-0">Import JSON</h5>
          </div>
       </template>
       <template #default>
@@ -230,8 +234,8 @@
          <Button
             label="Import"
             @click="emit('importJSON', state.importJSONFile)"
-            :loading="isBusy"
-            :disabled="!state.importJSONFile"
+            :disabled="!state.importJSONFile || isBusy"
+            text
          ></Button>
       </template>
    </Dialog>
@@ -244,7 +248,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-account-edit me-2"></i>
-            <b>Set Name</b>
+            <h5 class="m-0">Set Name</h5>
          </div>
       </template>
       <template #default>
@@ -264,6 +268,7 @@
             label="Set"
             @click="setUsername(roomState.username)"
             :disabled="!roomState.username"
+            text
          ></Button>
       </template>
    </Dialog>
@@ -276,59 +281,62 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-plus-box-outline me-2"></i>
-            <b>Create Room</b>
+            <h5 class="m-0">Create Room</h5>
          </div>
       </template>
       <template #default>
-         <div class="p-inputgroup flex-1">
-            <Button
-               icon="mdi mdi-shuffle-variant"
-               @click="generateRandomRoomId"
-               :loading="
-                  roomState.isBusyGeneratingRandomId ||
-                  roomState.isBusyCreatingRoom
-               "
-            ></Button>
-            <InputText
-               id="roomIdInput"
-               type="text"
-               placeholder="Room ID"
-               spellcheck="false"
-               autocomplete="off"
-               class="w-100"
-               :disabled="
-                  roomState.isBusyGeneratingRandomId ||
-                  roomState.isBusyCreatingRoom
-               "
-               v-model="roomState.createRoomId"
-               v-focus
-               @keypress.enter="createRoom(roomState.createRoomId)"
-            ></InputText>
-            <Button
-               icon="mdi mdi-content-copy"
-               :disabled="
-                  !roomState.createRoomId ||
-                  roomState.isBusyGeneratingRandomId ||
-                  roomState.isBusyCreatingRoom
-               "
-               @click="copyRoomId"
-            ></Button>
-         </div>
+         <InputText
+            id="roomIdInput"
+            type="text"
+            placeholder="Room ID"
+            spellcheck="false"
+            autocomplete="off"
+            class="w-100"
+            :disabled="
+               roomState.isBusyGeneratingRandomId ||
+               roomState.isBusyCreatingRoom
+            "
+            v-model="roomState.createRoomId"
+            v-focus
+            @keypress.enter="createRoom(roomState.createRoomId)"
+         ></InputText>
+         <div class="p-inputgroup flex-1"></div>
          <small v-if="!!roomState.createRoomErrorMessage" class="text-danger">{{
             roomState.createRoomErrorMessage
          }}</small>
       </template>
       <template #footer>
          <Button
-            label="Create & Join"
+            label="Randomize"
+            @click="generateRandomRoomId"
+            :disabled="
+               roomState.isBusyGeneratingRandomId ||
+               roomState.isBusyCreatingRoom
+            "
+            plain
+            text
+         ></Button>
+         <Button
+            label="Copy"
+            :disabled="
+               !roomState.createRoomId ||
+               roomState.isBusyGeneratingRandomId ||
+               roomState.isBusyCreatingRoom
+            "
+            @click="copyRoomId"
+            plain
+            text
+         ></Button>
+         <Button
+            label="Create"
             @click="createRoom(roomState.createRoomId)"
-            :loading="roomState.isBusyCreatingRoom"
             :disabled="
                !roomState.createRoomId ||
                roomState.isBusyGeneratingRandomId ||
                roomState.isBusyCreatingRoom ||
                props.isBusy
             "
+            text
          ></Button>
       </template>
    </Dialog>
@@ -341,7 +349,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-login me-2"></i>
-            <b>Join Room</b>
+            <h5 class="m-0">Join Room</h5>
          </div>
       </template>
       <template #default>
@@ -366,7 +374,7 @@
                roomState.isBusyJoiningRoom ||
                props.isBusy
             "
-            :loading="roomState.isBusyJoiningRoom"
+            text
          ></Button>
       </template>
    </Dialog>
@@ -377,7 +385,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-account-group me-2"></i>
-            <b>Collaborators — {{ room?.users.length || 0 }}</b>
+            <h5 class="m-0">Collaborators — {{ room?.users.length || 0 }}</h5>
          </div>
       </template>
       <template #default>
@@ -387,13 +395,14 @@
             @openSetNameDialogWithTargetUserId="
                openSetNameDialogWithTargetUserId
             "
+            @push-notification="(...args) => emit('pushNotification', ...args)"
          ></UserList>
       </template>
    </Sidebar>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onUnmounted } from "vue";
+import { ref, reactive, watch, onUnmounted, nextTick } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import Projects from "@app/components/navbar/Projects.vue";
 import Options from "@app/components/options/Options.vue";
@@ -592,8 +601,41 @@ watch(
    }
 );
 
+function confirmDiscardChanges(title: string) {
+   return new Promise(async (resolve) => {
+      if (currentProjectIsSaved() || currentProjectIsEmpty()) {
+         resolve(true);
+         return;
+      }
+
+      await nextTick();
+
+      confirm.require({
+         message:
+            "The current project is not yet saved. Do you want to discard changes?",
+         header: title,
+         icon: "mdi mdi-alert",
+         acceptClass: "p-button-danger",
+         accept() {
+            resolve(true);
+         },
+         reject() {
+            resolve(false);
+         },
+         onHide() {
+            resolve(false);
+         },
+      });
+   });
+}
+
 // Joining rooms
-function joinRoom(roomId: string) {
+async function joinRoom(roomId: string, doConfirmDiscard = true) {
+   if (doConfirmDiscard) {
+      let doConfirm = await confirmDiscardChanges("Join Room");
+      if (!doConfirm) return;
+   }
+   
    console.log("Joining room: " + roomId);
    if (!roomId) return;
    let url = location.protocol + "//" + join(location.host, "app/");
@@ -625,7 +667,7 @@ watch(
 );
 
 if (route.params.roomId) {
-   joinRoom(route.params.roomId as string);
+   joinRoom(route.params.roomId as string, false);
 }
 
 socket.on("result:user:leaveRoom", (data) => {
@@ -651,7 +693,7 @@ function copyRoomId() {
          "//" +
          join(location.host, "app", roomState.createRoomId);
       navigator.clipboard.writeText(roomURL);
-      emit("pushNotification", "Copied to clipboard", "", "info")
+      emit("pushNotification", "Copied to clipboard", "", "info");
    }
 }
 
@@ -667,8 +709,12 @@ function currentProjectIsSaved() {
 function currentProjectIsEmpty() {
    // Check if empty
    let temp = storage.getTempProject();
-   let currentProjectIsEmpty = !temp?.files?.length && !temp?.packages?.length;
-   return currentProjectIsEmpty;
+   let isEmpty = !temp?.files?.length && !temp?.packages?.length;
+
+   // Consider as empty if it contains an empty /index.js file
+   let starterFile = temp?.files?.[0];
+   let isFresh = temp?.files?.length == 1 && !temp?.packages?.length && starterFile?.source == "/index.js" && !starterFile?.content;
+   return isEmpty || isFresh;
 }
 
 const menuBar = ref<InstanceType<typeof Menubar>>();
@@ -693,22 +739,10 @@ const navbarItems = reactive<MenuItem[]>([
             key: "newProject",
             label: "New",
             icon: "mdi mdi-plus",
-            command: () => {
-               // If not saved...
-               if (!currentProjectIsSaved() && !currentProjectIsEmpty()) {
-                  confirm.require({
-                     message:
-                        "The current project is not yet saved. Do you want to discard changes and create a new project?",
-                     header: `New project`,
-                     icon: "mdi mdi-alert",
-                     acceptClass: "p-button-danger",
-                     accept() {
-                        emit("newProject");
-                     },
-                  });
-               } else {
-                  emit("newProject");
-               }
+            command: async () => {
+               let doConfirm = await confirmDiscardChanges("New Project");
+               if (!doConfirm) return;
+               emit("newProject");
             },
             disabled: props.isBusy,
          },
@@ -763,7 +797,7 @@ const navbarItems = reactive<MenuItem[]>([
          {
             key: "createRoom",
             label: "Create room",
-            icon: "mdi mdi-plus-box-outline",
+            icon: "mdi mdi-plus",
             command: () => {
                roomState.showCreateRoomDialog = true;
             },
@@ -964,23 +998,11 @@ function createProject(projectName: string) {
    state.newProjectName = "";
 }
 
-function openProject(projectId: string) {
+async function openProject(projectId: string) {
    if (!projectId) return;
-
-   if (!currentProjectIsSaved() && !currentProjectIsEmpty()) {
-      confirm.require({
-         message:
-            "The current project is not yet saved. Do you want to discard changes?",
-         header: `Open project`,
-         icon: "mdi mdi-alert",
-         acceptClass: "p-button-danger",
-         accept() {
-            emit("openProject", projectId);
-         },
-      });
-   } else {
-      emit("openProject", projectId);
-   }
+   let doConfirm = await confirmDiscardChanges("Open Project");
+   if (!doConfirm) return;
+   emit("openProject", projectId);
 }
 </script>
 

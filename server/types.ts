@@ -6,10 +6,11 @@ import type typescriptOptions from "@app/options/typescript";
 export interface IUser {
    id: Readonly<string>;
    ip: Readonly<string>;
-   socket: Readonly<Socket>;
+   socket: Readonly<Socket<ClientToServerEvents, ServerToClientEvents>>;
    name: string;
    currentRoom: IRoom | null;
    color: string;
+   icon: string;
    state: {
       path?: string;
       cursorOffset?: number;
@@ -18,6 +19,8 @@ export interface IUser {
          end: number;
       };
    };
+   followers: IUser[];
+   following: IUser | null;
 }
 
 export interface IFile {
@@ -104,6 +107,14 @@ export interface ServerToClientEvents {
       }>
    ) => void;
    "room:update": (serializedRoom: string | null) => void;
+   "result:user:followUser": (
+      data: IResultData<{
+         /**
+          * The path of the user that is getting followed.
+          */
+         path: string;
+      }>
+   ) => void;
    "result:room:createOrUpdateFile": (
       data: IResultData<{ source: string; content: string }>
    ) => void;
@@ -138,6 +149,12 @@ export interface ClientToServerEvents {
    ) => void;
    "user:update:path": (source: string) => void;
    "user:edit": (source: string, content: string) => void;
+   /**
+    *
+    * @param userId The id of the user to follow.
+    */
+   "user:followUser": (userId: string) => void;
+   "user:unfollow": () => void;
    "room:createOrUpdateFile": (source: string, content: string) => void;
    "room:removeFile": (source: string) => void;
    "room:addPackage": (name: string, version: string) => void;

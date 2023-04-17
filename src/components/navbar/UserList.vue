@@ -5,7 +5,7 @@
          :itemSize="itemHeight + gapSize"
          class="d-flex w-100 h-100"
       >
-         <template #item="{ item: user }: { item: IUser }">
+         <template #item="{ item: user }">
             <Button
                class="d-flex user-wrapper w-100 text-start text-truncate"
                :style="{
@@ -21,23 +21,28 @@
                <span
                   class="user-icon d-flex flex-shrink-0 align-items-center justify-content-center me-3 p-button-icon p-button-icon-left"
                   :style="{
-                     'background-color': user.color,
+                     'border-color': user.color,
+                     color: user.color,
                   }"
                >
-                  <span class="mdi mdi-account"></span>
+                  <span :class="'mdi mdi-' + user.icon"></span>
                </span>
 
                <span class="p-button-label">{{ user.name }}</span>
-               <Badge
-                  v-if="user.id === modelValue.hostId"
-                  value="host"
-                  severity="danger"
-               ></Badge>
-               <Badge
-                  v-if="user.id === socket.id"
-                  value="you"
-                  severity="warning"
-               ></Badge>
+               <TransitionGroup name="bounce">
+                  <i
+                     v-if="user.id === socket.id"
+                     class="mdi mdi-account"
+                     v-tooltip="'You'"
+                     key="you"
+                  ></i>
+                  <i
+                     v-if="user.id === modelValue.hostId"
+                     class="mdi mdi-crown text-warning"
+                     v-tooltip="'Host'"
+                     key="host"
+                  ></i>
+               </TransitionGroup>
             </Button>
          </template>
       </VirtualScroller>
@@ -48,26 +53,23 @@
 <script setup lang="ts">
 import ContextMenu from "primevue/contextmenu";
 import VirtualScroller from "primevue/virtualscroller";
-import Badge from "primevue/badge";
 import Button from "primevue/button";
-import { IRoom, IUser, IResultData } from "@server/types";
+import { IRoom } from "@server/types";
 import { reactive, ref } from "vue";
 import { MenuItem } from "primevue/menuitem";
 import { socket } from "@app/socket";
-import { useToast } from "primevue/usetoast";
 const props = defineProps<{
    modelValue: IRoom;
 }>();
 
 const emit = defineEmits<{
    (e: "openSetNameDialogWithTargetUserId", userId: string): void;
+   (e: "pushNotification", ...args: any): void;
 }>();
 
 const state = reactive({
    clickedUserId: "",
 });
-
-const toast = useToast();
 
 const itemHeight = 50;
 const gapSize = 5;
@@ -80,13 +82,12 @@ socket.on("result:user:transferHost", (data) => {
    );
 
    if (!hostingUser) return;
-
-   toast.add({
-      life: 3000,
-      severity: "success",
-      summary: "Transfer Host",
-      detail: `${hostingUser.name} is now the host.`,
-   });
+   emit(
+      "pushNotification",
+      "Transfer Host",
+      `${hostingUser.name} is now the host.`,
+      "success"
+   );
 });
 
 function showMenu(event, clickedUserId: string) {
@@ -102,11 +103,15 @@ function showMenu(event, clickedUserId: string) {
    let isSelf = clickedUser.id == socket.id;
    let isHost = socket.id == props.modelValue.hostId;
 
-   menuModel.push({
-      label: "Follow",
-      icon: "mdi mdi-account-arrow-left",
-      command: () => {},
-   });
+   if (!isSelf) {
+      menuModel.push({
+         label: "Follow",
+         icon: "mdi mdi-target-account",
+         command: () => {
+            socket.emit("user:followUser", clickedUser.id);
+         },
+      });
+   }
 
    // Show set name if the clicked user is themself or the room host
    if (isSelf || isHost) {
@@ -155,10 +160,11 @@ function showMenu(event, clickedUserId: string) {
 
 <style lang="scss" scoped>
 .user-icon {
-   border-radius: 15px;
+   border-radius: 50%;
    overflow: hidden;
    width: 30px;
    height: 30px;
-   color: var(--primary-color-text) !important;
+   border: 2px solid;
+   background-color: transparent;
 }
 </style>

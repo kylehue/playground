@@ -1,6 +1,6 @@
 <template>
    <Toast  />
-   <ConfirmDialog :draggable="false" />
+   <ConfirmDialog :draggable="false" style="max-width: 600px;" />
    <!-- New file dialog -->
    <Dialog
       v-model:visible="state.showNewFileDialog"
@@ -12,7 +12,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-plus me-2"></i>
-            <b>Create new file</b>
+            <h5 class="m-0">Create new file</h5>
          </div>
       </template>
       <InputText
@@ -30,6 +30,7 @@
             label="Create"
             :disabled="!state.newFileDialogPath"
             @click="createFile(state.newFileDialogPath)"
+            text
          />
       </template>
    </Dialog>
@@ -44,7 +45,7 @@
       <template #header>
          <div class="d-flex align-items-center">
             <i class="mdi mdi-plus me-2"></i>
-            <b>Add Packages</b>
+            <h5 class="m-0">Add Packages</h5>
          </div>
       </template>
       <div class="d-flex flex-row">
@@ -98,6 +99,7 @@
                   state.selectedPackageVersion?.value!
                )
             "
+            text
          />
       </template>
    </Dialog>
@@ -337,7 +339,7 @@ socket.on("room:update", (serializedRoom) => {
       ? flatted.parse(serializedRoom)
       : null;
 
-   room?.users.sort((a, b) => a.name.localeCompare(b.name));
+   room?.users.sort((a, b) => a.id === socket.id ? -1 : a.name.localeCompare(b.name));
    roomState.room = room;
    console.log(room);
 });
@@ -483,8 +485,8 @@ watch(
    }
 );
 
-async function confirmLeaveCurrentRoom() {
-   return await new Promise(async (resolve) => {
+function confirmLeaveCurrentRoom() {
+   return new Promise(async (resolve) => {
       console.log(!roomState.room);
       
       if (!roomState.room) {

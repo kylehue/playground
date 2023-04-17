@@ -165,7 +165,11 @@ function addDts(pkgName: string, content: string) {
    );
 }
 
-function setModel(path: string) {
+function setModel(path: string, unfollow = true) {
+   if (unfollow && props.room) {
+      socket.emit("user:unfollow");
+   }
+
    let uri = monaco.Uri.parse(path);
    let model = monaco.editor.getModel(uri);
 
@@ -176,6 +180,11 @@ function setModel(path: string) {
 
    return model;
 }
+
+socket.on("result:user:followUser", (data) => {
+   if (!data.result) return;
+   setModel(data.result.path, false);
+});
 
 function createModel(path: string, content = "") {
    let uri = monaco.Uri.parse(path);
@@ -313,15 +322,15 @@ const collabUserElements = new Map<string, collabElement>();
 const collabContentManager = new EditorContentManager({
    editor: editorInstance,
    onInsert() {
-      if (!currentModel) return;
+      if (!currentModel || !props.room) return;
       socket.emit("user:edit", currentModel.uri.path, currentModel.getValue());
    },
    onReplace() {
-      if (!currentModel) return;
+      if (!currentModel || !props.room) return;
       socket.emit("user:edit", currentModel.uri.path, currentModel.getValue());
    },
    onDelete() {
-      if (!currentModel) return;
+      if (!currentModel || !props.room) return;
       socket.emit("user:edit", currentModel.uri.path, currentModel.getValue());
    },
 });
@@ -521,9 +530,9 @@ function updateCollabElements() {
          selectionOffsets.start,
          selectionOffsets.end
       );
-   }
 
-   socket.emit("user:update:path", currentModel.uri.path);
+      socket.emit("user:update:path", currentModel.uri.path);
+   }
 }
 
 editorInstance.onDidChangeModel(function (event) {

@@ -1,6 +1,5 @@
 import { io } from "./setup";
-import { ClientToServerEvents, ServerToClientEvents } from "./types";
-import rooms, { generateRandomRoomId, serializeRoom } from "./utils/rooms";
+import rooms, { generateRandomRoomId } from "./utils/rooms";
 import User from "./utils/User";
 
 io.on("connection", (socket) => {
@@ -154,6 +153,15 @@ io.on("connection", (socket) => {
             userStatesInSamePath,
          },
       });
+
+      // Followers
+      for (let follower of user.followers) {
+         follower.socket.emit("result:user:followUser", {
+            result: {
+               path,
+            },
+         });
+      }
    });
 
    // Content insert
@@ -288,5 +296,19 @@ io.on("connection", (socket) => {
                options,
             },
          });
+   });
+
+   socket.on("user:followUser", (userId) => {
+      if (!user.currentRoom) return;
+      let userToFollow = user.currentRoom.users.find((u) => u.id === userId);
+      if (!userToFollow) return;
+      user.unfollow();
+
+      userToFollow.followers.push(user);
+      user.following = userToFollow;
+   });
+
+   socket.on("user:unfollow", () => {
+      user.unfollow();
    });
 });

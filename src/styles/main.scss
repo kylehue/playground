@@ -110,6 +110,56 @@ body {
    }
 }
 
+.pulse {
+   animation: pulse 1s infinite ease-in-out alternate;
+}
+
+@keyframes pulse {
+   from {
+      transform: scale(0.975);
+   }
+   to {
+      transform: scale(1.025);
+   }
+}
+
+.elastic-spin {
+   animation: elastic-spin 2s infinite ease;
+}
+
+@keyframes elastic-spin {
+   from {
+      transform: rotate(0deg);
+   }
+   to {
+      transform: rotate(720deg);
+   }
+}
+
+.bounce-enter-active {
+   animation: bounce-in 0.2s ease-in-out;
+}
+
+.bounce-leave-active {
+   animation: bounce-in 0.2s ease-in-out reverse;
+}
+
+@keyframes bounce-in {
+   0% {
+      opacity: 0;
+      transform: scale(0.5);
+   }
+   25% {
+      opacity: 1;
+   }
+   50% {
+      transform: scale(1.2);
+   }
+   100% {
+      transform: scale(1);
+   }
+}
+
 img[alt="logo"] {
    pointer-events: none;
    user-select: none;
