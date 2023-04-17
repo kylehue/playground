@@ -60,7 +60,7 @@ io.on("connection", (socket) => {
             roomId: room.id,
             files: room.files,
             packages: room.packages,
-            options: room.options
+            options: room.options,
          },
       });
    });
@@ -107,41 +107,31 @@ io.on("connection", (socket) => {
       }
    });
 
-   // Update cursor position
-   socket.on("user:update:cursorPosition", (path, offset) => {
-      if (!user.currentRoom) return;
-      user.state.cursorOffset = offset;
-      socket.broadcast
-         .in(user.currentRoom.id)
-         .emit("result:user:update:cursorPosition", {
-            result: {
-               userId: user.id,
-               cursorOffset: offset,
-               source: path,
-            },
-         });
-   });
-
    // Update selection
-   socket.on("user:update:selection", (path, startOffset, endOffset) => {
-      if (!user.currentRoom) return;
-      user.state.path = path;
-      user.state.selectionOffset = {
-         start: startOffset,
-         end: endOffset,
-      };
+   socket.on(
+      "user:update:selection",
+      (path, startOffset, endOffset, broadcast = true) => {
+         if (!user.currentRoom) return;
+         user.state.path = path;
+         user.state.selectionOffset = {
+            start: startOffset,
+            end: endOffset,
+         };
 
-      socket.broadcast
-         .in(user.currentRoom.id)
-         .emit("result:user:update:selection", {
-            result: {
-               userId: user.id,
-               source: path,
-               startOffset,
-               endOffset,
-            },
-         });
-   });
+         if (broadcast) {
+            socket.broadcast
+               .in(user.currentRoom.id)
+               .emit("result:user:update:selection", {
+                  result: {
+                     userId: user.id,
+                     source: path,
+                     startOffset,
+                     endOffset,
+                  },
+               });
+         }
+      }
+   );
 
    // Update user path
    socket.on("user:update:path", (path) => {
@@ -165,62 +155,18 @@ io.on("connection", (socket) => {
          },
       });
    });
-   let edits: Parameters<ClientToServerEvents["user:editor:insert"]>[] = [];
 
    // Content insert
-   socket.on("user:editor:insert", (path, index, text, content) => {
-      if (!user.currentRoom) return;
-      edits.push([path, index, text, content]);
-
-      socket.broadcast
-         .in(user.currentRoom.id)
-         .emit("result:user:editor:insert", {
-            result: {
-               source: path,
-               content,
-               specifics: {
-                  index,
-                  text,
-               },
-            },
-         });
-   });
-
-   // Content replace
-   socket.on("user:editor:replace", (path, index, length, text, content) => {
+   socket.on("user:edit", (source, content) => {
       if (!user.currentRoom) return;
 
-      socket.broadcast
-         .in(user.currentRoom.id)
-         .emit("result:user:editor:replace", {
-            result: {
-               source: path,
-               content,
-               specifics: {
-                  index,
-                  text,
-                  length,
-               },
-            },
-         });
-   });
-
-   // Content delete
-   socket.on("user:editor:delete", (path, index, length, content) => {
-      if (!user.currentRoom) return;
-
-      socket.broadcast
-         .in(user.currentRoom.id)
-         .emit("result:user:editor:delete", {
-            result: {
-               source: path,
-               content,
-               specifics: {
-                  index,
-                  length,
-               },
-            },
-         });
+      socket.broadcast.in(user.currentRoom.id).emit("result:user:edit", {
+         result: {
+            userId: user.id,
+            source,
+            content,
+         },
+      });
    });
 
    socket.on("room:createOrUpdateFile", (path, content) => {
@@ -277,7 +223,7 @@ io.on("connection", (socket) => {
 
       user.currentRoom.packages.push({
          name,
-         version
+         version,
       });
 
       socket.broadcast.in(user.currentRoom.id).emit("result:room:addPackage", {

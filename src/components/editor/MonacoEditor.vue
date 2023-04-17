@@ -200,6 +200,27 @@ function getValidModels() {
    return models;
 }
 
+function getOffsets(selection: monaco.Selection) {
+   let result = {
+      start: 0,
+      end: 0
+   };
+
+   if (!currentModel) return result;
+   let start = currentModel.getOffsetAt(
+      selection.getStartPosition()
+   );
+   let end = currentModel.getOffsetAt(selection.getEndPosition());
+   if (selection.getDirection() == monaco.SelectionDirection.RTL) {
+      [start, end] = [end, start];
+   }
+
+   result.start = start;
+   result.end = end;
+
+   return result;
+}
+
 function addToDocs(source: string, content: string) {
    console.log(`Adding ${source} to docs`);
 
@@ -275,69 +296,47 @@ const collabCursorManager = new RemoteCursorManager({
    tooltips: true,
    tooltipDuration: 2,
    showTooltipOnHover: false,
-   tooltipClassName: "primary-color-text"
+   tooltipClassName: "primary-color-text",
 });
-
-const collabUserCursors = new Map<
-   string,
-   ReturnType<typeof collabCursorManager.addCursor>
->();
 
 const collabSelectionManager = new RemoteSelectionManager({
    editor: editorInstance,
 });
 
-const collabUserSelections = new Map<
-   string,
-   ReturnType<typeof collabSelectionManager.addSelection>
->();
+interface collabElement {
+   cursor: ReturnType<RemoteCursorManager["addCursor"]>;
+   selection: ReturnType<RemoteSelectionManager["addSelection"]>;
+}
+
+const collabUserElements = new Map<string, collabElement>();
 
 const collabContentManager = new EditorContentManager({
    editor: editorInstance,
-   onInsert(index, text) {
+   onInsert() {
       if (!currentModel) return;
-      console.log("onInsert");
-      console.log(index, text);
-      socket.emit(
-         "user:editor:insert",
-         currentModel.uri.path,
-         index,
-         text,
-         currentModel.getValue()
-      );
+      socket.emit("user:edit", currentModel.uri.path, currentModel.getValue());
    },
-   onReplace(index, length, text) {
+   onReplace() {
       if (!currentModel) return;
-      console.log("onReplace");
-      console.log(index, length, text);
-      socket.emit(
-         "user:editor:replace",
-         currentModel.uri.path,
-         index,
-         length,
-         text,
-         currentModel.getValue()
-      );
+      socket.emit("user:edit", currentModel.uri.path, currentModel.getValue());
    },
-   onDelete(index, length) {
+   onDelete() {
       if (!currentModel) return;
-      console.log("onDelete");
-      console.log(index, length);
-      socket.emit(
-         "user:editor:delete",
-         currentModel.uri.path,
-         index,
-         length,
-         currentModel.getValue()
-      );
+      socket.emit("user:edit", currentModel.uri.path, currentModel.getValue());
    },
 });
 
 // Collab content insert
-socket.on("result:user:editor:insert", (data) => {
+socket.on("result:user:edit", (data) => {
    if (!data.result) return;
    if (!currentModel) return;
-   console.log(data);
+
+   // Remove selection of the typer
+   let userSelection = collabUserElements.get(data.result.userId)?.selection;
+   if (userSelection) {
+      let endOffset = currentModel.getOffsetAt(userSelection.getEndPosition());
+      userSelection.setOffsets(endOffset, endOffset);
+   }
 
    // Sync contents
    if (data.result.source != currentModel.uri.path) {
@@ -345,33 +344,10 @@ socket.on("result:user:editor:insert", (data) => {
       if (model) {
          model.setValue(data.result.content);
       }
-   }
-});
-
-// Collab content delete
-socket.on("result:user:editor:delete", (data) => {
-   if (!data.result) return;
-   if (!currentModel) return;
-
-   // Sync contents
-   if (data.result.source != currentModel.uri.path) {
-      let model = monaco.editor.getModel(monaco.Uri.parse(data.result.source));
-      if (model) {
-         model.setValue(data.result.content);
-      }
-   }
-});
-
-// Collab content replace
-socket.on("result:user:editor:replace", (data) => {
-   if (!data.result) return;
-   if (!currentModel) return;
-
-   // Sync contents
-   if (data.result.source != currentModel.uri.path) {
-      let model = monaco.editor.getModel(monaco.Uri.parse(data.result.source));
-      if (model) {
-         model.setValue(data.result.content);
+   } else {
+      if (currentModel.getValue() != data.result.content) {
+         console.warn("Content is out of sync! Syncing manually...");
+         bindCollaborativeModel(currentModel);
       }
    }
 });
@@ -379,45 +355,41 @@ socket.on("result:user:editor:replace", (data) => {
 watch(
    () => props.room?.users,
    (users = []) => {
+      // Add cursors for new users
       for (let user of users) {
-         if (!collabUserCursors.has(user.id) && user.id !== socket.id) {
-            // Add cursor for new users
+         if (!collabUserElements.has(user.id) && user.id !== socket.id) {
             let userCursor = collabCursorManager.addCursor(
                user.id,
                user.color,
                user.name
             );
-            collabUserCursors.set(user.id, userCursor);
+            userCursor.setOffset(0);
 
-            // Add selection for new users
             let userSelection = collabSelectionManager.addSelection(
                user.id,
                user.color
             );
-            collabUserSelections.set(user.id, userSelection);
+            userSelection.setOffsets(0, 0);
             userSelection.hide();
+
+            collabUserElements.set(user.id, {
+               cursor: userCursor,
+               selection: userSelection,
+            });
          }
       }
 
       // Remove cursors of users that isn't in the room
-      collabUserCursors.forEach((userCursor, userCursorId) => {
-         let user = users.find((u) => userCursorId === u.id);
+      collabUserElements.forEach((userElement, userId) => {
+         let user = users.find((u) => userId === u.id);
          if (!user) {
-            userCursor.dispose();
-            collabUserCursors.delete(userCursorId);
+            userElement.cursor.dispose();
+            userElement.selection.dispose();
+            collabUserElements.delete(userId);
          } else {
             // Just update properties if it exists
             // Update name
-            userCursor.setTooltipLabel(user.name);
-         }
-      });
-
-      // Remove selections of users that isn't in the room
-      collabUserSelections.forEach((userSelection, userSelectionId) => {
-         let user = users.find((u) => userSelectionId === u.id);
-         if (!user) {
-            userSelection.dispose();
-            collabUserSelections.delete(userSelectionId);
+            userElement.cursor.setTooltipLabel(user.name);
          }
       });
 
@@ -438,7 +410,6 @@ editorInstance.onDidChangeModelContent((event) => {
       );
    }
 
-   // Don't update cursors/selections
    doCancelCursorUpdateEmit = true;
 
    emit("onDidChangeModelContent");
@@ -447,24 +418,16 @@ editorInstance.onDidChangeModelContent((event) => {
 editorInstance.onDidChangeCursorSelection((event) => {
    if (!currentModel) return;
    if (props.room) {
-      let startOffset = currentModel.getOffsetAt(
-         event.selection.getStartPosition()
-      );
-      let endOffset = currentModel.getOffsetAt(
-         event.selection.getEndPosition()
-      );
-      if (event.selection.getDirection() == monaco.SelectionDirection.RTL) {
-         [startOffset, endOffset] = [endOffset, startOffset];
-      }
+      let offsets = getOffsets(event.selection);
 
-      if (!doCancelCursorUpdateEmit || startOffset == endOffset) {
-         socket.emit(
-            "user:update:selection",
-            currentModel.uri.path,
-            startOffset,
-            endOffset
-         );
-      }
+      //console.log("Selection range:", startOffset, endOffset);
+      socket.emit(
+         "user:update:selection",
+         currentModel.uri.path,
+         offsets.start,
+         offsets.end,
+         !doCancelCursorUpdateEmit
+      );
    }
 
    doCancelCursorUpdateEmit = false;
@@ -473,8 +436,9 @@ editorInstance.onDidChangeCursorSelection((event) => {
 socket.on("result:user:update:selection", (data) => {
    if (!currentModel) return;
    if (!data.result) return;
-   let userSelection = collabUserSelections.get(data.result.userId);
-   let userCursor = collabUserCursors.get(data.result.userId);
+   let userElement = collabUserElements.get(data.result.userId);
+   let userSelection = userElement?.selection;
+   let userCursor = userElement?.cursor;
    if (!userSelection || !userCursor) return;
    if (data.result.source === currentModel.uri.path) {
       userCursor.setOffset(data.result.endOffset);
@@ -508,36 +472,24 @@ socket.on("result:user:update:path", (data) => {
    if (!currentModel) return;
 
    // Set the visibility of remote users' cursors based on their current model path
-
-   // Cursor element
-   collabUserCursors.forEach((userCursor, userCursorId) => {
+   collabUserElements.forEach((userElement, userId) => {
       let userStateInSamePath = data.result!.userStatesInSamePath.find(
-         (u) => u.id === userCursorId
+         (u) => u.id === userId
       );
-      if (userStateInSamePath && userStateInSamePath.id !== socket.id) {
-         userCursor.setOffset(userStateInSamePath.state.cursorOffset || 0);
-         userCursor.show();
-      } else {
-         userCursor.hide();
-      }
-   });
 
-   // Selection element
-   collabUserSelections.forEach((userSelection, userSelectionId) => {
-      let userStateInSamePath = data.result!.userStatesInSamePath.find(
-         (u) => u.id === userSelectionId
-      );
+      if (!userStateInSamePath) return;
+      if (userStateInSamePath.id === socket.id) return;
       let startOffset = userStateInSamePath?.state.selectionOffset?.start || 0;
       let endOffset = userStateInSamePath?.state.selectionOffset?.end || 0;
-      if (
-         userStateInSamePath &&
-         userStateInSamePath.id !== socket.id &&
-         startOffset != endOffset
-      ) {
-         userSelection.setOffsets(startOffset, endOffset);
-         userSelection.show();
-      } else {
-         userSelection.hide();
+
+      // Cursor
+      userElement.cursor.setOffset(endOffset);
+      userElement.cursor.show();
+
+      // Selection
+      if (startOffset != endOffset) {
+         userElement.selection.setOffsets(startOffset, endOffset);
+         userElement.selection.show();
       }
    });
 });
@@ -550,20 +502,17 @@ function updateCollabElements() {
       if (position) {
          offset = currentModel.getOffsetAt(position);
       }
-      socket.emit("user:update:cursorPosition", currentModel.uri.path, offset);
 
       let selectionOffsets = {
-         start: 0,
-         end: 0,
+         start: offset,
+         end: offset,
       };
+
       let selection = editorInstance.getSelection();
       if (selection) {
-         selectionOffsets.start = currentModel.getOffsetAt(
-            selection.getStartPosition()
-         );
-         selectionOffsets.end = currentModel.getOffsetAt(
-            selection.getEndPosition()
-         );
+         let offsets = getOffsets(selection);
+         selectionOffsets.start = offsets.start;
+         selectionOffsets.end = offsets.end;
       }
 
       socket.emit(
@@ -591,14 +540,11 @@ editorInstance.onDidChangeModel(function (event) {
          monaco.editor.ScrollType.Immediate
       );
    }
-   // Hide all remote cursors
-   collabUserCursors.forEach((userCursor) => {
-      userCursor.hide();
-   });
 
-   // Hide all remote selections
-   collabUserSelections.forEach((userSelection) => {
-      userSelection.hide();
+   // Hide all remote cursors
+   collabUserElements.forEach((userElement) => {
+      userElement.cursor.hide();
+      userElement.selection.hide();
    });
 
    updateCollabElements();
@@ -627,7 +573,7 @@ emmetJSX(monaco, ["javascript", "typescript"]);
 setupLanguageFormats(props.editorOptions);
 
 (window as any).monaco = monaco;
-onMounted(async () => {
+onMounted(() => {
    editorElement.value?.append(editorParentElement);
    // Dispose the starter model
    // editorInstance.getModel()?.dispose();

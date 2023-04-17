@@ -83,13 +83,6 @@ export interface ServerToClientEvents {
          userId: string;
       }>
    ) => void;
-   "result:user:update:cursorPosition": (
-      data: IResultData<{
-         userId: string;
-         source: string;
-         cursorOffset: number;
-      }>
-   ) => void;
    "result:user:update:path": (
       data: IResultData<{
          userStatesInSamePath: { id: string; state: IUser["state"] }[];
@@ -103,35 +96,11 @@ export interface ServerToClientEvents {
          endOffset: number;
       }>
    ) => void;
-   "result:user:editor:insert": (
+   "result:user:edit": (
       data: IResultData<{
+         userId: string;
          source: string;
          content: string;
-         specifics: {
-            index: number;
-            text: string;
-         };
-      }>
-   ) => void;
-   "result:user:editor:replace": (
-      data: IResultData<{
-         source: string;
-         content: string;
-         specifics: {
-            index: number;
-            length: number;
-            text: string;
-         };
-      }>
-   ) => void;
-   "result:user:editor:delete": (
-      data: IResultData<{
-         source: string;
-         content: string;
-         specifics: {
-            index: number;
-            length: number;
-         };
       }>
    ) => void;
    "room:update": (serializedRoom: string | null) => void;
@@ -161,32 +130,14 @@ export interface ClientToServerEvents {
    "user:joinRoom": (roomId: string) => void;
    "user:createRoom": (roomId: string) => void;
    "user:transferHost": (userId: string) => void;
-   "user:update:cursorPosition": (source: string, offset: number) => void;
    "user:update:selection": (
       source: string,
       startOffset: number,
-      endOffset: number
+      endOffset: number,
+      broadcast?: boolean
    ) => void;
    "user:update:path": (source: string) => void;
-   "user:editor:insert": (
-      source: string,
-      index: number,
-      text: string,
-      content: string
-   ) => void;
-   "user:editor:replace": (
-      source: string,
-      index: number,
-      length: number,
-      text: string,
-      content: string
-   ) => void;
-   "user:editor:delete": (
-      source: string,
-      index: number,
-      length: number,
-      content: string
-   ) => void;
+   "user:edit": (source: string, content: string) => void;
    "room:createOrUpdateFile": (source: string, content: string) => void;
    "room:removeFile": (source: string) => void;
    "room:addPackage": (name: string, version: string) => void;
