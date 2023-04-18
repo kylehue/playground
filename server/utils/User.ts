@@ -157,6 +157,16 @@ export default class User implements IUser {
          }
       }
 
+      // Emit event
+      this.socket.emit("result:user:unfollow", {
+         result: {
+            user: {
+               id: this.following.id,
+               name: this.following.name
+            }
+         }
+      });
+
       this.following = null;
    }
 

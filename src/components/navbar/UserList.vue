@@ -60,6 +60,7 @@ import { MenuItem } from "primevue/menuitem";
 import { socket } from "@app/socket";
 const props = defineProps<{
    modelValue: IRoom;
+   followingUserId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -76,20 +77,6 @@ const gapSize = 5;
 const menu = ref<InstanceType<typeof ContextMenu>>();
 const menuModel = reactive<MenuItem[]>([]);
 
-socket.on("result:user:transferHost", (data) => {
-   const hostingUser = props.modelValue.users.find(
-      (u) => u.id === data.result?.userId || ""
-   );
-
-   if (!hostingUser) return;
-   emit(
-      "pushNotification",
-      "Transfer Host",
-      `${hostingUser.name} is now the host.`,
-      "success"
-   );
-});
-
 function showMenu(event, clickedUserId: string) {
    if (!event || !clickedUserId) return;
    const clickedUser = props.modelValue.users.find(
@@ -104,13 +91,25 @@ function showMenu(event, clickedUserId: string) {
    let isHost = socket.id == props.modelValue.hostId;
 
    if (!isSelf) {
-      menuModel.push({
-         label: "Follow",
-         icon: "mdi mdi-target-account",
-         command: () => {
-            socket.emit("user:followUser", clickedUser.id);
-         },
-      });
+      console.log(props.followingUserId, clickedUser.id);
+      
+      if (props.followingUserId == clickedUser.id) {
+         menuModel.push({
+            label: "Unfollow",
+            icon: "mdi mdi-target-account",
+            command: () => {
+               socket.emit("user:unfollow");
+            },
+         });
+      } else {
+         menuModel.push({
+            label: "Follow",
+            icon: "mdi mdi-target-account",
+            command: () => {
+               socket.emit("user:followUser", clickedUser.id);
+            },
+         });
+      }
    }
 
    // Show set name if the clicked user is themself or the room host
@@ -134,7 +133,7 @@ function showMenu(event, clickedUserId: string) {
          },
       });
 
-      if (props.modelValue.bannedIps.includes(clickedUser.ip)) {
+      /* if (props.modelValue.bannedIps.includes(clickedUser.ip)) {
          menuModel.push({
             label: "Remove ban",
             icon: "mdi mdi-account-lock-open",
@@ -145,9 +144,13 @@ function showMenu(event, clickedUserId: string) {
             label: "Ban",
             icon: "mdi mdi-gavel",
             class: "text-danger",
-            command: () => {},
+            command: () => {
+               if (process.env.NODE_ENV == "development") {
+                  props.modelValue.bannedIps.push(clickedUser.ip);
+               }
+            },
          });
-      }
+      } */
    }
 
    if (menuModel.length) {

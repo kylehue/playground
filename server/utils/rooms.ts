@@ -46,6 +46,7 @@ export function serializeRoom(room: IRoom) {
 }
 
 export class Room implements IRoom {
+   public readonly creatorId: string;
    public readonly id: string;
    private _hostId: string;
    public users: IUser[];
@@ -55,6 +56,7 @@ export class Room implements IRoom {
    public options: { bundler?: any; babel?: any; typescript?: any; };
    constructor(id: string, hostId: string) {
       this.id = id;
+      this.creatorId = hostId;
       this._hostId = hostId;
       this.users = [];
       this.bannedIps = [];

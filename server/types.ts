@@ -34,9 +34,10 @@ export interface IPackage {
 }
 
 export interface IRoom {
-   hostId: string;
+   creatorId: Readonly<string>;
+   hostId: Readonly<string>;
+   id: Readonly<string>;
    bannedIps: string[];
-   id: string;
    users: IUser[];
    files: IFile[];
    packages: IPackage[];
@@ -53,6 +54,7 @@ export interface IResultData<ResultType> {
 }
 
 export interface ServerToClientEvents {
+   "result:user:runProject": (isHardRun: boolean) => void;
    "result:user:leaveRoom": (
       data: IResultData<{
          roomId: string;
@@ -74,6 +76,30 @@ export interface ServerToClientEvents {
          files: IFile[];
          packages: IPackage[];
          options: IRoom["options"];
+      }>
+   ) => void;
+   "result:user:follower": (
+      data: IResultData<{
+         user: {
+            id: string;
+            name: string;
+         };
+      }>
+   ) => void;
+   "result:user:unfollow": (
+      data: IResultData<{
+         user: {
+            id: string;
+            name: string;
+         };
+      }>
+   ) => void;
+   "result:user:followerHost": (
+      data: IResultData<{
+         user: {
+            id: string;
+            name: string;
+         };
       }>
    ) => void;
    "result:user:createRoom": (
@@ -107,7 +133,15 @@ export interface ServerToClientEvents {
       }>
    ) => void;
    "room:update": (serializedRoom: string | null) => void;
-   "result:user:followUser": (
+   "room:newUser": (
+      data: IResultData<{
+         user: {
+            id: string;
+            name: string;
+         };
+      }>
+   ) => void;
+   "result:user:followPath": (
       data: IResultData<{
          /**
           * The path of the user that is getting followed.
@@ -119,6 +153,12 @@ export interface ServerToClientEvents {
       data: IResultData<{ source: string; content: string }>
    ) => void;
    "result:room:removeFile": (data: IResultData<{ source: string }>) => void;
+   "result:room:renameFile": (
+      data: IResultData<{
+         fromPath: string;
+         toPath: string;
+      }>
+   ) => void;
    "result:room:addPackage": (
       data: IResultData<{ name: string; version: string }>
    ) => void;
@@ -135,6 +175,7 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+   "user:runProject": (isHardRun?: boolean) => void;
    "user:leave": () => void;
    "user:updateName": (userId: string, newName: string) => void;
    "user:generateRandomRoomId": () => void;
@@ -157,6 +198,7 @@ export interface ClientToServerEvents {
    "user:unfollow": () => void;
    "room:createOrUpdateFile": (source: string, content: string) => void;
    "room:removeFile": (source: string) => void;
+   "room:renameFile": (from: string, to: string) => void;
    "room:addPackage": (name: string, version: string) => void;
    "room:removePackage": (name: string) => void;
    "room:updateBabelOptions": (options: typeof babelOptions) => void;

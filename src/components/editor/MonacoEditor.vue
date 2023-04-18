@@ -181,7 +181,7 @@ function setModel(path: string, unfollow = true) {
    return model;
 }
 
-socket.on("result:user:followUser", (data) => {
+socket.on("result:user:followPath", (data) => {
    if (!data.result) return;
    setModel(data.result.path, false);
 });
@@ -581,7 +581,7 @@ emmetCSS(monaco, ["css", "scss"]);
 emmetJSX(monaco, ["javascript", "typescript"]);
 setupLanguageFormats(props.editorOptions);
 
-(window as any).monaco = monaco;
+if (process.env.NODE_ENV == "development") (window as any).monaco = monaco;
 onMounted(() => {
    editorElement.value?.append(editorParentElement);
    // Dispose the starter model

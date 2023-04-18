@@ -62,6 +62,15 @@ io.on("connection", (socket) => {
             options: room.options,
          },
       });
+
+      socket.broadcast.in(room.id).emit("room:newUser", {
+         result: {
+            user: {
+               id: user.id,
+               name: user.name,
+            },
+         },
+      });
    });
 
    socket.on("user:createRoom", (roomId) => {
@@ -156,7 +165,7 @@ io.on("connection", (socket) => {
 
       // Followers
       for (let follower of user.followers) {
-         follower.socket.emit("result:user:followUser", {
+         follower.socket.emit("result:user:followPath", {
             result: {
                path,
             },
@@ -224,6 +233,25 @@ io.on("connection", (socket) => {
                },
             });
       }
+   });
+
+   socket.on("room:renameFile", (fromPath, toPath) => {
+      if (!user.currentRoom) return;
+
+      for (let i = 0; i < user.currentRoom.files.length; i++) {
+         const file = user.currentRoom.files[i];
+         if (file.source === fromPath) {
+            file.source = toPath;
+            break;
+         }
+      }
+
+      socket.broadcast.in(user.currentRoom.id).emit("result:room:renameFile", {
+         result: {
+            fromPath,
+            toPath,
+         },
+      });
    });
 
    socket.on("room:addPackage", (name, version) => {
@@ -306,9 +334,43 @@ io.on("connection", (socket) => {
 
       userToFollow.followers.push(user);
       user.following = userToFollow;
+
+      socket.emit("result:user:follower", {
+         result: {
+            user: {
+               id: userToFollow.id,
+               name: userToFollow.name,
+            },
+         },
+      });
+
+      if (userToFollow.state.path) {
+         socket.emit("result:user:followPath", {
+            result: {
+               path: userToFollow.state.path,
+            },
+         });
+      }
+
+      userToFollow.socket.emit("result:user:followerHost", {
+         result: {
+            user: {
+               id: user.id,
+               name: user.name,
+            },
+         },
+      });
    });
 
    socket.on("user:unfollow", () => {
       user.unfollow();
+   });
+
+   socket.on("user:runProject", (isHardRun) => {
+      if (!user.currentRoom) return;
+
+      socket.broadcast
+         .in(user.currentRoom.id)
+         .emit("result:user:runProject", !!isHardRun);
    });
 });

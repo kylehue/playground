@@ -16,7 +16,7 @@
                :icon="!isBusy ? 'mdi mdi-play' : 'pi pi-spinner pi-spin'"
                :model="runButtonMenuItems"
                :disabled="isBusy"
-               @click="emit('runProject')"
+               @click="runProject()"
             >
             </SplitButton>
          </template>
@@ -396,6 +396,7 @@
                openSetNameDialogWithTargetUserId
             "
             @push-notification="(...args) => emit('pushNotification', ...args)"
+            :followingUserId="followingUserId"
          ></UserList>
       </template>
    </Sidebar>
@@ -439,6 +440,7 @@ const props = defineProps<{
    room: IRoom | null;
    downloadStatus?: string;
    isDownloading?: boolean;
+   followingUserId?: string;
 }>();
 
 const state = reactive({
@@ -513,6 +515,14 @@ function setUsername(username: string, userId = roomState.setNameTargetUserId) {
 
    roomState.showSetNameDialog = false;
    roomState.setNameTargetUserId = socket.id;
+}
+
+function runProject(isHardRun = false) {
+   if (props.room) {
+      socket.emit("user:runProject", isHardRun);
+   }
+
+   emit("runProject", isHardRun);
 }
 
 socket.on("result:user:updateName", (data) => {
@@ -635,7 +645,7 @@ async function joinRoom(roomId: string, doConfirmDiscard = true) {
       let doConfirm = await confirmDiscardChanges("Join Room");
       if (!doConfirm) return;
    }
-   
+
    console.log("Joining room: " + roomId);
    if (!roomId) return;
    let url = location.protocol + "//" + join(location.host, "app/");
@@ -713,7 +723,11 @@ function currentProjectIsEmpty() {
 
    // Consider as empty if it contains an empty /index.js file
    let starterFile = temp?.files?.[0];
-   let isFresh = temp?.files?.length == 1 && !temp?.packages?.length && starterFile?.source == "/index.js" && !starterFile?.content;
+   let isFresh =
+      temp?.files?.length == 1 &&
+      !temp?.packages?.length &&
+      starterFile?.source == "/index.js" &&
+      !starterFile?.content;
    return isEmpty || isFresh;
 }
 
@@ -724,7 +738,7 @@ const runButtonMenuItems = [
       label: "Hard run",
       icon: "mdi mdi-play",
       command: () => {
-         emit("runProject", true);
+         runProject(true);
       },
    },
 ];

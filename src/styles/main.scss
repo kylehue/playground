@@ -175,6 +175,39 @@ img[alt="logo"] {
    line-height: 0;
 }
 
+.p-toast {
+   opacity: 1 !important;
+}
+
+.p-toast-message {
+   background: var(--surface-card) !important;
+   color: var(--text-color) !important;
+
+   .p-toast-icon-close {
+      color: var(--surface-300) !important;
+
+      &:hover {
+         background: rgba(255, 255, 255, 0.1) !important;
+      }
+   }
+}
+
+.p-toast-message-warning .p-toast-message-icon {
+   color: var(--bs-warning) !important;
+}
+
+.p-toast-message-info .p-toast-message-icon {
+   color: var(--bs-info) !important;
+}
+
+.p-toast-message-success .p-toast-message-icon {
+   color: var(--bs-success) !important;
+}
+
+.p-toast-message-error .p-toast-message-icon {
+   color: var(--bs-danger) !important;
+}
+
 .p-toast-message-text {
    width: calc(100% - 100px) !important;
    white-space: break-spaces !important;

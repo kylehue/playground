@@ -1,6 +1,6 @@
 <template>
-   <Toast  />
-   <ConfirmDialog :draggable="false" style="max-width: 600px;" />
+   <Toast />
+   <ConfirmDialog :draggable="false" style="max-width: 600px" />
    <!-- New file dialog -->
    <Dialog
       v-model:visible="state.showNewFileDialog"
@@ -122,6 +122,7 @@
       :downloadStatus="state.downloadStatus"
       :isDownloading="state.isDownloading"
       :room="(roomState.room as any)"
+      :following-user-id="roomState.followingUserId"
       @leaveCurrentRoom="confirmLeaveCurrentRoom"
    ></Navbar>
    <Splitpanes v-fill-remaining-height>
@@ -204,7 +205,7 @@ import {
    FetchedVersion,
 } from "@app/utils/npmSearch";
 import templates, { Template, basicHTMLBundleContent } from "@app/templates";
-import { basename, join, extname } from "path-browserify";
+import { basename, join, extname, dirname } from "path-browserify";
 import * as bundler from "@app/bundler";
 import defaultBundlerOptions from "@app/options/bundler";
 import defaultBabelOptions from "@app/options/babel";
@@ -214,9 +215,10 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import Dropzone from "dropzone";
 import { socket } from "@app/socket";
-import { IResultData, IRoom } from "@server/types";
+import { IRoom } from "@server/types";
 import * as flatted from "flatted";
 import { Uri, editor } from "monaco-editor";
+import isFile from "./utils/isFile";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -309,7 +311,7 @@ watch(typescriptOptions, () => {
    if (roomState.room && !suppressOptionsServerUpdate) {
       socket.emit("room:updateTypescriptOptions", typescriptOptions);
    }
-   
+
    suppressOptionsServerUpdate = false;
 });
 
@@ -324,6 +326,7 @@ bundler.updateBabelOptions({
 // Socket
 const roomState = reactive({
    room: null as IRoom | null,
+   followingUserId: "",
 });
 
 socket.on("connect", () => {
@@ -339,9 +342,21 @@ socket.on("room:update", (serializedRoom) => {
       ? flatted.parse(serializedRoom)
       : null;
 
-   room?.users.sort((a, b) => a.id === socket.id ? -1 : a.name.localeCompare(b.name));
+   room?.users.sort((a, b) =>
+      a.id === socket.id ? -1 : a.name.localeCompare(b.name)
+   );
    roomState.room = room;
    console.log(room);
+});
+
+socket.on("room:newUser", (data) => {
+   if (!data.result) return;
+
+   pushNotification(
+      `${data.result.user.name} has joined the room.`,
+      "",
+      "info"
+   );
 });
 
 socket.on("result:room:updateBabelOptions", (data) => {
@@ -360,6 +375,47 @@ socket.on("result:room:updateBundlerOptions", (data) => {
    for (let key in data.result.options) {
       bundlerOptions[key] = data.result.options[key];
    }
+});
+
+socket.on("result:user:transferHost", (data) => {
+   const hostingUser = roomState.room?.users.find(
+      (u) => u.id === data.result?.userId || ""
+   );
+
+   if (!hostingUser) return;
+   pushNotification(
+      "Transfer Host",
+      `${hostingUser.name} is now the host.`,
+      "success"
+   );
+});
+
+socket.on("result:user:unfollow", (data) => {
+   if (!data.result) return;
+   pushNotification(
+      `You are no longer following ${data.result.user.name}`,
+      "",
+      "info"
+   );
+
+   roomState.followingUserId = "";
+});
+
+socket.on("result:user:follower", (data) => {
+   if (!data.result) return;
+   roomState.followingUserId = data.result.user.id;
+
+   pushNotification(
+      `You are now following ${data.result.user.name}`,
+      "",
+      "info"
+   );
+});
+
+socket.on("result:user:followerHost", (data) => {
+   if (!data.result) return;
+
+   pushNotification(`${data.result.user.name} is following you.`, "", "info");
 });
 
 socket.on("result:room:updateTypescriptOptions", (data) => {
@@ -419,16 +475,16 @@ socket.on("result:user:joinRoom", async (data) => {
          options: {
             babelOptions: data.result.options.babel,
             bundlerOptions: data.result.options.bundler,
-            typescriptOptions: data.result.options.typescript
-         }
+            typescriptOptions: data.result.options.typescript,
+         },
       },
       {
          createFileOptions: {
             emitToServer: false,
          },
          addPackageOptions: {
-            emitToServer: false
-         }
+            emitToServer: false,
+         },
       }
    );
 
@@ -488,7 +544,7 @@ watch(
 function confirmLeaveCurrentRoom() {
    return new Promise(async (resolve) => {
       console.log(!roomState.room);
-      
+
       if (!roomState.room) {
          resolve(true);
          return;
@@ -526,7 +582,9 @@ function pushNotification(
    message: string,
    severity: MessageProps["severity"]
 ) {
-   let toastNodes = Array.from(document.querySelectorAll<HTMLDivElement>(".p-toast-message"));
+   let toastNodes = Array.from(
+      document.querySelectorAll<HTMLDivElement>(".p-toast-message")
+   );
 
    // Limit messages
    if (toastNodes.length >= 4) {
@@ -535,15 +593,20 @@ function pushNotification(
 
    // Only notify if unique
    for (let toastNode of toastNodes) {
-      let titleNode = toastNode.querySelector<HTMLSpanElement>(".p-toast-summary");
-      let messageNode = toastNode.querySelector<HTMLSpanElement>(".p-toast-detail");
+      let titleNode =
+         toastNode.querySelector<HTMLSpanElement>(".p-toast-summary");
+      let messageNode =
+         toastNode.querySelector<HTMLSpanElement>(".p-toast-detail");
 
-      if (titleNode?.textContent == title && messageNode?.textContent == message) {
+      if (
+         titleNode?.textContent == title &&
+         messageNode?.textContent == message
+      ) {
          return;
       }
    }
 
-   let additionalTime = Math.min((title.length + message.length) * 20, 5000);
+   let additionalTime = Math.min((title.length + message.length) * 40, 7000);
    toast.add({
       life: 3000 + additionalTime,
       closable: true,
@@ -932,7 +995,21 @@ async function removeFile(path: string) {
    }
 }
 
-async function renameFile(fromPath: string, toPath: string) {
+interface RenameFileOptions {
+   emitToServer: boolean;
+}
+
+async function renameFile(
+   fromPath: string,
+   toPath: string,
+   options?: Partial<RenameFileOptions>
+) {
+   options = Object.assign<RenameFileOptions, Partial<RenameFileOptions>>(
+      {
+         emitToServer: true,
+      },
+      options || {}
+   );
    if (!fromPath || !toPath) return;
 
    let validation = validateFile(toPath);
@@ -983,12 +1060,43 @@ async function renameFile(fromPath: string, toPath: string) {
       if (state.copiedFileDescriptor?.fullPath == oldPath) {
          state.copiedFileDescriptor = null;
       }
+
+      if (roomState.room && options.emitToServer) {
+         socket.emit("room:renameFile", fromPath, toPath);
+      }
+      
+      
+      
+      let type = isFile(fromPath) ? "file" : "directory";
+      let drawerItem = drawer.value?.self.getItemFromPath(type, fromPath);
+      if (drawerItem) {
+         // Move in drawer if not yet moved
+         let targetPath = dirname(toPath);
+         let directory = drawer.value?.self.getDirectoryFromPath(targetPath);
+         if (targetPath == "/") {
+            directory = drawer.value?.self;
+         }
+         drawerItem.moveToDirectory(directory);
+
+         // Rename in drawer
+         let targetName = basename(toPath);
+         drawerItem.rename(targetName);
+      }
    }
    busyState.bundler = false;
    busyState.files = false;
 
    saveProject();
 }
+
+socket.on("result:room:renameFile", (data) => {
+   if (!data.result) return;
+   renameFile(data.result.fromPath, data.result.toPath, {
+      emitToServer: false,
+   });
+
+   console.log(data);
+});
 
 async function clearProject() {
    busyState.bundler = true;
@@ -1164,14 +1272,17 @@ function saveProject(projectId?: string) {
       },
    };
 
+   // don't save in dev mode for testing purposes
    if (process.env.NODE_ENV == "development") {
       return;
    }
 
    storage.updateProject(state.currentProjectId, savestate);
 
-   // Save in temp
-   storage.saveTempProject(savestate);
+   // Only save in temp if not in collab or the user is the room creator
+   if (!roomState.room || roomState.room?.creatorId === socket.id) {
+      storage.saveTempProject(savestate);
+   }
 }
 
 function openCreateFileDialog(path = "") {
@@ -1281,6 +1392,10 @@ async function runProject(isHardRun = false) {
    busyState.bundler = false;
    hardRunRequired = false;
 }
+
+socket.on("result:user:runProject", (isHardRun) => {
+   runProject(isHardRun);
+});
 
 const runQueue: NodeJS.Timeout[] = [];
 function onDidChangeModelContent() {

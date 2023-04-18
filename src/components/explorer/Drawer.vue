@@ -21,6 +21,7 @@ import { MenuItem } from "primevue/menuitem";
 import { useConfirm } from "primevue/useconfirm";
 import { resolve, extname, dirname, relative } from "path-browserify";
 import validateFile from "@app/utils/validateFile";
+import isFile from "@app/utils/isFile";
 const props = defineProps({
    clipboardHasItem: Boolean,
    isBusy: Boolean,
@@ -44,7 +45,7 @@ const drawer = new Drawer({
    },
 });
 
-(window as any).drawer = drawer;
+if (process.env.NODE_ENV == "development") (window as any).drawer = drawer;
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>();
 const contextMenuFocusedItem = ref();
@@ -122,12 +123,6 @@ function createFile(path: string) {
 
       return drawer.addDirectoryFromPath(path);
    }
-}
-
-function isFile(path: string) {
-   let extension = extname(path);
-   let isValid = /^.[a-zA-Z]+$/g.test(extension);
-   return !!extension && isValid;
 }
 
 function removeFile(path: string) {

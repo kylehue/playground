@@ -19,6 +19,3 @@ export default function getLang(str: string) {
 
    return languages[ext.substring(1)];
 }
-
-(window as any).getLang = getLang;
-(window as any).extname = extname;
